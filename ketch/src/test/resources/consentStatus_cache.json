@@ -1,0 +1,11 @@
+{
+  "cachedAt":1111111,
+  "purposes": {
+    "analytics": {
+      "allowed": "false"
+    },
+    "data_sales": {
+      "allowed": "true"
+    }
+  }
+}

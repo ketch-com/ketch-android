@@ -1,0 +1,57 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.ketch.android.example"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="21"
+8-->/Users/okuribko/StudioProjects/ketch-android/example/src/main/AndroidManifest.xml
+9        android:targetSdkVersion="29" />
+9-->/Users/okuribko/StudioProjects/ketch-android/example/src/main/AndroidManifest.xml
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->/Users/okuribko/StudioProjects/ketch-android/example/src/main/AndroidManifest.xml:5:5-67
+11-->/Users/okuribko/StudioProjects/ketch-android/example/src/main/AndroidManifest.xml:5:22-64
+12    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+12-->/Users/okuribko/StudioProjects/ketch-android/example/src/main/AndroidManifest.xml:6:5-79
+12-->/Users/okuribko/StudioProjects/ketch-android/example/src/main/AndroidManifest.xml:6:22-76
+13    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+13-->[com.facebook.flipper:flipper:0.35.0] /Users/okuribko/.gradle/caches/transforms-2/files-2.1/3d2ce301c6058b04e6628e5a1abf5734/jetified-flipper-0.35.0/AndroidManifest.xml:16:5-76
+13-->[com.facebook.flipper:flipper:0.35.0] /Users/okuribko/.gradle/caches/transforms-2/files-2.1/3d2ce301c6058b04e6628e5a1abf5734/jetified-flipper-0.35.0/AndroidManifest.xml:16:22-73
+14
+15    <application
+15-->/Users/okuribko/StudioProjects/ketch-android/example/src/main/AndroidManifest.xml:8:5-22:19
+16        android:allowBackup="true"
+16-->/Users/okuribko/StudioProjects/ketch-android/example/src/main/AndroidManifest.xml:9:9-35
+17        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+17-->[androidx.core:core:1.2.0] /Users/okuribko/.gradle/caches/transforms-2/files-2.1/934b31702b94e14db9955bdb59730a2d/core-1.2.0/AndroidManifest.xml:24:18-86
+18        android:debuggable="true"
+19        android:icon="@mipmap/ic_launcher"
+19-->/Users/okuribko/StudioProjects/ketch-android/example/src/main/AndroidManifest.xml:10:9-43
+20        android:label="@string/app_name"
+20-->/Users/okuribko/StudioProjects/ketch-android/example/src/main/AndroidManifest.xml:11:9-41
+21        android:roundIcon="@mipmap/ic_launcher_round"
+21-->/Users/okuribko/StudioProjects/ketch-android/example/src/main/AndroidManifest.xml:12:9-54
+22        android:supportsRtl="true"
+22-->/Users/okuribko/StudioProjects/ketch-android/example/src/main/AndroidManifest.xml:13:9-35
+23        android:testOnly="true"
+24        android:theme="@style/AppTheme" >
+24-->/Users/okuribko/StudioProjects/ketch-android/example/src/main/AndroidManifest.xml:14:9-40
+25        <activity android:name="com.ketch.android.MainActivity" >
+25-->/Users/okuribko/StudioProjects/ketch-android/example/src/main/AndroidManifest.xml:15:9-21:20
+25-->/Users/okuribko/StudioProjects/ketch-android/example/src/main/AndroidManifest.xml:15:19-64
+26            <intent-filter>
+26-->/Users/okuribko/StudioProjects/ketch-android/example/src/main/AndroidManifest.xml:16:13-20:29
+27                <action android:name="android.intent.action.MAIN" />
+27-->/Users/okuribko/StudioProjects/ketch-android/example/src/main/AndroidManifest.xml:17:17-69
+27-->/Users/okuribko/StudioProjects/ketch-android/example/src/main/AndroidManifest.xml:17:25-66
+28
+29                <category android:name="android.intent.category.LAUNCHER" />
+29-->/Users/okuribko/StudioProjects/ketch-android/example/src/main/AndroidManifest.xml:19:17-77
+29-->/Users/okuribko/StudioProjects/ketch-android/example/src/main/AndroidManifest.xml:19:27-74
+30            </intent-filter>
+31        </activity>
+32    </application>
+33
+34</manifest>

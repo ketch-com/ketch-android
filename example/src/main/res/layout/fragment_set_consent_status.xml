@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/parent"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF"
+    tools:context=".MainActivity">
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/identityKeyInput"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/identityKeyText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Identity"
+            android:imeOptions="actionDone"
+            android:inputType="textNoSuggestions"
+            android:maxLines="1"
+            android:minLines="1"
+            android:scrollHorizontally="true"
+            android:textColor="#000000"
+            android:textColorHint="#F0F0F0" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <TextView
+        android:id="@+id/consentLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:text="Consent"
+        android:textColor="#000000"
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/identityKeyInput" />
+
+    <TextView
+        android:id="@+id/allowedLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:text="Allowed"
+        android:textColor="#000000"
+        android:textSize="14sp"
+        app:layout_constraintBottom_toBottomOf="@+id/consentLabel"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/consentLabel" />
+
+    <CheckBox
+        android:id="@+id/analyticsConsent"
+        style="@android:style/Widget.CompoundButton.CheckBox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="analytics"
+        app:layout_constraintBottom_toTopOf="@+id/dataSalesConsent"
+        app:layout_constraintStart_toStartOf="@+id/consentLabel"
+        app:layout_constraintTop_toBottomOf="@+id/consentLabel" />
+
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/analyticsConsentSwitch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        app:layout_constraintEnd_toEndOf="@+id/allowedLabel"
+        app:layout_constraintTop_toTopOf="@+id/analyticsConsent"
+        app:layout_constraintBottom_toBottomOf="@+id/analyticsConsent"/>
+
+    <CheckBox
+        android:id="@+id/dataSalesConsent"
+        style="@android:style/Widget.CompoundButton.CheckBox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="datasales"
+        app:layout_constraintTop_toBottomOf="@+id/analyticsConsent"
+        app:layout_constraintStart_toStartOf="@+id/consentLabel"/>
+
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/dataSalesConsentSwitch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        app:layout_constraintEnd_toEndOf="@+id/allowedLabel"
+        app:layout_constraintTop_toTopOf="@+id/dataSalesConsent"
+        app:layout_constraintBottom_toBottomOf="@+id/dataSalesConsent"/>
+
+    <CheckBox
+        android:id="@+id/identityManagementConsent"
+        style="@android:style/Widget.CompoundButton.CheckBox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="identitymanagement"
+        app:layout_constraintTop_toBottomOf="@+id/dataSalesConsent"
+        app:layout_constraintStart_toStartOf="@+id/consentLabel"/>
+
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/identityManagementConsentSwitch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        app:layout_constraintEnd_toEndOf="@+id/allowedLabel"
+        app:layout_constraintTop_toTopOf="@+id/identityManagementConsent"
+        app:layout_constraintBottom_toBottomOf="@+id/identityManagementConsent"/>
+
+    <TextView
+        android:id="@+id/migrationOptionLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:text="Migration Option"
+        android:textColor="#000000"
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/identityManagementConsent" />
+
+    <TextView
+        android:id="@+id/migrationOptionValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Always"
+        android:textColor="#000000"
+        android:textSize="22sp"
+        app:layout_constraintStart_toStartOf="@+id/migrationOptionLabel"
+        app:layout_constraintTop_toBottomOf="@+id/migrationOptionLabel" />
+
+    <Button
+        android:id="@+id/setConsentStatus"
+        style="@style/MaterialButtonText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@color/colorAccent"
+        android:text="Set Consent Status"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/migrationOptionValue" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/setConsentStatus">
+
+        <TextView
+            android:id="@+id/setConsentStatusResult"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:scrollbars="vertical"
+            android:textColor="#000000"
+            android:textSize="14sp" />
+    </ScrollView>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

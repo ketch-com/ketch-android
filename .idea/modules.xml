@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/example/example.iml" filepath="$PROJECT_DIR$/.idea/modules/example/example.iml" group="ketch-android/example" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/dinghy/ketch.iml" filepath="$PROJECT_DIR$/.idea/modules/dinghy/ketch.iml" group="ketch-android/ketch" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ketch-android.iml" filepath="$PROJECT_DIR$/.idea/modules/ketch-android.iml" group="ketch-android" />
+    </modules>
+  </component>
+</project>

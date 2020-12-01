@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Gradle: io.kotest:kotest-core-jvm:4.0.1@jar">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.kotest/kotest-core-jvm/4.0.1/a6093c511e0092a3fde77160bd2c3a18d7d70338/kotest-core-jvm-4.0.1.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.kotest/kotest-core-jvm/4.0.1/de6fa40894b3423454e2d1115b0623e5ce39f9c0/kotest-core-jvm-4.0.1-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.kotest/kotest-core-jvm/4.0.1/fe8cc5df5404e91bcc6ba133619b042bf287baa9/kotest-core-jvm-4.0.1-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

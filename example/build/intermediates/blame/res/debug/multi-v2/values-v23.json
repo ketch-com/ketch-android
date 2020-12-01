@@ -1,0 +1,76 @@
+{
+    "logs": [
+        {
+            "outputFile": "/Users/okuribko/StudioProjects/ketch-android/example/build/intermediates/incremental/mergeDebugResources/merged.dir/values-v23/values-v23.xml",
+            "map": [
+                {
+                    "source": "/Users/okuribko/.gradle/caches/transforms-2/files-2.1/092519d23429a7621f51cd979f0aa5fc/jetified-material-values-1.1.1/res/values-v23/values-v23.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "85",
+                        "endOffsets": "136"
+                    }
+                },
+                {
+                    "source": "/Users/okuribko/.gradle/caches/transforms-2/files-2.1/1b3480e162cc068cac0816ad66ec7129/material-1.1.0/res/values-v23/values-v23.xml",
+                    "from": {
+                        "startLines": "2,6",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,320",
+                        "endLines": "5,9",
+                        "endColumns": "10,10",
+                        "endOffsets": "315,588"
+                    },
+                    "to": {
+                        "startLines": "52,56",
+                        "startColumns": "4,4",
+                        "startOffsets": "3643,3908",
+                        "endLines": "55,59",
+                        "endColumns": "10,10",
+                        "endOffsets": "3903,4176"
+                    }
+                },
+                {
+                    "source": "/Users/okuribko/.gradle/caches/transforms-2/files-2.1/d70e3f92a9c627367ac84e66c41c38a4/appcompat-1.1.0/res/values-v23/values-v23.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,20,34,35,36,37,41,42,43,44",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,190,325,400,487,1371,2267,2386,2513,2618,2842,2957,3064,3177",
+                        "endLines": "2,3,4,5,19,33,34,35,36,40,41,42,43,47",
+                        "endColumns": "134,134,74,86,12,12,118,126,104,12,114,106,112,12",
+                        "endOffsets": "185,320,395,482,1366,2262,2381,2508,2613,2837,2952,3059,3172,3402"
+                    },
+                    "to": {
+                        "startLines": "3,4,5,6,7,21,35,36,37,38,42,43,44,45",
+                        "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4",
+                        "startOffsets": "141,276,411,486,573,1457,2353,2472,2599,2704,2928,3043,3150,3263",
+                        "endLines": "3,4,5,6,20,34,35,36,37,41,42,43,44,48",
+                        "endColumns": "134,134,74,86,12,12,118,126,104,12,114,106,112,12",
+                        "endOffsets": "271,406,481,568,1452,2348,2467,2594,2699,2923,3038,3145,3258,3488"
+                    }
+                },
+                {
+                    "source": "/Users/okuribko/.gradle/caches/transforms-2/files-2.1/8ba3e46597de4ff6a2cb4eec121d27bf/cardview-1.0.0/res/values-v23/values-v23.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "4",
+                        "endColumns": "12",
+                        "endOffsets": "200"
+                    },
+                    "to": {
+                        "startLines": "49",
+                        "startColumns": "4",
+                        "startOffsets": "3493",
+                        "endLines": "51",
+                        "endColumns": "12",
+                        "endOffsets": "3638"
+                    }
+                }
+            ]
+        }
+    ]
+}
