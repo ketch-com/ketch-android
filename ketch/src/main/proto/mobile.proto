@@ -1,0 +1,313 @@
+syntax = "proto3";
+
+package mobile;
+
+message ConfigurationOrganization {
+    string code = 1;
+    string name = 2;
+}
+
+message ConfigurationPolicyScopeInfo {
+    string code = 1;
+    string defaultScopeCode = 2;
+    string variable = 3;
+    map<string, string> scopes = 4;
+}
+
+message ConfigurationApplication {
+    string code = 1;
+    string name = 2;
+    string platform = 3;
+}
+
+message ConfigurationEnvironment {
+    string code = 1;
+    string pattern = 2;
+    string hash = 3;
+}
+
+message ConfigurationDeployment {
+    string code = 1;
+    int64 version = 2;
+}
+
+message ConfigurationPurpose {
+    reserved 1;
+    string code = 2;
+    string name = 3;
+    string description = 4;
+    string legalBasisCode = 5;
+    bool requiresOptIn = 6;
+    bool allowsOptOut = 7;
+    bool requiresPrivacyPolicy = 8;
+}
+
+message ConfigurationIdentity {
+    string type = 1;
+    string variable = 2;
+}
+
+message ConfigurationPolicyDocument {
+    string code = 1;
+    int64 version = 2;
+    string url = 3;
+}
+
+message ConfigurationRight {
+    string code = 1;
+    string name = 2;
+    string description = 3;
+}
+
+message GetConfigurationRequest {
+    string organizationCode = 1;
+    string applicationCode = 2;
+    string applicationEnvironmentCode = 3;
+    string IP = 4;
+    string countryCode = 5;
+    string regionCode = 6;
+    string languageCode = 7;
+}
+
+message GetConfigurationResponse {
+    string language = 1;
+    string countryCode = 2;
+    string regionCode = 3;
+
+    ConfigurationOrganization organization = 4;
+    ConfigurationApplication app = 5;
+    repeated ConfigurationEnvironment environments = 6;
+    ConfigurationPolicyScopeInfo policyScope = 7;
+    map<string, ConfigurationIdentity> identities = 8;
+    ConfigurationEnvironment environment = 9;
+    ConfigurationDeployment deployment = 10;
+    ConfigurationPolicyDocument privacyPolicy = 11;
+    ConfigurationPolicyDocument termsOfService = 12;
+    repeated ConfigurationRight rights = 13;
+    repeated string regulations = 14;
+    repeated ConfigurationPurpose purposes = 15;
+    map<string, string> services = 16;
+    map<string, int32> options = 17;
+}
+
+// Identity describes the way of identifying a data subject
+message Identity {
+    // IdentitySpace is the identifier for the identity space
+    string identity_space = 1;
+
+    // IdentityValue is the actual identity value
+    string identity_value = 2;
+}
+
+// DataSubject describes the information required about a data subject
+message DataSubject {
+    // First is the data subject's first name
+    string first = 1;
+
+    // Last is the data subject's last name
+    string last = 2;
+
+    // County is the data subject's country code (ISO 3166-2)
+    string country = 3;
+
+    // Region is the data subject's region code (ISO 3166-2)
+    string region = 4;
+
+    // VerificationMethod specifies how the data subject was verified
+    string verification_method = 5;
+
+    // VerificationMethod specifies how the data subject was verified
+    string email = 6;
+}
+
+// Organization describes the entity who holds the processing permit
+message Organization {
+    // ID is the identifier of the organization
+    string id = 1;
+
+    // Name is the name of the organization
+    string name = 2;
+
+    // LogoURL is a valid URL to the logo of the organization
+    string logo_url = 3;
+}
+
+// Controller describes a data controller
+message Controller {
+    // ID is the identifier of the controller in the originating system
+    string id = 1;
+
+    // Name is the name of the controller in the originating system
+    string name = 2;
+
+    // LogoURL is a valid URL to the logo of the controller
+    string logo_url = 3;
+}
+
+// Context provides information to know how a request was collected
+message Context {
+    // CollectedFrom specifies how the request was received
+    string collected_from = 1;
+
+    // Application specifies the website or application ID where the request was received
+    string application = 2;
+
+    // Environment specifies the environment (production, testing, etc)
+    string environment = 3;
+}
+
+// Purpose describes a purpose.
+message Purpose {
+    // Purpose is the code/id/url of the purpose
+    string purpose = 1;
+
+    // LegalBasis describes the basis on which the purpose consent has been provided
+    string legal_basis = 2;
+}
+
+// Consent represents a consent to a purpose
+message Consent {
+    // Purpose is the consent purpose
+    string purpose = 1;
+
+    // LegalBasis is the legal basis appealed to
+    string legal_basis = 2;
+
+    // Allowed is true if the purpose is allowed
+    bool allowed = 3;
+}
+
+// InvokeRightRequest is the request sent to the service to invoke a right
+message InvokeRightRequest {
+    // RequestID is the unique identifier of the request
+    string request_id = 1;
+
+    // PolicyScope is the policy scope under which this right was invoked
+    string policy_scope = 2;
+
+    // Right is the actual right being invoked
+    string right = 3;
+
+    // DataSubject is the details about the data subject invoking the right.
+    DataSubject data_subject = 4;
+
+    // Identities is a list of identities for the data subject.
+    repeated Identity identities = 5;
+
+    // Organization describes the entity who holds the processing permit
+    Organization organization = 6;
+
+    // Controller is the details about the controller
+    Controller controller = 7;
+
+    // SubmittedTime is the timestamp when this right was originally invoked.
+    int64 submitted_time = 8;
+
+    // DueTime is the timestamp when this right invocation request should be completed.
+    int64 due_time = 9;
+
+    // Context provides information about where and how the right invocation was collected.
+    Context context = 10;
+
+    // Extensions allow vendor-scoped extensions to the protocol
+    map<string, string> extensions = 100;
+}
+
+// InvokeRightResponse is the response returned from invoking a right
+message InvokeRightResponse {
+    // RequestID is the unique identifier of the request
+    string request_id = 1;
+
+    // ControllerID is the unique identity of the Controller in the Processor’s system.
+    string controller_id = 2;
+
+    // ExpectedCompletionTime is the time when the Processor expects to fulfill the request.
+    int64 expected_completion_time = 3;
+
+    // ReceivedTime is the time when the Processor received the request.
+    int64 received_time = 4;
+}
+
+// SetConsentRequest is the request sent to the service to set consent
+message SetConsentRequest {
+    // RequestID is the unique identifier of the request
+    string request_id = 1;
+
+    // PolicyScope is the policy scope under which the consent was collected
+    string policy_scope = 2;
+
+    // Consents is a list of consents
+    repeated Consent consents = 3;
+
+    // Identities is a list of identities for the data subject.
+    repeated Identity identities = 4;
+
+    // Organization describes the entity who holds the processing permit
+    Organization organization = 5;
+
+    // Controller is the details about the controller
+    Controller controller = 6;
+
+    // CollectedTime is the timestamp when this consent was originally collected
+    int64 collected_time = 7;
+
+    // ExpiryTime is the timestamp when this consent expires
+    int64 expiry_time = 8;
+
+    // Context provides information about where and how the right invocation was collected
+    Context context = 9;
+
+    // Extensions allow vendor-scoped extensions to the protocol
+    map<string, string> extensions = 100;
+}
+
+// SetConsentResponse is the response returned when consent is set
+message SetConsentResponse {
+    // RequestID is the unique identifier of the request
+    string request_id = 1;
+
+    // ReceivedTime is the time when the Processor received the request
+    int64 received_time = 3;
+}
+
+// GetConsentRequest
+message GetConsentRequest {
+    // RequestID is the unique identifier of the request
+    string request_id = 1;
+
+    // Context provides context for how the consent was requested
+    Context context = 2;
+
+    // Identities is a list of identities
+    repeated Identity identities = 3;
+
+    // Purposes is a list of Purpose/Legal bases
+    repeated Purpose purposes = 4;
+
+    // OrganizationID is identifier of the entity who holds the processing permit
+    string organization_id = 5;
+
+    // ControllerID is the identifier of the data controller
+    string controller_id = 6;
+}
+
+// GetConsentResponse
+message GetConsentResponse {
+    // RequestID is the unique identifier of the request
+    string request_id = 1;
+
+    // Consents is a list of consents available
+    repeated Consent consents = 2;
+}
+
+service Mobile {
+    // Supercargo + Astrolabe
+    rpc GetConfiguration (GetConfigurationRequest) returns (GetConfigurationResponse);
+
+    // Wheelhouse + Transponder
+    rpc GetConsent (GetConsentRequest) returns (GetConsentResponse);
+    rpc SetConsent (SetConsentRequest) returns (SetConsentResponse);
+
+    // InvokeRight is used to invoke a right for a data subject
+    rpc InvokeRight (InvokeRightRequest) returns (InvokeRightResponse);
+}
