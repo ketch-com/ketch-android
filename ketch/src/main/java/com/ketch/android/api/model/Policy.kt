@@ -6,6 +6,6 @@ import kotlinx.android.parcel.Parcelize
 @Parcelize
 data class PolicyDocument(
     val code: String?,
-    val version: Int?,
+    val version: Long?,
     val url: String?
 ) : Parcelable

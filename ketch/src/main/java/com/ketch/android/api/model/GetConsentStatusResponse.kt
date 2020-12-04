@@ -13,6 +13,10 @@ data class GetConsentStatusResponse(
     override val cachedAt: Long? = null
 ) : Parcelable, Cacheable {
 
+    companion object {
+        const val version = 1
+    }
+
     /**
      * Return a copy of {@link GetConsentStatusResponse} with provided timestamp set
      */

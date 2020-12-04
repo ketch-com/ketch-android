@@ -1,37 +1,19 @@
 package com.ketch.android.repository
 
 import android.content.Context
+import android.util.Log
 import com.google.gson.Gson
-import com.ketch.android.api.ApiUtils
-import com.ketch.android.api.KetchApiClient
-import com.ketch.android.api.MigrationOption
-import com.ketch.android.api.OtherError
-import com.ketch.android.api.RequestError
-import com.ketch.android.api.Result
-import com.ketch.android.api.flatMapSuccess
-import com.ketch.android.api.mapWithResult
-import com.ketch.android.api.model.ApiConsentStatus
-import com.ketch.android.api.model.BootstrapConfiguration
-import com.ketch.android.api.model.Cacheable
-import com.ketch.android.api.model.Configuration
-import com.ketch.android.model.ConsentStatus
-import com.ketch.android.api.model.Environment
-import com.ketch.android.api.model.GetConsentStatusBody
-import com.ketch.android.api.model.GetConsentStatusResponse
-import com.ketch.android.api.model.InvokeRightsBody
-import com.ketch.android.api.model.UpdateConsentStatusBody
-import com.ketch.android.api.toDomain
+import com.ketch.android.api.*
+import com.ketch.android.api.adapter.ConfigurationDataAdapter
+import com.ketch.android.api.model.*
 import com.ketch.android.cache.CacheProvider
 import com.ketch.android.location.LocationUtils
+import com.ketch.android.model.ConsentStatus
 import com.ketch.android.model.UserData
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.transform
+import kotlinx.coroutines.flow.*
+import mobile.MobileOuterClass
+import transponder.Transponder
 
 /**
  * Main class for accessing ketch resources
@@ -50,11 +32,13 @@ class KetchRepository internal constructor(
 ) {
     /**
      * Collection of base service URLs received as a part of bootstrap json and needed to form other
-     * ketch endpoints URLs
+     * SwitchBit endpoints URLs
      */
     private var serviceUrls: Map<String, String>? = null
 
     private val gson = Gson()
+
+    private var mobileClient: MobileClient? = null
 
     /**
      * Retrieves bootstrap configuration needed for full config
@@ -76,8 +60,13 @@ class KetchRepository internal constructor(
             .catch { e ->
                 emit(Result.fail(OtherError(e)))
             }
-            .wrapWithCache(BootstrapConfiguration::class.java, organizationCode, applicationCode)
-            .fallbackWithCache(BootstrapConfiguration::class.java, organizationCode, applicationCode)
+            .wrapWithCache(BootstrapConfiguration::class.java, 0, organizationCode, applicationCode)
+            .fallbackWithCache(
+                BootstrapConfiguration::class.java,
+                0,
+                organizationCode,
+                applicationCode
+            )
             .onEach { result ->
                 if (result is Result.Success) {
                     // save received service URLs to use them for further requests
@@ -91,7 +80,7 @@ class KetchRepository internal constructor(
      * Retrieves full configuration data
      * Should be used if location latitude and longitude are provided
      * Caching is performed in {@see getConfigurationFlow} method
-     * Tries to determine locationCode based on provided coordinates using Android components. If fails, fallbacks to using of ketch resources
+     * Tries to determine locationCode based on provided coordinates using Android components. If fails, fallbacks to using of switchbit resources
      * @param configuration bootstrap configuration
      * @param environment environment value that should match one of environment patterns
      * @param languageCode current locale code (e.g. en_US)
@@ -118,7 +107,7 @@ class KetchRepository internal constructor(
             }
             .flatMapLatest { locationCode ->
                 // if locationCode is successfully determined, use it to form a final getFullConfiguration request
-                // otherwise use ketch ASTROLABE endpoint to get location code first
+                // otherwise use switchbit ASTROLABE endpoint to get location code first
                 locationCode?.let {
                     getConfigurationFlow(
                         configuration = configuration,
@@ -129,7 +118,8 @@ class KetchRepository internal constructor(
                 } ?: getFullConfiguration(
                     configuration = configuration,
                     environment = environment,
-                    languageCode = languageCode)
+                    languageCode = languageCode
+                )
             }
             .flowOn(Dispatchers.IO)
 
@@ -137,7 +127,7 @@ class KetchRepository internal constructor(
      * Retrieves full configuration data
      * Should be used if location latitude and longitude are absent or Android component failed to get location code
      * Caching is performed in {@see getConfigurationFlow} method
-     * Tries to determine locationCode using ketch ASTROLABE resource
+     * Tries to determine locationCode using switchbit ASTROLABE resource
      * @param configuration bootstrap configuration
      * @param environment environment value that should match one of environment patterns
      * @param languageCode current locale code (e.g. en_US)
@@ -150,7 +140,8 @@ class KetchRepository internal constructor(
     ): Flow<Result<RequestError, Configuration>> =
         flow {
             emit(
-                client.getApiService(serviceUrls?.get(ServiceNames.ASTROLABE.value)).getGeolocation()
+                client.getApiService(serviceUrls?.get(ServiceNames.ASTROLABE.value))
+                    .getGeolocation()
             )
         }
             .mapWithResult { it.getGeolocationCode().orEmpty() }
@@ -207,6 +198,7 @@ class KetchRepository internal constructor(
             }
             .wrapWithCache(
                 Configuration::class.java,
+                0,
                 organizationCode,
                 applicationCode,
                 environment,
@@ -215,6 +207,7 @@ class KetchRepository internal constructor(
             )
             .fallbackWithCache(
                 Configuration::class.java,
+                0,
                 organizationCode,
                 applicationCode,
                 environment,
@@ -222,6 +215,72 @@ class KetchRepository internal constructor(
                 languageCode
             )
             .flowOn(Dispatchers.IO)
+    }
+
+    fun getConfigurationProto(
+        environment: String,
+        languageCode: String
+    ): Flow<Result<RequestError, ConfigurationV2>> {
+        return flow {
+            mobileClient = MobileClient(context!!)
+            val blockingStub = mobileClient!!.blockingStub
+            val request = MobileOuterClass.GetConfigurationRequest.newBuilder()
+                .setOrganizationCode(organizationCode)
+                .setApplicationCode(applicationCode)
+                .setApplicationEnvironmentCode(environment)
+                .setLanguageCode(languageCode)
+                .build()
+            Log.d(">>>", request.toString())
+            val response = blockingStub.getConfiguration(request)
+            emit(response)
+        }
+            .map { ConfigurationDataAdapter().toModel(it) }
+            .map<ConfigurationV2, Result<RequestError, ConfigurationV2>> { Result.succeed(it) }
+            .catch { e ->
+                emit(Result.fail(OtherError(e)))
+            }
+
+            .map { it }
+            .wrapWithCache(
+                ConfigurationV2::class.java,
+                ConfigurationV2.version,
+                organizationCode,
+                applicationCode,
+                environment,
+                languageCode
+            )
+            .fallbackWithCache(
+                ConfigurationV2::class.java,
+                ConfigurationV2.version,
+                organizationCode,
+                applicationCode,
+                environment,
+                languageCode
+            )
+            .flowOn(Dispatchers.IO)
+/*
+
+        return flow {
+            emit(
+                blockingStub.getConfiguration(
+                    MobileOuterClass.GetConfigurationRequest.newBuilder()
+                        .setOrganizationCode(organizationCode)
+                        .setApplicationCode(applicationCode)
+                        .setApplicationEnvironmentCode(environment)
+                        .setLanguageCode(languageCode)
+                        .build()
+                )
+            )
+        }
+            .map {
+                Log.d("~~99", it.toString())
+                it.toString()
+            }
+            .catch {
+                Log.d("~~", it.message ?: "")
+                    emit(it.toString())
+            }
+            .flowOn(Dispatchers.IO)*/
     }
 
     /**
@@ -248,10 +307,11 @@ class KetchRepository internal constructor(
                 )
             )
             emit(
-                client.getApiService(serviceUrls?.get(ServiceNames.WHEELHOUSE.value)).getConsentStatus(
-                    organizationCode = organizationCode,
-                    getConsentStatusBody = body
-                )
+                client.getApiService(serviceUrls?.get(ServiceNames.WHEELHOUSE.value))
+                    .getConsentStatus(
+                        organizationCode = organizationCode,
+                        getConsentStatusBody = body
+                    )
             )
         }
             .mapWithResult { it }
@@ -260,6 +320,7 @@ class KetchRepository internal constructor(
             }
             .wrapWithCache(
                 GetConsentStatusResponse::class.java,
+                GetConsentStatusResponse.version,
                 organizationCode,
                 applicationCode,
                 configuration.environment?.code,
@@ -268,6 +329,7 @@ class KetchRepository internal constructor(
             )
             .fallbackWithCache(
                 GetConsentStatusResponse::class.java,
+                GetConsentStatusResponse.version,
                 organizationCode,
                 applicationCode,
                 configuration.environment?.code,
@@ -331,14 +393,79 @@ class KetchRepository internal constructor(
                 ),
                 migrationOption = migrationOption.value
             )
+            Log.d("~~~", body.toString())
             emit(
-                client.getApiService(serviceUrls?.get(ServiceNames.WHEELHOUSE.value)).updateConsentStatus(
-                    organizationCode = organizationCode,
-                    updateConsentStatusBody = body
-                )
+                client.getApiService(serviceUrls?.get(ServiceNames.WHEELHOUSE.value))
+                    .updateConsentStatus(
+                        organizationCode = organizationCode,
+                        updateConsentStatusBody = body
+                    )
             )
         }
             .mapWithResult { it }
+            .catch { e ->
+                emit(Result.fail(OtherError(e)))
+            }
+            .flowOn(Dispatchers.IO)
+
+
+    /**
+     * Sends a request for updating consent status
+     * Uses organizationCode to form a full URL
+     * @param configuration full configuration
+     * @param identities map of identityCodes and identityValues. Keys and values shouldn't be null
+     * @param consents map of consent names and information if this particular legalBasisCode should be allowed or not
+     * @param migrationOption rule that represents how updating should be performed
+     * @return Flow of Result.Success if successful and with an error if request or its handling failed
+     */
+    fun updateConsentStatusProto(
+        configuration: ConfigurationV2,
+        identities: Iterable<IdentityV2>,
+        purposes: Iterable<PurposeV2>,
+        consents: Map<String, ConsentStatus>,
+        migrationOption: MigrationOption
+    ): Flow<Result<RequestError, MobileOuterClass.SetConsentResponse>> =
+        flow {
+            Log.d("~~~", "identities: ${identities.count()}")
+            val blockingStub = mobileClient!!.blockingStub
+            val request = MobileOuterClass.SetConsentRequest.newBuilder()
+                .setPolicyScope(configuration.policyScope!!.code)
+                .addAllConsents(
+                    purposes.map {
+                        MobileOuterClass.Consent.newBuilder()
+                            .setPurpose(it.purpose)
+                            .setLegalBasis(it.legalBasis)
+                            .setAllowed(true).build()
+                    })
+                .addAllIdentities(identities.map {
+                    Log.d("~~~", "Identity: $it")
+                    MobileOuterClass.Identity.newBuilder()
+                        .setIdentitySpace(it.space)
+                        .setIdentityValue(it.value)
+                        .build()
+                })
+                .setOrganization(MobileOuterClass.Organization.newBuilder()
+                    .setId(configuration.organization!!.code)
+                    .setName(configuration.organization.name)
+                    .build())
+                .setCollectedTime(System.currentTimeMillis())
+                .setContext(MobileOuterClass.Context.newBuilder()
+                    .setApplication(configuration.applicationInfo!!.code)
+                    .setCollectedFrom("phone")
+                    .setEnvironment(configuration.environment!!.code)
+                    .build())
+
+                .build()
+
+            Log.d(">>>", request.toString())
+            val response = blockingStub.setConsent(request)
+            Log.d("<<<", response.toString())
+
+            emit(
+                response
+            )
+        }
+            .map<MobileOuterClass.SetConsentResponse, Result<RequestError, MobileOuterClass.SetConsentResponse>> { Result.succeed(it) }
             .catch { e ->
                 emit(Result.fail(OtherError(e)))
             }
@@ -391,12 +518,16 @@ class KetchRepository internal constructor(
      * @param type class of the object that needs to be cached
      * @param params set of objects that represent each request
      */
-    private fun <T : Cacheable> Flow<Result<RequestError, T>>.wrapWithCache(type: Class<*>, vararg params: Any?): Flow<Result<RequestError, T>> =
+    private fun <T : Cacheable> Flow<Result<RequestError, T>>.wrapWithCache(
+        type: Class<*>,
+        version: Int,
+        vararg params: Any?
+    ): Flow<Result<RequestError, T>> =
         onEach { result ->
             if (result is Result.Success) {
                 val data = result.value
                 cacheProvider?.store(
-                    "${type.simpleName}_${cacheProvider.generateSalt(*params)}",
+                    "${type.simpleName}_${version}_${cacheProvider.generateSalt(*params)}",
                     gson.toJson(data.cacheableCopy(System.currentTimeMillis()))
                 )
             }
@@ -410,14 +541,19 @@ class KetchRepository internal constructor(
      * @param type class of the object that needs to be cached
      * @param params set of objects that represent each request
      */
-    private fun <T : Any> Flow<Result<RequestError, T>>.fallbackWithCache(type: Class<*>, vararg params: Any?): Flow<Result<RequestError, T>> =
+    private fun <T : Any> Flow<Result<RequestError, T>>.fallbackWithCache(
+        type: Class<*>,
+        version: Int,
+        vararg params: Any?
+    ): Flow<Result<RequestError, T>> =
         transform { result ->
             if (result is Result.Error) {
                 println("hash ${type.simpleName}_${cacheProvider?.generateSalt(*params)}")
-                cacheProvider?.obtain("${type.simpleName}_${cacheProvider.generateSalt(*params)}")?.let {
-                    println(gson.fromJson(it, type) as T)
-                    emit(Result.succeed(gson.fromJson(it, type) as T))
-                } ?: emit(result)
+                cacheProvider?.obtain("${type.simpleName}_${version}_${cacheProvider.generateSalt(*params)}")
+                    ?.let {
+                        println(gson.fromJson(it, type) as T)
+                        emit(Result.succeed(gson.fromJson(it, type) as T))
+                    } ?: emit(result)
             } else
                 emit(result)
         }
@@ -430,7 +566,7 @@ class KetchRepository internal constructor(
     }
 
     /**
-     * Builder class to config ketchRepository. Repository should be created only with this class
+     * Builder class to config SwitchbitRepository. Repository should be created only with this class
      */
     class Builder() {
         private var organizationCode: String? = null
@@ -442,7 +578,8 @@ class KetchRepository internal constructor(
 
         fun applicationCode(code: String): Builder = this.apply { applicationCode = code }
 
-        fun cacheProvider(provider: CacheProvider): Builder = this.apply { cacheProvider = provider }
+        fun cacheProvider(provider: CacheProvider): Builder =
+            this.apply { cacheProvider = provider }
 
         fun context(ctx: Context): Builder = this.apply { context = ctx }
 

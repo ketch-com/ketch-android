@@ -4,7 +4,7 @@ import android.os.Parcelable
 import kotlinx.android.parcel.Parcelize
 
 @Parcelize
-data class Deployment(
-    val code: String?,
-    val version: Long?
+data class OrganizationV2(
+    val name: String,
+    val code: String?
 ) : Parcelable
