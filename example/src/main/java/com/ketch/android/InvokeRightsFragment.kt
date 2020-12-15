@@ -10,8 +10,13 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.ketch.android.api.Result
 import com.ketch.android.api.model.Configuration
+import com.ketch.android.api.model.ConfigurationV2
+import com.ketch.android.api.model.IdentityV2
 import com.ketch.android.model.UserData
+import com.ketch.android.model.UserDataV2
 import kotlinx.android.synthetic.main.fragment_invoke_rights.*
+import kotlinx.android.synthetic.main.fragment_invoke_rights.identityKeyText
+import kotlinx.android.synthetic.main.fragment_set_consent_status.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
@@ -42,22 +47,44 @@ class InvokeRightsFragment : BaseFragment() {
 
         setupActionBar("Usage. Invoke Rights", true)
 
-        var config: Configuration? = null
+        var config: ConfigurationV2? = null
         arguments?.getString(CONFIG_JSON)?.let {
-            config = Gson().fromJson(it, Configuration::class.java)
+            config = Gson().fromJson(it, ConfigurationV2::class.java)
         }
+
+        right1.text = config!!.rights?.get(0)?.code ?: ""
+        right2.text = config!!.rights?.get(1)?.code ?: ""
+        right3.text = config!!.rights?.get(2)?.code ?: ""
+
+        val userData = UserDataV2(
+            first = "Foo",
+            last = "Bar",
+            country = "US",
+            region = "CA",
+            email = "someone@ketch.com"
+        )
+
+        userDataValue.text =
+            """First Name: ${userData.first}
+            |Last name: ${userData.last}
+            |Country: ${userData.country}
+            |Region: ${userData.region}
+            |Email: ${userData.email}""".trimMargin()
 
         invokeRights.setOnClickListener {
             if (identityKeyText.text.toString().isNotBlank() && config != null) {
-                val rights = listOf(portability, rtbf, wrong_right).filter { it.isChecked }
+                val rights = listOf(right1, right2, right3).filter { it.isChecked }
                     .map {
                         it.text.toString()
                     }
+                val identities: List<IdentityV2> = config!!.identities!!.map {
+                    IdentityV2(it.key, identityKeyText.text.toString())
+                }
                 job = CoroutineScope(Dispatchers.Main).launch {
-                    repositoryProvider?.getRepository()?.invokeRights(
+                    repositoryProvider?.getRepository()?.invokeRightsProto(
                         configuration = config!!,
-                        identities = mapOf(identityKeyText.text.toString() to "testValue"),
-                        userData = UserData(email = userDataValue.text.toString()),
+                        identities = identities,
+                        userData = userData,
                         rights = rights
                     )
                         ?.collect { result ->
@@ -82,7 +109,7 @@ class InvokeRightsFragment : BaseFragment() {
     companion object {
         const val CONFIG_JSON = "configJson"
 
-        fun newInstance(configuration: Configuration): InvokeRightsFragment =
+        fun newInstance(configuration: ConfigurationV2): InvokeRightsFragment =
             InvokeRightsFragment().apply {
                 arguments = Bundle().apply {
                     putString(CONFIG_JSON, Gson().toJson(configuration))

@@ -65,10 +65,7 @@ class SetupFragment : BaseFragment() {
         )
 
         (requireActivity() as MainActivity).addFragment(
-            GetBootstrapConfigFragment.newInstance(
-                orgCode = organizationCodeText.text.toString(),
-                appCode = applicationCodeText.text.toString()
-            )
+            GetFullConfigFragment.newInstance()
         )
     }
 

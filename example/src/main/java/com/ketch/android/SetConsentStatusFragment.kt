@@ -2,15 +2,18 @@ package com.ketch.android
 
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CheckBox
+import android.widget.Toast
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.ketch.android.api.MigrationOption
 import com.ketch.android.api.Result
-import com.ketch.android.api.model.Configuration
+import com.ketch.android.api.model.*
 import com.ketch.android.model.ConsentStatus
 import kotlinx.android.synthetic.main.fragment_set_consent_status.*
 import kotlinx.coroutines.CoroutineScope
@@ -21,7 +24,7 @@ import kotlinx.coroutines.launch
 class SetConsentStatusFragment : BaseFragment() {
 
     private var repositoryProvider: RepositoryProvider? = null
-    private var config: Configuration? = null
+    private var config: ConfigurationV2? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -43,19 +46,23 @@ class SetConsentStatusFragment : BaseFragment() {
 
         setupActionBar("Usage. Set Consent Status", true)
 
-        var config: Configuration? = null
+        var config: ConfigurationV2? = null
         arguments?.getString(CONFIG_JSON)?.let {
-            config = Gson().fromJson(it, Configuration::class.java)
+            config = Gson().fromJson(it, ConfigurationV2::class.java)
         }
+
+        populateConsent(config?.purposes?.get(0), consent1)
+        populateConsent(config?.purposes?.get(1), consent2)
+        populateConsent(config?.purposes?.get(2), consent3)
 
         setConsentStatus.setOnClickListener {
             if (identityKeyText.text.toString().isNotBlank() && config != null) {
                 job = CoroutineScope(Dispatchers.Main).launch {
                     val consents: Map<String, ConsentStatus> =
                         mapOf(
-                            analyticsConsent to analyticsConsentSwitch,
-                            dataSalesConsent to dataSalesConsentSwitch,
-                            identityManagementConsent to identityManagementConsentSwitch
+                            consent1 to consent1Switch,
+                            consent2 to consent2Switch,
+                            consent3 to consent3Switch
                         )
                             .filter { it.key.isChecked }
                             .map { (consent, switch) ->
@@ -65,15 +72,36 @@ class SetConsentStatusFragment : BaseFragment() {
                                 )
                             }
                             .toMap()
-                    repositoryProvider?.getRepository()?.updateConsentStatus(
+                    val identities: List<IdentityV2> = config!!.identities!!.map {
+                        IdentityV2(it.key, identityKeyText.text.toString())
+                    }
+
+                    repositoryProvider?.getRepository()?.updateConsentStatusProto(
                         configuration = config!!,
-                        identities = mapOf(identityKeyText.text.toString() to "testValue"),
+                        identities = identities,
                         consents = consents,
-                        migrationOption = MigrationOption.MIGRATE_ALWAYS
+                        migrationOption = MigrationOption.MIGRATE_ALWAYS,
+                        purposes = mapOf(
+                            consent1 to consent1Switch,
+                            consent2 to consent2Switch,
+                            consent3 to consent3Switch
+                        )
+                            .filter { it.key.isChecked }
+                            .map { (consent, switch) ->
+                                consent.text.toString() to ConsentStatus(
+                                    allowed = switch.isChecked,
+                                    legalBasisCode = config!!.purposes?.find { it.code == consent.text.toString() }?.legalBasisCode
+                                )
+                            }.
+                            map {(consent, consentStatus) ->
+                                Log.d("~~~", "$consent,${consentStatus.legalBasisCode}, ${consentStatus.allowed}")
+                                PurposeV2(consent, consentStatus.legalBasisCode!!, consentStatus.allowed ?: false)
+                            }
                     )
                         ?.collect { result ->
                             when (result) {
                                 is Result.Success -> {
+                                    Log.d("<<<", result.toString())
                                     setConsentStatusResult.text =
                                         GsonBuilder().setPrettyPrinting().create()
                                             .toJson(JsonObject())
@@ -86,14 +114,24 @@ class SetConsentStatusFragment : BaseFragment() {
                             }
                         }
                 }
+            } else {
+                Toast.makeText(activity!!, "Configuration & Identity key should not be blank", Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+
+    private fun populateConsent(purpose: Purpose?, checkBox: CheckBox) {
+        purpose?.code?.let {
+            checkBox.text = it
+        } ?: run {
+            checkBox.visibility = View.GONE
         }
     }
 
     companion object {
         const val CONFIG_JSON = "configJson"
 
-        fun newInstance(configuration: Configuration): SetConsentStatusFragment =
+        fun newInstance(configuration: ConfigurationV2): SetConsentStatusFragment =
             SetConsentStatusFragment().apply {
                 arguments = Bundle().apply {
                     putString(CONFIG_JSON, Gson().toJson(configuration))
