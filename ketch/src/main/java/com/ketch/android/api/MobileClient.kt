@@ -12,7 +12,9 @@ class MobileClient private constructor(channel: Channel) {
         private const val SERVER_PORT = 443;
     }
 
-    val blockingStub = MobileGrpc.newBlockingStub(channel).withInterceptors(TimeoutInterceptor())
+    val blockingStub: MobileGrpc.MobileBlockingStub = MobileGrpc
+        .newBlockingStub(channel)
+        .withInterceptors(TimeoutInterceptor())
 
     constructor(context: Context) : this(
         AndroidChannelBuilder.forAddress(SERVER_NAME, SERVER_PORT).context(context).build()

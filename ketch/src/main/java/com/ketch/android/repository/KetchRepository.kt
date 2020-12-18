@@ -1,6 +1,8 @@
 package com.ketch.android.repository
 
 import android.content.Context
+import android.util.Base64
+import android.util.Base64.NO_WRAP
 import android.util.Log
 import com.google.gson.Gson
 import com.ketch.android.api.*
@@ -10,10 +12,11 @@ import com.ketch.android.cache.CacheProvider
 import com.ketch.android.location.LocationUtils
 import com.ketch.android.model.ConsentStatus
 import com.ketch.android.model.UserData
+import com.ketch.android.model.UserDataV2
+import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import mobile.MobileOuterClass
-import transponder.Transponder
 
 /**
  * Main class for accessing ketch resources
@@ -30,6 +33,9 @@ class KetchRepository internal constructor(
     private val cacheProvider: CacheProvider?,
     private val client: KetchApiClient = KetchApiClient()
 ) {
+    companion object {
+        private const val GRPC_TAG = "gRPC"
+    }
     /**
      * Collection of base service URLs received as a part of bootstrap json and needed to form other
      * SwitchBit endpoints URLs
@@ -219,28 +225,66 @@ class KetchRepository internal constructor(
 
     fun getConfigurationProto(
         environment: String,
-        languageCode: String
+        countryCode: String,
+        languageCode: String,
+        regionCode: String = "",
+        IP: String = ""
     ): Flow<Result<RequestError, ConfigurationV2>> {
         return flow {
+            println(1)
             mobileClient = MobileClient(context!!)
+            println(2)
             val blockingStub = mobileClient!!.blockingStub
+            println(3)
             val request = MobileOuterClass.GetConfigurationRequest.newBuilder()
                 .setOrganizationCode(organizationCode)
                 .setApplicationCode(applicationCode)
                 .setApplicationEnvironmentCode(environment)
                 .setLanguageCode(languageCode)
+                .setCountryCode(countryCode)
+                .setRegionCode(regionCode)
+                .setIP("")
                 .build()
-            Log.d(">>>", request.toString())
+            println(4)
+
+            Log.d(GRPC_TAG, ">>> $request")
             val response = blockingStub.getConfiguration(request)
             emit(response)
+            Log.d(GRPC_TAG, "<<< $response")
+//            Log.d(GRPC_TAG, "<<<base64: ${Base64.encodeToString(response.toByteArray(), NO_WRAP)}")
         }
             .map { ConfigurationDataAdapter().toModel(it) }
-            .map<ConfigurationV2, Result<RequestError, ConfigurationV2>> { Result.succeed(it) }
+            .map<ConfigurationV2, Result<RequestError, ConfigurationV2>> {
+                var sb = Gson().toJson(it)
+                if (sb.length > 4000) {
+                    Log.d(GRPC_TAG, "sb.length = " + sb.length)
+                    val chunkCount: Int = sb.length / 4000 // integer division
+                    for (i in 0..chunkCount) {
+                        val max = 4000 * (i + 1)
+                        if (max >= sb.length) {
+                            Log.d(
+                                GRPC_TAG,
+                                "chunk " + i + " of " + chunkCount + ":" + sb.substring(4000 * i)
+                            )
+                        } else {
+                            Log.d(
+                                GRPC_TAG,
+                                "chunk $i of $chunkCount:" + sb.substring(
+                                    4000 * i,
+                                    max
+                                )
+                            )
+                        }
+                    }
+                }
+                Result.succeed(it) }
             .catch { e ->
-                emit(Result.fail(OtherError(e)))
+                Log.e(GRPC_TAG, "<<< $e")
+                when (e) {
+                    is StatusRuntimeException -> emit(Result.fail(StatusError(e.status.code, e.status.description)))
+                    else -> emit(Result.fail(OtherErrorV2(e)))
+                }
             }
-
-            .map { it }
             .wrapWithCache(
                 ConfigurationV2::class.java,
                 ConfigurationV2.version,
@@ -258,29 +302,6 @@ class KetchRepository internal constructor(
                 languageCode
             )
             .flowOn(Dispatchers.IO)
-/*
-
-        return flow {
-            emit(
-                blockingStub.getConfiguration(
-                    MobileOuterClass.GetConfigurationRequest.newBuilder()
-                        .setOrganizationCode(organizationCode)
-                        .setApplicationCode(applicationCode)
-                        .setApplicationEnvironmentCode(environment)
-                        .setLanguageCode(languageCode)
-                        .build()
-                )
-            )
-        }
-            .map {
-                Log.d("~~99", it.toString())
-                it.toString()
-            }
-            .catch {
-                Log.d("~~", it.message ?: "")
-                    emit(it.toString())
-            }
-            .flowOn(Dispatchers.IO)*/
     }
 
     /**
@@ -393,7 +414,6 @@ class KetchRepository internal constructor(
                 ),
                 migrationOption = migrationOption.value
             )
-            Log.d("~~~", body.toString())
             emit(
                 client.getApiService(serviceUrls?.get(ServiceNames.WHEELHOUSE.value))
                     .updateConsentStatus(
@@ -404,6 +424,61 @@ class KetchRepository internal constructor(
         }
             .mapWithResult { it }
             .catch { e ->
+                emit(Result.fail(OtherError(e)))
+            }
+            .flowOn(Dispatchers.IO)
+
+    /**
+     * Sends a request for updating consent status
+     * Uses organizationCode to form a full URL
+     * @param configuration full configuration
+     * @param identities map of identityCodes and identityValues. Keys and values shouldn't be null
+     * @param consents map of consent names and information if this particular legalBasisCode should be allowed or not
+     * @param migrationOption rule that represents how updating should be performed
+     * @return Flow of Result.Success if successful and with an error if request or its handling failed
+     */
+    fun getConsentStatusProto(
+        configuration: ConfigurationV2,
+        identities: Iterable<IdentityV2>,
+        purposes: Iterable<PurposeV2>
+    ): Flow<Result<RequestError, MobileOuterClass.GetConsentResponse>> =
+        flow {
+//            mobileClient = MobileClient(context!!)
+            val blockingStub = mobileClient!!.blockingStub
+            val request = MobileOuterClass.GetConsentRequest.newBuilder()
+                .addAllPurposes(
+                    purposes.map {
+                        MobileOuterClass.Purpose.newBuilder()
+                            .setPurpose(it.purpose)
+                            .setLegalBasis(it.legalBasis)
+                            .build()
+                    })
+                .addAllIdentities(identities.map {
+                    MobileOuterClass.Identity.newBuilder()
+                        .setIdentitySpace(it.space)
+                        .setIdentityValue(it.value)
+                        .build()
+                })
+                .setOrganizationId(configuration.organization!!.code)
+                .setContext(MobileOuterClass.Context.newBuilder()
+                    .setApplication(configuration.applicationInfo!!.code)
+                    .setCollectedFrom("phone")
+                    .setEnvironment(configuration.environment!!.code)
+                    .build())
+
+                .build()
+
+            Log.d(GRPC_TAG, ">>> $request")
+            val response = blockingStub.getConsent(request)
+            Log.d(GRPC_TAG, "<<< $response")
+
+            emit(
+                response
+            )
+        }
+            .map<MobileOuterClass.GetConsentResponse, Result<RequestError, MobileOuterClass.GetConsentResponse>> { Result.succeed(it) }
+            .catch { e ->
+                Log.e(GRPC_TAG, "<<< $e")
                 emit(Result.fail(OtherError(e)))
             }
             .flowOn(Dispatchers.IO)
@@ -426,7 +501,6 @@ class KetchRepository internal constructor(
         migrationOption: MigrationOption
     ): Flow<Result<RequestError, MobileOuterClass.SetConsentResponse>> =
         flow {
-            Log.d("~~~", "identities: ${identities.count()}")
             val blockingStub = mobileClient!!.blockingStub
             val request = MobileOuterClass.SetConsentRequest.newBuilder()
                 .setPolicyScope(configuration.policyScope!!.code)
@@ -438,7 +512,6 @@ class KetchRepository internal constructor(
                             .setAllowed(true).build()
                     })
                 .addAllIdentities(identities.map {
-                    Log.d("~~~", "Identity: $it")
                     MobileOuterClass.Identity.newBuilder()
                         .setIdentitySpace(it.space)
                         .setIdentityValue(it.value)
@@ -457,9 +530,9 @@ class KetchRepository internal constructor(
 
                 .build()
 
-            Log.d(">>>", request.toString())
+            Log.d(GRPC_TAG, ">>> $request")
             val response = blockingStub.setConsent(request)
-            Log.d("<<<", response.toString())
+            Log.d(GRPC_TAG, "<<< $response")
 
             emit(
                 response
@@ -467,6 +540,7 @@ class KetchRepository internal constructor(
         }
             .map<MobileOuterClass.SetConsentResponse, Result<RequestError, MobileOuterClass.SetConsentResponse>> { Result.succeed(it) }
             .catch { e ->
+                Log.e(GRPC_TAG, "<<< $e")
                 emit(Result.fail(OtherError(e)))
             }
             .flowOn(Dispatchers.IO)
@@ -507,6 +581,70 @@ class KetchRepository internal constructor(
         }
             .mapWithResult { it }
             .catch { e ->
+                emit(Result.fail(OtherError(e)))
+            }
+            .flowOn(Dispatchers.IO)
+
+
+    /**
+     * Sends a request for invoking rights
+     * Uses organizationCode to form a full URL
+     * @param configuration full configuration
+     * @param identities map of identityCodes and identityValues. Keys and values shouldn't be null
+     * @param userData consists user information like email
+     * @param rights list of strings of rights. Rights shouldn't bu null
+     * @return Flow of Result.Success if successful and with an error if request or its handling failed
+     */
+    fun invokeRightsProto(
+        configuration: ConfigurationV2,
+        identities: Iterable<IdentityV2>,
+        userData: UserDataV2,
+        rights: List<String>
+    ): Flow<Result<RequestError, Unit>> =
+        flow {
+            val blockingStub = mobileClient!!.blockingStub
+            val request = MobileOuterClass.InvokeRightRequest.newBuilder()
+                .setPolicyScope(configuration.policyScope!!.code)
+                .setRight(rights.first())
+                .setDataSubject(
+                    MobileOuterClass.DataSubject.newBuilder()
+                        .setFirst(userData.first)
+                        .setLast(userData.last)
+                        .setCountry(userData.country)
+                        .setRegion(userData.region)
+                        .setEmail(userData.email)
+                )
+                .addAllIdentities(identities.map {
+                    MobileOuterClass.Identity.newBuilder()
+                        .setIdentitySpace(it.space)
+                        .setIdentityValue(it.value)
+                        .build()
+                })
+                .setOrganization(
+                    MobileOuterClass.Organization.newBuilder()
+                        .setId(configuration.organization!!.code)
+                        .setName(configuration.organization.name)
+                        .build()
+                )
+                .setSubmittedTime(System.currentTimeMillis())
+                .setContext(
+                    MobileOuterClass.Context.newBuilder()
+                        .setApplication(configuration.applicationInfo!!.code)
+                        .setCollectedFrom("phone")
+                        .setEnvironment(configuration.environment!!.code)
+                        .build()
+                )
+                .build()
+
+            Log.d(GRPC_TAG, ">>> $request")
+            val response = blockingStub.invokeRight(request)
+            Log.d(GRPC_TAG, "<<< $response")
+
+            emit(response)
+        }
+            .map<MobileOuterClass.InvokeRightResponse, Result<RequestError, Unit>> { Result.succeed(Unit) }
+            .catch { e ->
+                Log.e(GRPC_TAG, "<<< $e")
                 emit(Result.fail(OtherError(e)))
             }
             .flowOn(Dispatchers.IO)

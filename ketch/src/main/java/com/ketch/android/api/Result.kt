@@ -1,5 +1,7 @@
 package com.ketch.android.api
 
+import io.grpc.Status
+
 /**
  * Classes for wrapping successful and failed responses from the server
  */
@@ -28,3 +30,6 @@ data class HttpError(val code: Int, val message: String?) : RemoteError()
  * no network, any kind of transformation/caching/type matching etc. exceptions
  */
 data class OtherError(val exception: Throwable) : RequestError()
+//io.grpc.StatusRuntimeException:
+class StatusError(internal val code: Status.Code, val description: String?) : RequestError()
+class OtherErrorV2(val exception: Throwable): RequestError()

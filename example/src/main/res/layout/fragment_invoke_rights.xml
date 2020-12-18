@@ -50,7 +50,7 @@
         android:layout_height="wrap_content"
         android:text="email: example@domain.com"
         android:textColor="#000000"
-        android:textSize="22sp"
+        android:textSize="18sp"
         app:layout_constraintStart_toStartOf="@+id/userDataLabel"
         app:layout_constraintTop_toBottomOf="@+id/userDataLabel" />
 
@@ -61,38 +61,46 @@
         android:text="Rights"
         android:textColor="#000000"
         android:textSize="14sp"
+        android:layout_marginTop="16dp"
         app:layout_constraintStart_toStartOf="@+id/userDataValue"
         app:layout_constraintTop_toBottomOf="@+id/userDataValue" />
 
-    <CheckBox
-        android:id="@+id/portability"
-        style="@android:style/Widget.CompoundButton.CheckBox"
-        android:layout_width="wrap_content"
+    <RadioGroup
+        android:id="@+id/radioGroup"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="portability"
-        app:layout_constraintEnd_toStartOf="@+id/rtbf"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/rightsLabel" />
+        android:orientation="horizontal"
+        app:layout_constraintStart_toStartOf="@+id/rightsLabel"
+        app:layout_constraintTop_toBottomOf="@+id/rightsLabel">
 
-    <CheckBox
-        android:id="@+id/rtbf"
-        style="@android:style/Widget.CompoundButton.CheckBox"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="rtbf"
-        app:layout_constraintTop_toBottomOf="@+id/rightsLabel"
-        app:layout_constraintStart_toEndOf="@+id/portability"
-        app:layout_constraintEnd_toStartOf="@+id/wrong_right"/>
+        <RadioButton
+            android:id="@+id/right1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="portability"
+            app:layout_constraintEnd_toStartOf="@+id/rtbf"
+            app:layout_constraintStart_toStartOf="@id/radioGroup"
+            app:layout_constraintTop_toBottomOf="@+id/rightsLabel" />
 
-    <CheckBox
-        android:id="@+id/wrong_right"
-        style="@android:style/Widget.CompoundButton.CheckBox"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="wrong_right"
-        app:layout_constraintTop_toBottomOf="@+id/rightsLabel"
-        app:layout_constraintStart_toEndOf="@+id/rtbf"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        <RadioButton
+            android:id="@+id/right2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="rtbf"
+            app:layout_constraintEnd_toStartOf="@+id/wrong_right"
+            app:layout_constraintStart_toEndOf="@+id/portability"
+            app:layout_constraintTop_toBottomOf="@+id/rightsLabel" />
+
+        <RadioButton
+            android:id="@+id/right3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="wrong_right"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/rtbf"
+            app:layout_constraintTop_toBottomOf="@+id/rightsLabel" />
+
+    </RadioGroup>
 
     <Button
         android:id="@+id/invokeRights"
@@ -103,7 +111,7 @@
         android:text="Invoke Rights"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/portability" />
+        app:layout_constraintTop_toBottomOf="@+id/radioGroup" />
 
     <ScrollView
         android:layout_width="match_parent"

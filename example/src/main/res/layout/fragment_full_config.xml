@@ -13,7 +13,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        android:text="Location"
+        android:text="IP"
         android:textColor="#000000"
         android:textSize="14sp"
         app:layout_constraintStart_toStartOf="parent"
@@ -23,7 +23,7 @@
         android:id="@+id/locationValue"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Determined by IP"
+        android:text="Detected automatically"
         android:textColor="#000000"
         android:textSize="22sp"
         app:layout_constraintStart_toStartOf="@+id/locationLabel"
@@ -48,6 +48,26 @@
         app:layout_constraintStart_toStartOf="@+id/languageCodeLabel"
         app:layout_constraintTop_toBottomOf="@+id/languageCodeLabel" />
 
+    <TextView
+        android:id="@+id/countryCodeLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Country Code"
+        android:textColor="#000000"
+        android:textSize="14sp"
+        app:layout_constraintStart_toStartOf="@+id/languageCodeValue"
+        app:layout_constraintTop_toBottomOf="@+id/languageCodeValue" />
+
+    <TextView
+        android:id="@+id/countryCodeValue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#000000"
+        android:textSize="22sp"
+        app:layout_constraintStart_toStartOf="@+id/countryCodeLabel"
+        app:layout_constraintTop_toBottomOf="@+id/countryCodeLabel" />
+
+
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/environmentInput"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -56,12 +76,13 @@
         android:layout_margin="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/languageCodeValue">
+        app:layout_constraintTop_toBottomOf="@+id/countryCodeValue">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/environmentText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:text="production"
             android:hint="Environment"
             android:imeOptions="actionDone"
             android:inputType="textNoSuggestions"
