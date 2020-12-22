@@ -10,6 +10,7 @@ import com.ketch.android.api.adapter.ConfigurationDataAdapter
 import com.ketch.android.api.model.*
 import com.ketch.android.cache.CacheProvider
 import com.ketch.android.location.LocationUtils
+import com.ketch.android.model.Consent
 import com.ketch.android.model.ConsentStatus
 import com.ketch.android.model.UserData
 import com.ketch.android.model.UserDataV2
@@ -36,6 +37,7 @@ class KetchRepository internal constructor(
     companion object {
         private const val GRPC_TAG = "gRPC"
     }
+
     /**
      * Collection of base service URLs received as a part of bootstrap json and needed to form other
      * SwitchBit endpoints URLs
@@ -277,14 +279,9 @@ class KetchRepository internal constructor(
                         }
                     }
                 }
-                Result.succeed(it) }
-            .catch { e ->
-                Log.e(GRPC_TAG, "<<< $e")
-                when (e) {
-                    is StatusRuntimeException -> emit(Result.fail(StatusError(e.status.code, e.status.description)))
-                    else -> emit(Result.fail(OtherErrorV2(e)))
-                }
+                Result.succeed(it)
             }
+            .handleErrors()
             .wrapWithCache(
                 ConfigurationV2::class.java,
                 ConfigurationV2.version,
@@ -441,9 +438,8 @@ class KetchRepository internal constructor(
         configuration: ConfigurationV2,
         identities: Iterable<IdentityV2>,
         purposes: Iterable<PurposeV2>
-    ): Flow<Result<RequestError, MobileOuterClass.GetConsentResponse>> =
+    ): Flow<Result<RequestError, GetConsentStatusResponseV2>> =
         flow {
-//            mobileClient = MobileClient(context!!)
             val blockingStub = mobileClient!!.blockingStub
             val request = MobileOuterClass.GetConsentRequest.newBuilder()
                 .addAllPurposes(
@@ -460,11 +456,13 @@ class KetchRepository internal constructor(
                         .build()
                 })
                 .setOrganizationId(configuration.organization!!.code)
-                .setContext(MobileOuterClass.Context.newBuilder()
-                    .setApplication(configuration.applicationInfo!!.code)
-                    .setCollectedFrom("phone")
-                    .setEnvironment(configuration.environment!!.code)
-                    .build())
+                .setContext(
+                    MobileOuterClass.Context.newBuilder()
+                        .setApplication(configuration.applicationInfo!!.code)
+                        .setCollectedFrom("phone")
+                        .setEnvironment(configuration.environment!!.code)
+                        .build()
+                )
 
                 .build()
 
@@ -476,11 +474,36 @@ class KetchRepository internal constructor(
                 response
             )
         }
-            .map<MobileOuterClass.GetConsentResponse, Result<RequestError, MobileOuterClass.GetConsentResponse>> { Result.succeed(it) }
-            .catch { e ->
-                Log.e(GRPC_TAG, "<<< $e")
-                emit(Result.fail(OtherError(e)))
+            .map<MobileOuterClass.GetConsentResponse, Result<RequestError, GetConsentStatusResponseV2>> {
+                Result.succeed(
+                    GetConsentStatusResponseV2(it.consentsList.map { consent ->
+                        Consent(
+                            consent.purpose,
+                            consent.legalBasis,
+                            consent.allowed
+                        )
+                    })
+                )
             }
+            .handleErrors()
+            .wrapWithCache(
+                GetConsentStatusResponseV2::class.java,
+                GetConsentStatusResponseV2.version,
+                organizationCode,
+                applicationCode,
+                configuration.environment?.code,
+                identities,
+                purposes
+            )
+            .fallbackWithCache(
+                GetConsentStatusResponseV2::class.java,
+                GetConsentStatusResponseV2.version,
+                organizationCode,
+                applicationCode,
+                configuration.environment?.code,
+                identities,
+                purposes
+            )
             .flowOn(Dispatchers.IO)
 
 
@@ -489,17 +512,14 @@ class KetchRepository internal constructor(
      * Uses organizationCode to form a full URL
      * @param configuration full configuration
      * @param identities map of identityCodes and identityValues. Keys and values shouldn't be null
-     * @param consents map of consent names and information if this particular legalBasisCode should be allowed or not
-     * @param migrationOption rule that represents how updating should be performed
+     * @param purposes map of consent names and information if this particular legalBasisCode should be allowed or not
      * @return Flow of Result.Success if successful and with an error if request or its handling failed
      */
     fun updateConsentStatusProto(
         configuration: ConfigurationV2,
         identities: Iterable<IdentityV2>,
-        purposes: Iterable<PurposeV2>,
-        consents: Map<String, ConsentStatus>,
-        migrationOption: MigrationOption
-    ): Flow<Result<RequestError, MobileOuterClass.SetConsentResponse>> =
+        purposes: Iterable<PurposeV2>
+    ): Flow<Result<RequestError, Long>> =
         flow {
             val blockingStub = mobileClient!!.blockingStub
             val request = MobileOuterClass.SetConsentRequest.newBuilder()
@@ -509,7 +529,7 @@ class KetchRepository internal constructor(
                         MobileOuterClass.Consent.newBuilder()
                             .setPurpose(it.purpose)
                             .setLegalBasis(it.legalBasis)
-                            .setAllowed(true).build()
+                            .setAllowed(it.allowed).build()
                     })
                 .addAllIdentities(identities.map {
                     MobileOuterClass.Identity.newBuilder()
@@ -517,16 +537,20 @@ class KetchRepository internal constructor(
                         .setIdentityValue(it.value)
                         .build()
                 })
-                .setOrganization(MobileOuterClass.Organization.newBuilder()
-                    .setId(configuration.organization!!.code)
-                    .setName(configuration.organization.name)
-                    .build())
+                .setOrganization(
+                    MobileOuterClass.Organization.newBuilder()
+                        .setId(configuration.organization!!.code)
+                        .setName(configuration.organization.name)
+                        .build()
+                )
                 .setCollectedTime(System.currentTimeMillis())
-                .setContext(MobileOuterClass.Context.newBuilder()
-                    .setApplication(configuration.applicationInfo!!.code)
-                    .setCollectedFrom("phone")
-                    .setEnvironment(configuration.environment!!.code)
-                    .build())
+                .setContext(
+                    MobileOuterClass.Context.newBuilder()
+                        .setApplication(configuration.applicationInfo!!.code)
+                        .setCollectedFrom("phone")
+                        .setEnvironment(configuration.environment!!.code)
+                        .build()
+                )
 
                 .build()
 
@@ -538,11 +562,12 @@ class KetchRepository internal constructor(
                 response
             )
         }
-            .map<MobileOuterClass.SetConsentResponse, Result<RequestError, MobileOuterClass.SetConsentResponse>> { Result.succeed(it) }
-            .catch { e ->
-                Log.e(GRPC_TAG, "<<< $e")
-                emit(Result.fail(OtherError(e)))
+            .map<MobileOuterClass.SetConsentResponse, Result<RequestError, Long>> {
+                Result.succeed(
+                    it.receivedTime
+                )
             }
+            .handleErrors()
             .flowOn(Dispatchers.IO)
 
     /**
@@ -642,12 +667,30 @@ class KetchRepository internal constructor(
 
             emit(response)
         }
-            .map<MobileOuterClass.InvokeRightResponse, Result<RequestError, Unit>> { Result.succeed(Unit) }
-            .catch { e ->
-                Log.e(GRPC_TAG, "<<< $e")
-                emit(Result.fail(OtherError(e)))
+            .map<MobileOuterClass.InvokeRightResponse, Result<RequestError, Unit>> {
+                Result.succeed(
+                    Unit
+                )
             }
+            .handleErrors()
             .flowOn(Dispatchers.IO)
+
+
+    private fun <T : Any> Flow<Result<RequestError, T>>.handleErrors(): Flow<Result<RequestError, T>> =
+    catch { e ->
+        Log.e(GRPC_TAG, "<<< $e")
+        when (e) {
+            is StatusRuntimeException -> emit(
+                Result.fail(
+                    StatusError(
+                        e.status.code,
+                        e.status.description
+                    )
+                )
+            )
+            else -> emit(Result.fail(OtherErrorV2(e)))
+        }
+    }
 
     /**
      * Tries to store {@link Cacheable} object from the upstream flow if result is successful
@@ -685,11 +728,18 @@ class KetchRepository internal constructor(
         vararg params: Any?
     ): Flow<Result<RequestError, T>> =
         transform { result ->
+            println(">>> $result")
             if (result is Result.Error) {
+                println(">>> error $result")
+
                 println("hash ${type.simpleName}_${cacheProvider?.generateSalt(*params)}")
                 cacheProvider?.obtain("${type.simpleName}_${version}_${cacheProvider.generateSalt(*params)}")
                     ?.let {
+                        println(">>>1 $it")
+
                         println(gson.fromJson(it, type) as T)
+                        println(">>>2 $it")
+
                         emit(Result.succeed(gson.fromJson(it, type) as T))
                     } ?: emit(result)
             } else

@@ -5,11 +5,13 @@ import android.util.Base64
 import android.util.Log
 import com.google.gson.Gson
 import com.ketch.android.api.*
-import com.ketch.android.api.model.Configuration
-import com.ketch.android.api.model.ConfigurationV2
+import com.ketch.android.api.model.*
 import com.ketch.android.cache.SharedPreferencesCacheProvider
 import com.ketch.android.loadFromFile
 import com.ketch.android.mock.MockResponses.Companion.mockGetConfigurationResponse
+import com.ketch.android.mock.MockResponses.Companion.mockGetConsentResponse
+import com.ketch.android.model.Consent
+import com.ketch.android.model.UserDataV2
 import io.grpc.ManagedChannel
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
@@ -23,6 +25,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import kotlinx.coroutines.flow.collect
 import mobile.MobileGrpc
+import mobile.MobileOuterClass
 import java.io.IOException
 
 class KetchRepositoryTestV2 : DescribeSpec() {
@@ -42,7 +45,8 @@ class KetchRepositoryTestV2 : DescribeSpec() {
 
         describe("test getFullConfiguration") {
             val configProto = mockGetConfigurationResponse
-            val config = Gson().fromJson(loadJsonFromFile("config.json"), ConfigurationV2::class.java)
+            val config =
+                Gson().fromJson(loadJsonFromFile("config.json"), ConfigurationV2::class.java)
             val cachedConfig =
                 Gson().fromJson(loadJsonFromFile("config_cache.json"), ConfigurationV2::class.java)
 
@@ -71,7 +75,6 @@ class KetchRepositoryTestV2 : DescribeSpec() {
                     .collect {
                         result = it
                     }
-                println(">>!" + result)
                 it("result should not be null") {
                     result shouldNotBe null
                 }
@@ -145,23 +148,35 @@ class KetchRepositoryTestV2 : DescribeSpec() {
             }
         }
 
- /*       describe("test getConsentStatus") {
-            val config = Gson().fromJson(loadJsonFromFile("config.json"), Configuration::class.java)
-            val status = Gson().fromJson(
-                loadJsonFromFile("consentStatus.json"),
-                GetConsentStatusResponse::class.java
-            )
+        describe("test getConsentStatus") {
+            val config =
+                Gson().fromJson(loadJsonFromFile("config.json"), ConfigurationV2::class.java)
+            val status = mockGetConsentResponse
 
-            context("receive a proper response for analytics") {
+            mockkStatic(Base64::class.java.name)
+            mockkStatic(Log::class.java.name)
+            mockkStatic(AndroidChannelBuilder::class.java.name)
+            mockkStatic(MobileGrpc::class.java.name)
+
+            every { Base64.decode(any<ByteArray>(), any()) } returns "/".toByteArray()
+            every { Base64.decode(any<String>(), any()) } returns "/".toByteArray()
+            every { Log.d(any<String>(), any()) } returns 0
+            every { Log.e(any<String>(), any()) } returns 0
+            every {
+                AndroidChannelBuilder.forAddress(any<String>(), any()).context(any()).build()
+            } returns channel
+            every { MobileGrpc.newBlockingStub(any()).withInterceptors(any()) } returns stub
+
+            context("receive a proper response") {
                 every { cacheProvider.obtain(any()) } returns null
                 coEvery {
-                    client.getApiService(any()).getConsentStatus(any(), any())
-                } returns Response.success(status)
-                var result: Result<RequestError, Map<String, ConsentStatus>>? = null
-                repo.getConsentStatus(
+                    stub.getConsent(any())
+                } returns mockGetConsentResponse
+                var result: Result<RequestError, GetConsentStatusResponseV2>? = null
+                repo.getConsentStatusProto(
                     config,
-                    mapOf("identity" to "identityValue"),
-                    mapOf("analytics" to "disclosure")
+                    arrayListOf(IdentityV2("id1", "id1")),
+                    arrayListOf(PurposeV2("id1", "id1", true))
                 )
                     .collect {
                         result = it
@@ -176,132 +191,118 @@ class KetchRepositoryTestV2 : DescribeSpec() {
                     (result as Result.Success).value shouldNotBe null
                 }
                 it("result value should be expected") {
-                    (result as Result.Success).value shouldBe mapOf(
-                        "analytics" to ConsentStatus(
-                            false,
-                            "disclosure"
+                    (result as Result.Success).value shouldBe GetConsentStatusResponseV2(
+                        arrayListOf(
+                            Consent(purpose = "id1", legalBasis = "opt_in", allowed = true),
+                            Consent(purpose = "id2", legalBasis = "opt_out", allowed = false)
                         )
                     )
                 }
             }
 
-            context("receive a proper response for analytics and data_sales") {
-                every { cacheProvider.obtain(any()) } returns null
-                coEvery {
-                    client.getApiService(any()).getConsentStatus(any(), any())
-                } returns Response.success(status)
+             context("receive failed response but has cache") {
+                          every { cacheProvider.obtain(any()) } returns loadJsonFromFile("consentStatus_cache.json")
+                          coEvery {
+                              stub.getConsent(any())
+                          } throws StatusRuntimeException(Status.DEADLINE_EXCEEDED)
 
-                var result: Result<RequestError, Map<String, ConsentStatus>>? = null
-                repo.getConsentStatus(
-                    config,
-                    mapOf("identity" to "identityValue"),
-                    mapOf("analytics" to "disclosure", "data_sales" to "consent_optin")
-                )
-                    .collect {
-                        result = it
-                    }
-                it("result should not be null") {
-                    result shouldNotBe null
-                }
-                it("result should be successful") {
-                    assert(result is Result.Success)
-                }
-                it("result value should not be null") {
-                    (result as Result.Success).value shouldNotBe null
-                }
-                it("result value should be expected") {
-                    (result as Result.Success).value shouldBe
-                            mapOf(
-                                "analytics" to ConsentStatus(false, "disclosure"),
-                                "data_sales" to ConsentStatus(true, "consent_optin")
-                            )
-                }
-            }
+                          var result: Result<RequestError, GetConsentStatusResponseV2>? = null
+                          repo.getConsentStatusProto(
+                              config,
+                              arrayListOf(IdentityV2("id1", "id1")),
+                              arrayListOf(PurposeV2("id1", "id1", true))
+                          )
+                              .collect {
+                                  result = it
+                              }
+                          it("result should not be null") {
+                              result shouldNotBe null
+                          }
+                          it("result should be successful $result") {
+                              assert(result is Result.Success)
+                          }
+                          it("result value should not be null") {
+                              (result as Result.Success).value shouldNotBe null
+                          }
+                          it("result value should be expected") {
+                              (result as Result.Success).value shouldBe
+                                      GetConsentStatusResponseV2(
+                                          arrayListOf(
+                                              Consent(purpose = "id1", legalBasis = "opt_in", allowed = true),
+                                              Consent(purpose = "id2", legalBasis = "opt_out", allowed = false)
+                                          ),
+                                          cachedAt = 1111111
+                                      )
+                          }
+                      }
 
-            context("receive failed response but has cache") {
-                every { cacheProvider.obtain(any()) } returns loadJsonFromFile("consentStatus_cache.json")
-                coEvery {
-                    client.getApiService(any()).getConsentStatus(any(), any())
-                } returns Response.error(404, ResponseBody.create(null, "{}"))
+                      context("receive failed response with no cache") {
+                          every { cacheProvider.obtain(any()) } returns null
+                          coEvery {
+                              stub.getConsent(any())
+                          } throws  StatusRuntimeException(Status.DEADLINE_EXCEEDED)
+                          var result: Result<RequestError, GetConsentStatusResponseV2>? = null
+                          repo.getConsentStatusProto(
+                              config,
+                              arrayListOf(IdentityV2("id1", "id1")),
+                              arrayListOf(PurposeV2("id1", "id1", true))
+                          )
+                              .collect {
+                                  result = it
+                              }
 
-                var result: Result<RequestError, Map<String, ConsentStatus>>? = null
-                repo.getConsentStatus(
-                    config,
-                    mapOf("identity" to "identityValue"),
-                    mapOf("analytics" to "disclosure", "data_sales" to "consent_optin")
-                )
-                    .collect {
-                        result = it
-                    }
-                it("result should not be null") {
-                    result shouldNotBe null
-                }
-                it("result should be successful") {
-                    assert(result is Result.Success)
-                }
-                it("result value should not be null") {
-                    (result as Result.Success).value shouldNotBe null
-                }
-                it("result value should be expected") {
-                    (result as Result.Success).value shouldBe
-                            mapOf(
-                                "analytics" to ConsentStatus(false, "disclosure"),
-                                "data_sales" to ConsentStatus(true, "consent_optin")
-                            )
-                }
-            }
-
-            context("receive failed response with no cache") {
-                every { cacheProvider.obtain(any()) } returns null
-                coEvery {
-                    client.getApiService(any()).getConsentStatus(any(), any())
-                } returns Response.error(404, ResponseBody.create(null, "{}"))
-
-                var result: Result<RequestError, Map<String, ConsentStatus>>? = null
-                repo.getConsentStatus(
-                    config,
-                    mapOf("identity" to "identityValue"),
-                    mapOf("analytics" to "disclosure", "data_sales" to "consent_optin")
-                )
-                    .collect {
-                        result = it
-                    }
-
-                it("result should not be null") {
-                    result shouldNotBe null
-                }
-                it("result should be failed") {
-                    assert(result is Result.Error)
-                }
-                it("result error should not be null") {
-                    (result as Result.Error).error shouldNotBe null
-                }
-                it("result error should be expected") {
-                    assert((result as Result.Error).error is HttpError)
-                }
-                it("result error code should be expected") {
-                    ((result as Result.Error).error as HttpError).code shouldBe 404
-                }
-            }
+                          it("result should not be null") {
+                              result shouldNotBe null
+                          }
+                          it("result should be failed") {
+                              assert(result is Result.Error)
+                          }
+                          it("result error should not be null") {
+                              (result as Result.Error).error shouldNotBe null
+                          }
+                          it("result error should be expected") {
+                              assert((result as Result.Error).error is StatusError)
+                          }
+                          it("result error code should be expected") {
+                              ((result as Result.Error).error as StatusError).code shouldBe Status.Code.DEADLINE_EXCEEDED
+                          }
+                      }
         }
+        describe("test setConsentStatus") {
+            val config: ConfigurationV2 =
+                Gson().fromJson(loadJsonFromFile("config.json"), ConfigurationV2::class.java)
 
-        describe("test updateConsentStatus") {
-            val config = Gson().fromJson(loadJsonFromFile("config.json"), Configuration::class.java)
+            mockkStatic(Base64::class.java.name)
+            mockkStatic(Log::class.java.name)
+            mockkStatic(AndroidChannelBuilder::class.java.name)
+            mockkStatic(MobileGrpc::class.java.name)
+
+            every { Base64.decode(any<ByteArray>(), any()) } returns "/".toByteArray()
+            every { Base64.decode(any<String>(), any()) } returns "/".toByteArray()
+            every { Log.d(any<String>(), any()) } returns 0
+            every { Log.e(any<String>(), any()) } returns 0
+            every {
+                AndroidChannelBuilder.forAddress(any<String>(), any()).context(any()).build()
+            } returns channel
+            every { MobileGrpc.newBlockingStub(any()).withInterceptors(any()) } returns stub
 
             context("receive a proper response") {
-                coEvery {
-                    client.getApiService(any()).updateConsentStatus(any(), any())
-                } returns Response.success(Unit)
+                every { cacheProvider.obtain(any()) } returns null
 
-                var result: Result<RequestError, Unit>? = null
-                repo.updateConsentStatus(
+                coEvery {
+                    stub.setConsent(any())
+                } returns MobileOuterClass.SetConsentResponse.newBuilder()
+                    .setReceivedTime(System.currentTimeMillis()).build()
+                var result: Result<RequestError, Long>? = null
+                repo.updateConsentStatusProto(
                     config,
-                    mapOf("identity" to "identityValue"),
-                    mapOf(
-                        "analytics" to ConsentStatus(false, "disclosure"),
-                        "data_sales" to ConsentStatus(true, "consent_optin")
+                    arrayListOf(
+                        IdentityV2("swb_dinghy", "swb_dinghy")
                     ),
-                    MigrationOption.MIGRATE_ALWAYS
+                    arrayListOf(
+                        PurposeV2("data_sales", "consent_opt_in", true),
+                        PurposeV2("test", "consent_opt_out", false)
+                    )
                 )
                     .collect {
                         result = it
@@ -319,18 +320,19 @@ class KetchRepositoryTestV2 : DescribeSpec() {
 
             context("receive a failed response") {
                 coEvery {
-                    client.getApiService(any()).updateConsentStatus(any(), any())
-                } returns Response.error(404, ResponseBody.create(null, "{}"))
+                    stub.setConsent(any())
+                } throws StatusRuntimeException(Status.DEADLINE_EXCEEDED)
 
-                var result: Result<RequestError, Unit>? = null
-                repo.updateConsentStatus(
+                var result: Result<RequestError, Long>? = null
+                repo.updateConsentStatusProto(
                     config,
-                    mapOf("identity" to "identityValue"),
-                    mapOf(
-                        "analytics" to ConsentStatus(false, "disclosure"),
-                        "data_sales" to ConsentStatus(true, "consent_optin")
+                    arrayListOf(
+                        IdentityV2("swb_dinghy", "swb_dinghy")
                     ),
-                    MigrationOption.MIGRATE_ALWAYS
+                    arrayListOf(
+                        PurposeV2("data_sales", "consent_opt_in", true),
+                        PurposeV2("test", "consent_opt_out", false)
+                    )
                 )
                     .collect {
                         result = it
@@ -345,27 +347,47 @@ class KetchRepositoryTestV2 : DescribeSpec() {
                     (result as Result.Error).error shouldNotBe null
                 }
                 it("result error should be expected") {
-                    assert((result as Result.Error).error is HttpError)
+                    assert((result as Result.Error).error is StatusError)
                 }
                 it("result error code should be expected") {
-                    ((result as Result.Error).error as HttpError).code shouldBe 404
+                    ((result as Result.Error).error as StatusError).code shouldBe Status.Code.DEADLINE_EXCEEDED
                 }
             }
         }
 
         describe("test invokeRights") {
-            val config = Gson().fromJson(loadJsonFromFile("config.json"), Configuration::class.java)
+            val config: ConfigurationV2 =
+                Gson().fromJson(loadJsonFromFile("config.json"), ConfigurationV2::class.java)
+
+            mockkStatic(Base64::class.java.name)
+            mockkStatic(Log::class.java.name)
+            mockkStatic(AndroidChannelBuilder::class.java.name)
+            mockkStatic(MobileGrpc::class.java.name)
+
+            every { Base64.decode(any<ByteArray>(), any()) } returns "/".toByteArray()
+            every { Base64.decode(any<String>(), any()) } returns "/".toByteArray()
+            every { Log.d(any<String>(), any()) } returns 0
+            every { Log.e(any<String>(), any()) } returns 0
+            every {
+                AndroidChannelBuilder.forAddress(any<String>(), any()).context(any()).build()
+            } returns channel
+            every { MobileGrpc.newBlockingStub(any()).withInterceptors(any()) } returns stub
 
             context("receive a proper response") {
                 coEvery {
-                    client.getApiService(any()).invokeRights(any(), any())
-                } returns Response.success(Unit)
+                    stub.invokeRight(any())
+                } returns MobileOuterClass.InvokeRightResponse.getDefaultInstance()
 
                 var result: Result<RequestError, Unit>? = null
-                repo.invokeRights(
+                repo.invokeRightsProto(
                     config,
-                    mapOf("identity" to "identityValue"),
-                    UserData(email = "a@b.com"),
+                    arrayListOf(
+                        IdentityV2("id", "_id")
+                    ),
+                    UserDataV2(
+                        email = "a@b.com",
+                        first = "First", last = "Last", region = "CA", country = "US"
+                    ),
                     listOf("portability")
                 )
                     .collect {
@@ -384,15 +406,20 @@ class KetchRepositoryTestV2 : DescribeSpec() {
 
             context("receive a failed response") {
                 coEvery {
-                    client.getApiService(any()).invokeRights(any(), any())
-                } returns Response.error(404, ResponseBody.create(null, "{}"))
+                    stub.invokeRight(any())
+                } throws StatusRuntimeException(Status.DEADLINE_EXCEEDED)
 
                 var result: Result<RequestError, Unit>? = null
-                repo.invokeRights(
+                repo.invokeRightsProto(
                     config,
-                    mapOf("identity" to "identityValue"),
-                    UserData(email = "a@b.com"),
-                    listOf("portabilitysssss")
+                    arrayListOf(
+                        IdentityV2("id", "_id")
+                    ),
+                    UserDataV2(
+                        email = "a@b.com",
+                        first = "First", last = "Last", region = "CA", country = "US"
+                    ),
+                    listOf("portability")
                 )
                     .collect {
                         result = it
@@ -407,12 +434,13 @@ class KetchRepositoryTestV2 : DescribeSpec() {
                     (result as Result.Error).error shouldNotBe null
                 }
                 it("result error should be expected") {
-                    assert((result as Result.Error).error is HttpError)
+                    assert((result as Result.Error).error is StatusError)
                 }
                 it("result error code should be expected") {
-                    ((result as Result.Error).error as HttpError).code shouldBe 404
+                    ((result as Result.Error).error as StatusError).code shouldBe Status.Code.DEADLINE_EXCEEDED
                 }
-        } }*/
+            }
+        }
     }
 
     private fun loadJsonFromFile(fileName: String): String {

@@ -1,11 +1,15 @@
 {
-  "cachedAt":1111111,
-  "purposes": {
-    "analytics": {
-      "allowed": "false"
+  "consents": [
+    {
+      "purpose": "id1",
+      "legalBasis": "opt_in",
+      "allowed": true
     },
-    "data_sales": {
-      "allowed": "true"
+    {
+      "purpose": "id2",
+      "legalBasis": "opt_out",
+      "allowed": false
     }
-  }
+  ],
+  "cachedAt": 1111111
 }

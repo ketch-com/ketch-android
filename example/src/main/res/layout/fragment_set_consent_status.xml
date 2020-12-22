@@ -111,27 +111,6 @@
         app:layout_constraintTop_toTopOf="@+id/consent3"
         app:layout_constraintBottom_toBottomOf="@+id/consent3"/>
 
-    <TextView
-        android:id="@+id/migrationOptionLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:text="Migration Option"
-        android:textColor="#000000"
-        android:textSize="14sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/consent3" />
-
-    <TextView
-        android:id="@+id/migrationOptionValue"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Always"
-        android:textColor="#000000"
-        android:textSize="22sp"
-        app:layout_constraintStart_toStartOf="@+id/migrationOptionLabel"
-        app:layout_constraintTop_toBottomOf="@+id/migrationOptionLabel" />
-
     <Button
         android:id="@+id/setConsentStatus"
         style="@style/MaterialButtonText"
@@ -141,7 +120,7 @@
         android:text="Set Consent Status"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/migrationOptionValue" />
+        app:layout_constraintTop_toBottomOf="@+id/consent3" />
 
     <ScrollView
         android:layout_width="match_parent"

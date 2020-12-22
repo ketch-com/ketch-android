@@ -58,20 +58,6 @@ class SetConsentStatusFragment : BaseFragment() {
         setConsentStatus.setOnClickListener {
             if (identityKeyText.text.toString().isNotBlank() && config != null) {
                 job = CoroutineScope(Dispatchers.Main).launch {
-                    val consents: Map<String, ConsentStatus> =
-                        mapOf(
-                            consent1 to consent1Switch,
-                            consent2 to consent2Switch,
-                            consent3 to consent3Switch
-                        )
-                            .filter { it.key.isChecked }
-                            .map { (consent, switch) ->
-                                consent.text.toString() to ConsentStatus(
-                                    allowed = switch.isChecked,
-                                    legalBasisCode = config!!.purposes?.find { it.code == consent.text.toString() }?.legalBasisCode
-                                )
-                            }
-                            .toMap()
                     val identities: List<IdentityV2> = config!!.identities!!.map {
                         IdentityV2(it.key, identityKeyText.text.toString())
                     }
@@ -79,8 +65,6 @@ class SetConsentStatusFragment : BaseFragment() {
                     repositoryProvider?.getRepository()?.updateConsentStatusProto(
                         configuration = config!!,
                         identities = identities,
-                        consents = consents,
-                        migrationOption = MigrationOption.MIGRATE_ALWAYS,
                         purposes = mapOf(
                             consent1 to consent1Switch,
                             consent2 to consent2Switch,
@@ -101,7 +85,6 @@ class SetConsentStatusFragment : BaseFragment() {
                         ?.collect { result ->
                             when (result) {
                                 is Result.Success -> {
-                                    Log.d("<<<", result.toString())
                                     setConsentStatusResult.text =
                                         GsonBuilder().setPrettyPrinting().create()
                                             .toJson(JsonObject())
