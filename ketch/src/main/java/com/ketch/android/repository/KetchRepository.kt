@@ -1,18 +1,12 @@
 package com.ketch.android.repository
 
 import android.content.Context
-import android.util.Base64
-import android.util.Base64.NO_WRAP
-import android.util.Log
 import com.google.gson.Gson
 import com.ketch.android.api.*
 import com.ketch.android.api.adapter.ConfigurationDataAdapter
 import com.ketch.android.api.model.*
 import com.ketch.android.cache.CacheProvider
-import com.ketch.android.location.LocationUtils
 import com.ketch.android.model.Consent
-import com.ketch.android.model.ConsentStatus
-import com.ketch.android.model.UserData
 import com.ketch.android.model.UserDataV2
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.Dispatchers
@@ -32,198 +26,10 @@ class KetchRepository internal constructor(
     private val applicationCode: String,
     private val context: Context?,
     private val cacheProvider: CacheProvider?,
-    private val client: KetchApiClient = KetchApiClient()
+    private val client: MobileClient = MobileClient(context!!)
 ) {
-    companion object {
-        private const val GRPC_TAG = "gRPC"
-    }
-
-    /**
-     * Collection of base service URLs received as a part of bootstrap json and needed to form other
-     * SwitchBit endpoints URLs
-     */
-    private var serviceUrls: Map<String, String>? = null
 
     private val gson = Gson()
-
-    private var mobileClient: MobileClient? = null
-
-    /**
-     * Retrieves bootstrap configuration needed for full config
-     * Uses organizationCode and applicationCode to form a full URL
-     * Result will be cached for each unique pair of organizationCode and applicationCode
-     * In case of response fail previously cached data will be allegedly returned as Result.Success
-     * @return Flow with Result with {@link BootstrapConfiguration} if successful and with an error if request or its handling failed
-     */
-    fun getBootstrapConfiguration(): Flow<Result<RequestError, BootstrapConfiguration>> {
-        return flow {
-            emit(
-                client.getApiService().getBootstrapConfiguration(
-                    organizationCode,
-                    applicationCode
-                )
-            )
-        }
-            .mapWithResult { it }
-            .catch { e ->
-                emit(Result.fail(OtherError(e)))
-            }
-            .wrapWithCache(BootstrapConfiguration::class.java, 0, organizationCode, applicationCode)
-            .fallbackWithCache(
-                BootstrapConfiguration::class.java,
-                0,
-                organizationCode,
-                applicationCode
-            )
-            .onEach { result ->
-                if (result is Result.Success) {
-                    // save received service URLs to use them for further requests
-                    serviceUrls = result.value.services
-                }
-            }
-            .flowOn(Dispatchers.IO)
-    }
-
-    /**
-     * Retrieves full configuration data
-     * Should be used if location latitude and longitude are provided
-     * Caching is performed in {@see getConfigurationFlow} method
-     * Tries to determine locationCode based on provided coordinates using Android components. If fails, fallbacks to using of switchbit resources
-     * @param configuration bootstrap configuration
-     * @param environment environment value that should match one of environment patterns
-     * @param languageCode current locale code (e.g. en_US)
-     * @param latitude
-     * @param longitude
-     * @return Flow of Result with {@link Configuration} if successful and with an error if request or its handling failed
-     */
-    fun getFullConfiguration(
-        configuration: BootstrapConfiguration,
-        environment: String,
-        languageCode: String,
-        latitude: Double,
-        longitude: Double
-    ): Flow<Result<RequestError, Configuration>> =
-        flow {
-            emit(
-                context?.let {
-                    LocationUtils.getLocationCode(latitude, longitude, it)
-                }
-            )
-        }
-            .catch {
-                emit(null)
-            }
-            .flatMapLatest { locationCode ->
-                // if locationCode is successfully determined, use it to form a final getFullConfiguration request
-                // otherwise use switchbit ASTROLABE endpoint to get location code first
-                locationCode?.let {
-                    getConfigurationFlow(
-                        configuration = configuration,
-                        scope = configuration.policyScope?.getRecommendedScope(locationCode.getGeolocationCode()),
-                        environment = environment,
-                        languageCode = languageCode
-                    )
-                } ?: getFullConfiguration(
-                    configuration = configuration,
-                    environment = environment,
-                    languageCode = languageCode
-                )
-            }
-            .flowOn(Dispatchers.IO)
-
-    /**
-     * Retrieves full configuration data
-     * Should be used if location latitude and longitude are absent or Android component failed to get location code
-     * Caching is performed in {@see getConfigurationFlow} method
-     * Tries to determine locationCode using switchbit ASTROLABE resource
-     * @param configuration bootstrap configuration
-     * @param environment environment value that should match one of environment patterns
-     * @param languageCode current locale code (e.g. en_US)
-     * @return Flow of Result with {@link Configuration} if successful and with an error if request or its handling failed
-     */
-    fun getFullConfiguration(
-        configuration: BootstrapConfiguration,
-        environment: String,
-        languageCode: String
-    ): Flow<Result<RequestError, Configuration>> =
-        flow {
-            emit(
-                client.getApiService(serviceUrls?.get(ServiceNames.ASTROLABE.value))
-                    .getGeolocation()
-            )
-        }
-            .mapWithResult { it.getGeolocationCode().orEmpty() }
-            .catch { e ->
-                emit(Result.fail(OtherError(e)))
-            }
-            .flatMapLatest { locationResult ->
-                val locationCode = when (locationResult) {
-                    is Result.Success -> locationResult.value
-                    is Result.Error -> null
-                }
-                val scope = configuration.policyScope?.getRecommendedScope(locationCode)
-                getConfigurationFlow(
-                    configuration, scope, environment, languageCode
-                )
-            }
-            .catch { e ->
-                emit(Result.fail(OtherError(e)))
-            }
-            .flowOn(Dispatchers.IO)
-
-    /**
-     * Retrieves full configuration data
-     * Uses organizationCode, applicationCode, environment, policyScopeCode and languageCode to form a full URL
-     * Result will be cached for each unique set of  of organizationCode, applicationCode, environment, scope and languageCode
-     * In case of response fail previously cached data will be allegedly returned as Result.Success
-     * @return Flow of Result with {@link BootstrapConfiguration} if successful and with an error if request or its handling failed
-     */
-    private fun getConfigurationFlow(
-        configuration: BootstrapConfiguration,
-        scope: String?,
-        environment: String,
-        languageCode: String
-    ): Flow<Result<RequestError, Configuration>> {
-        val chosenEnvironment: Environment? = configuration.environments?.firstOrNull {
-            it.matchPattern(environment)
-        } ?: configuration.getDefaultEnvironment()
-        return flow {
-            emit(
-                client.getApiService(serviceUrls?.get(ServiceNames.SUPERCARGO.value))
-                    .getFullConfiguration(
-                        organizationCode = organizationCode,
-                        applicationCode = applicationCode,
-                        environmentCode = chosenEnvironment?.code,
-                        environmentHash = chosenEnvironment?.hash,
-                        policyScopeCode = scope,
-                        languageCode = languageCode
-                    )
-            )
-        }
-            .mapWithResult { it }
-            .catch { e ->
-                emit(Result.fail(OtherError(e)))
-            }
-            .wrapWithCache(
-                Configuration::class.java,
-                0,
-                organizationCode,
-                applicationCode,
-                environment,
-                scope,
-                languageCode
-            )
-            .fallbackWithCache(
-                Configuration::class.java,
-                0,
-                organizationCode,
-                applicationCode,
-                environment,
-                scope,
-                languageCode
-            )
-            .flowOn(Dispatchers.IO)
-    }
 
     fun getConfigurationProto(
         environment: String,
@@ -233,11 +39,7 @@ class KetchRepository internal constructor(
         IP: String = ""
     ): Flow<Result<RequestError, ConfigurationV2>> {
         return flow {
-            println(1)
-            mobileClient = MobileClient(context!!)
-            println(2)
-            val blockingStub = mobileClient!!.blockingStub
-            println(3)
+            val blockingStub = client.blockingStub
             val request = MobileOuterClass.GetConfigurationRequest.newBuilder()
                 .setOrganizationCode(organizationCode)
                 .setApplicationCode(applicationCode)
@@ -247,38 +49,12 @@ class KetchRepository internal constructor(
                 .setRegionCode(regionCode)
                 .setIP("")
                 .build()
-            println(4)
 
-            Log.d(GRPC_TAG, ">>> $request")
             val response = blockingStub.getConfiguration(request)
             emit(response)
-            Log.d(GRPC_TAG, "<<< $response")
-//            Log.d(GRPC_TAG, "<<<base64: ${Base64.encodeToString(response.toByteArray(), NO_WRAP)}")
         }
             .map { ConfigurationDataAdapter().toModel(it) }
             .map<ConfigurationV2, Result<RequestError, ConfigurationV2>> {
-                var sb = Gson().toJson(it)
-                if (sb.length > 4000) {
-                    Log.d(GRPC_TAG, "sb.length = " + sb.length)
-                    val chunkCount: Int = sb.length / 4000 // integer division
-                    for (i in 0..chunkCount) {
-                        val max = 4000 * (i + 1)
-                        if (max >= sb.length) {
-                            Log.d(
-                                GRPC_TAG,
-                                "chunk " + i + " of " + chunkCount + ":" + sb.substring(4000 * i)
-                            )
-                        } else {
-                            Log.d(
-                                GRPC_TAG,
-                                "chunk $i of $chunkCount:" + sb.substring(
-                                    4000 * i,
-                                    max
-                                )
-                            )
-                        }
-                    }
-                }
                 Result.succeed(it)
             }
             .handleErrors()
@@ -302,130 +78,6 @@ class KetchRepository internal constructor(
     }
 
     /**
-     * Retrieves currently set consent status
-     * Uses organizationCode to form a full URL
-     * Result will be cached for each unique set of  of organizationCode, applicationCode, environment, identities and purposes
-     * @param configuration full configuration
-     * @param identities map of identityCodes and identityValues. Keys and values shouldn't be null
-     * @param purposes map of activity names and names of legalBasisCode of this activity. Keys and values shouldn't be null
-     * @return Flow of Result with Map<String, ConsentStatus>> if successful and with an error if request or its handling failed
-     */
-    fun getConsentStatus(
-        configuration: Configuration,
-        identities: Map<String, String>,
-        purposes: Map<String, String>
-    ): Flow<Result<RequestError, Map<String, ConsentStatus>>> =
-        flow {
-            val body = GetConsentStatusBody(
-                applicationCode = applicationCode,
-                applicationEnvironmentCode = configuration.environment?.code,
-                identities = ApiUtils.constructIdentities(organizationCode, identities),
-                purposes = GetConsentStatusBody.constructPurposes(
-                    purposes
-                )
-            )
-            emit(
-                client.getApiService(serviceUrls?.get(ServiceNames.WHEELHOUSE.value))
-                    .getConsentStatus(
-                        organizationCode = organizationCode,
-                        getConsentStatusBody = body
-                    )
-            )
-        }
-            .mapWithResult { it }
-            .catch { e ->
-                emit(Result.fail(OtherError(e)))
-            }
-            .wrapWithCache(
-                GetConsentStatusResponse::class.java,
-                GetConsentStatusResponse.version,
-                organizationCode,
-                applicationCode,
-                configuration.environment?.code,
-                identities,
-                purposes
-            )
-            .fallbackWithCache(
-                GetConsentStatusResponse::class.java,
-                GetConsentStatusResponse.version,
-                organizationCode,
-                applicationCode,
-                configuration.environment?.code,
-                identities,
-                purposes
-            )
-            .flatMapSuccess { getConsentStatusResponse ->
-                // as far as server response doesn't contain all needed information client awaits,
-                // successful result should be merged with input parameter purposes to form a proper value to return
-                flow {
-                    val activities: Map<String, ApiConsentStatus>? =
-                        getConsentStatusResponse.purposes
-                    activities?.let {
-                        emit(
-                            Result.succeed(
-                                activities.map { activity ->
-                                    activity.key to activity.value.copy(
-                                        legalBasisCode = purposes[activity.key]
-                                    ).toDomain()
-                                }
-                                    .filter {
-                                        it.second.legalBasisCode != null
-                                    }
-                                    .toMap()
-                            )
-                        )
-                    } ?: emit(Result.succeed(emptyMap()))
-                }
-            }
-            .catch { e ->
-                emit(Result.fail(OtherError(e)))
-            }
-            .flowOn(Dispatchers.IO)
-
-    /**
-     * Sends a request for updating consent status
-     * Uses organizationCode to form a full URL
-     * @param configuration full configuration
-     * @param identities map of identityCodes and identityValues. Keys and values shouldn't be null
-     * @param consents map of consent names and information if this particular legalBasisCode should be allowed or not
-     * @param migrationOption rule that represents how updating should be performed
-     * @return Flow of Result.Success if successful and with an error if request or its handling failed
-     */
-    fun updateConsentStatus(
-        configuration: Configuration,
-        identities: Map<String, String>,
-        consents: Map<String, ConsentStatus>,
-        migrationOption: MigrationOption
-    ): Flow<Result<RequestError, Unit>> =
-        flow {
-            val body = UpdateConsentStatusBody(
-                applicationCode = applicationCode,
-                applicationEnvironmentCode = configuration.environment?.code,
-                identities = ApiUtils.constructIdentities(
-                    organizationCode,
-                    identities
-                ),
-                policyScopeCode = configuration.policyScope?.code,
-                purposes = UpdateConsentStatusBody.constructPurposes(
-                    consents
-                ),
-                migrationOption = migrationOption.value
-            )
-            emit(
-                client.getApiService(serviceUrls?.get(ServiceNames.WHEELHOUSE.value))
-                    .updateConsentStatus(
-                        organizationCode = organizationCode,
-                        updateConsentStatusBody = body
-                    )
-            )
-        }
-            .mapWithResult { it }
-            .catch { e ->
-                emit(Result.fail(OtherError(e)))
-            }
-            .flowOn(Dispatchers.IO)
-
-    /**
      * Sends a request for updating consent status
      * Uses organizationCode to form a full URL
      * @param configuration full configuration
@@ -440,7 +92,7 @@ class KetchRepository internal constructor(
         purposes: Iterable<PurposeV2>
     ): Flow<Result<RequestError, GetConsentStatusResponseV2>> =
         flow {
-            val blockingStub = mobileClient!!.blockingStub
+            val blockingStub = client.blockingStub
             val request = MobileOuterClass.GetConsentRequest.newBuilder()
                 .addAllPurposes(
                     purposes.map {
@@ -466,9 +118,7 @@ class KetchRepository internal constructor(
 
                 .build()
 
-            Log.d(GRPC_TAG, ">>> $request")
             val response = blockingStub.getConsent(request)
-            Log.d(GRPC_TAG, "<<< $response")
 
             emit(
                 response
@@ -521,7 +171,7 @@ class KetchRepository internal constructor(
         purposes: Iterable<PurposeV2>
     ): Flow<Result<RequestError, Long>> =
         flow {
-            val blockingStub = mobileClient!!.blockingStub
+            val blockingStub = client.blockingStub
             val request = MobileOuterClass.SetConsentRequest.newBuilder()
                 .setPolicyScope(configuration.policyScope!!.code)
                 .addAllConsents(
@@ -554,9 +204,7 @@ class KetchRepository internal constructor(
 
                 .build()
 
-            Log.d(GRPC_TAG, ">>> $request")
             val response = blockingStub.setConsent(request)
-            Log.d(GRPC_TAG, "<<< $response")
 
             emit(
                 response
@@ -579,47 +227,6 @@ class KetchRepository internal constructor(
      * @param rights list of strings of rights. Rights shouldn't bu null
      * @return Flow of Result.Success if successful and with an error if request or its handling failed
      */
-    fun invokeRights(
-        configuration: Configuration,
-        identities: Map<String, String>,
-        userData: UserData,
-        rights: List<String>
-    ): Flow<Result<RequestError, Unit>> =
-        flow {
-            val body = InvokeRightsBody(
-                applicationCode = applicationCode,
-                applicationEnvironmentCode = configuration.environment?.code,
-                identities = ApiUtils.constructIdentities(
-                    organizationCode,
-                    identities
-                ),
-                policyScopeCode = configuration.policyScope?.code,
-                rightsEmail = userData.email,
-                rightCodes = rights
-            )
-            emit(
-                client.getApiService(serviceUrls?.get(ServiceNames.GANGPLANK.value)).invokeRights(
-                    organizationCode = organizationCode,
-                    invokeRightsBody = body
-                )
-            )
-        }
-            .mapWithResult { it }
-            .catch { e ->
-                emit(Result.fail(OtherError(e)))
-            }
-            .flowOn(Dispatchers.IO)
-
-
-    /**
-     * Sends a request for invoking rights
-     * Uses organizationCode to form a full URL
-     * @param configuration full configuration
-     * @param identities map of identityCodes and identityValues. Keys and values shouldn't be null
-     * @param userData consists user information like email
-     * @param rights list of strings of rights. Rights shouldn't bu null
-     * @return Flow of Result.Success if successful and with an error if request or its handling failed
-     */
     fun invokeRightsProto(
         configuration: ConfigurationV2,
         identities: Iterable<IdentityV2>,
@@ -627,7 +234,7 @@ class KetchRepository internal constructor(
         rights: List<String>
     ): Flow<Result<RequestError, Unit>> =
         flow {
-            val blockingStub = mobileClient!!.blockingStub
+            val blockingStub = client.blockingStub
             val request = MobileOuterClass.InvokeRightRequest.newBuilder()
                 .setPolicyScope(configuration.policyScope!!.code)
                 .setRight(rights.first())
@@ -661,9 +268,7 @@ class KetchRepository internal constructor(
                 )
                 .build()
 
-            Log.d(GRPC_TAG, ">>> $request")
             val response = blockingStub.invokeRight(request)
-            Log.d(GRPC_TAG, "<<< $response")
 
             emit(response)
         }
@@ -678,7 +283,6 @@ class KetchRepository internal constructor(
 
     private fun <T : Any> Flow<Result<RequestError, T>>.handleErrors(): Flow<Result<RequestError, T>> =
     catch { e ->
-        Log.e(GRPC_TAG, "<<< $e")
         when (e) {
             is StatusRuntimeException -> emit(
                 Result.fail(
@@ -728,33 +332,17 @@ class KetchRepository internal constructor(
         vararg params: Any?
     ): Flow<Result<RequestError, T>> =
         transform { result ->
-            println(">>> $result")
             if (result is Result.Error) {
-                println(">>> error $result")
-
-                println("hash ${type.simpleName}_${cacheProvider?.generateSalt(*params)}")
                 cacheProvider?.obtain("${type.simpleName}_${version}_${cacheProvider.generateSalt(*params)}")
                     ?.let {
-                        println(">>>1 $it")
-
-                        println(gson.fromJson(it, type) as T)
-                        println(">>>2 $it")
-
                         emit(Result.succeed(gson.fromJson(it, type) as T))
                     } ?: emit(result)
             } else
                 emit(result)
         }
 
-    private enum class ServiceNames(val value: String) {
-        ASTROLABE("astrolabe"),
-        GANGPLANK("gangplank"),
-        SUPERCARGO("supercargo"),
-        WHEELHOUSE("wheelhouse"),
-    }
-
     /**
-     * Builder class to config SwitchbitRepository. Repository should be created only with this class
+     * Builder class to config KetchRepository. Repository should be created only with this class
      */
     class Builder() {
         private var organizationCode: String? = null
