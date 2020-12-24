@@ -1,0 +1,34 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ main, ci ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+      ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+
+    steps:
+      - name: Install NDK
+        run: echo "y" | sudo /usr/local/lib/android/sdk/tools/bin/sdkmanager --install "ndk;20.0.5594570" --sdk_root=${ANDROID_SDK_ROOT}
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Build with Gradle
+        run: ./gradlew ketch:build
+      - name: Deploy
+        run: ./gradlew artifactoryPublish
+      - name: Clean
+        run: ./gradlew clean
+      - name: Download Dependencies
+        run: ./gradlew androidDependencies
+      - name: Build
+        run: ./gradlew example:build
+      - name: Run Tests
+        run: ./gradlew example:lint test

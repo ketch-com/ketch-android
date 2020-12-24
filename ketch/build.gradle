@@ -4,23 +4,18 @@ apply plugin: 'kotlin-android-extensions'
 apply plugin: 'com.google.protobuf'
 
 android {
-    compileSdkVersion 29
+    compileSdkVersion 30
     buildToolsVersion "29.0.2"
-
     defaultConfig {
         minSdkVersion 21
-        targetSdkVersion 29
+        targetSdkVersion 30
         versionCode 1
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
-    defaultConfig {
-        buildConfigField "String", "SERVER_NAME", "\"mobile.dev.b10s.io\""
-        buildConfigField "int", "SERVER_PORT", "443"
-    }
-    buildTypes {
 
+    buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -51,8 +46,7 @@ dependencies {
 
     implementation "io.grpc:grpc-okhttp:${grpcVersion}"
     implementation "io.grpc:grpc-android:${grpcVersion}"
-    //fixme
-    api "io.grpc:grpc-protobuf-lite:${grpcVersion}"
+    implementation "io.grpc:grpc-protobuf-lite:${grpcVersion}"
     implementation "io.grpc:grpc-stub:${grpcVersion}"
     implementation 'org.glassfish:javax.annotation:10.0-b28'
 

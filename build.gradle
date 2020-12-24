@@ -29,13 +29,13 @@ allprojects {
         google()
         jcenter()
 
-/*        maven {
+        maven {
             url "https://b10s.jfrog.io/artifactory/ketch/"
             credentials {
                 username = System.getenv('ARTIFACTORY_USERNAME')
                 password = System.getenv('ARTIFACTORY_PASSWORD')
             }
-        }*/
+        }
 
     }
 }
@@ -45,7 +45,7 @@ task clean(type: Delete) {
 }
 
 ext {
-    ketch_version = '0.0.2'
+    ketch_version = '0.1.' + System.getenv('GITHUB_RUN_NUMBER')
 }
 
 project('ketch') {

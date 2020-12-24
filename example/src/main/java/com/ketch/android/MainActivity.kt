@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import com.ketch.android.example.R
 import com.ketch.android.repository.KetchRepository
 import kotlinx.android.synthetic.main.activity_main.*
 

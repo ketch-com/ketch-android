@@ -11,6 +11,7 @@ import com.google.gson.JsonObject
 import com.ketch.android.api.Result
 import com.ketch.android.api.model.Configuration
 import com.ketch.android.api.model.IdentitySpace
+import com.ketch.android.example.R
 import com.ketch.android.model.UserData
 import kotlinx.android.synthetic.main.fragment_invoke_rights.*
 import kotlinx.android.synthetic.main.fragment_invoke_rights.identityKeyText

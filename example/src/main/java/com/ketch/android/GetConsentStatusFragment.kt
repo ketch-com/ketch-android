@@ -14,6 +14,7 @@ import com.ketch.android.api.model.Configuration
 import com.ketch.android.api.model.IdentitySpace
 import com.ketch.android.api.model.ConfigPurpose
 import com.ketch.android.api.model.Purpose
+import com.ketch.android.example.R
 import kotlinx.android.synthetic.main.fragment_get_consent_status.*
 import kotlinx.android.synthetic.main.fragment_get_consent_status.consent1
 import kotlinx.android.synthetic.main.fragment_get_consent_status.consent2
@@ -82,7 +83,6 @@ class GetConsentStatusFragment : BaseFragment() {
                         }
                         .filterNotNull()
                             .map {
-                                Log.d("~~~", "$it, ${it.legalBasisCode}")
                                 Purpose(it.code!!, it.legalBasisCode!!, false)
                             }
                     )

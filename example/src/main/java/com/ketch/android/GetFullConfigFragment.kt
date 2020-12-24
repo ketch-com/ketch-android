@@ -10,6 +10,7 @@ import android.widget.Toast
 import com.google.gson.GsonBuilder
 import com.ketch.android.api.Result
 import com.ketch.android.api.model.Configuration
+import com.ketch.android.example.R
 import kotlinx.android.synthetic.main.fragment_full_config.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect

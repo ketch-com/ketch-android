@@ -13,6 +13,7 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.ketch.android.api.Result
 import com.ketch.android.api.model.*
+import com.ketch.android.example.R
 import com.ketch.android.model.ConsentStatus
 import kotlinx.android.synthetic.main.fragment_set_consent_status.*
 import kotlinx.coroutines.CoroutineScope

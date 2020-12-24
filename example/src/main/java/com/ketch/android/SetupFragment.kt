@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import com.google.android.material.snackbar.Snackbar
 import com.ketch.android.cache.SharedPreferencesCacheProvider
+import com.ketch.android.example.R
 import com.ketch.android.repository.KetchRepository
 import kotlinx.android.synthetic.main.fragment_setup.*
 

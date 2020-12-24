@@ -1,7 +1,6 @@
 package com.ketch.android.api.adapter
 
 import com.ketch.android.api.model.*
-import com.ketch.android.api.model.Configuration
 import mobile.MobileOuterClass
 
 object ConfigurationDataAdapter  {

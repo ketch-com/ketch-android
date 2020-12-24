@@ -1,15 +1,17 @@
 package com.ketch.android.api
 
 import android.content.Context
-import com.ketch.android.BuildConfig.SERVER_NAME
-import com.ketch.android.BuildConfig.SERVER_PORT
 import io.grpc.*
 import io.grpc.android.AndroidChannelBuilder
-import io.grpc.android.BuildConfig
 import mobile.MobileGrpc
 import java.util.concurrent.TimeUnit
 
 class MobileClient private constructor(channel: Channel) {
+    companion object {
+        private const val SERVER_NAME = "mobile.dev.b10s.io"
+        private const val SERVER_PORT = 443
+    }
+
     val blockingStub: MobileGrpc.MobileBlockingStub = MobileGrpc
         .newBlockingStub(channel)
         .withInterceptors(TimeoutInterceptor())

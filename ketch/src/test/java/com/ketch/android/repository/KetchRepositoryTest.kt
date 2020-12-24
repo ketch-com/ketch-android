@@ -3,8 +3,14 @@ package com.ketch.android.repository
 import android.content.Context
 import android.util.Base64
 import com.google.gson.Gson
-import com.ketch.android.api.*
-import com.ketch.android.api.model.*
+import com.ketch.android.api.MobileClient
+import com.ketch.android.api.RequestError
+import com.ketch.android.api.Result
+import com.ketch.android.api.StatusError
+import com.ketch.android.api.model.Configuration
+import com.ketch.android.api.model.GetConsentStatusResponse
+import com.ketch.android.api.model.IdentitySpace
+import com.ketch.android.api.model.Purpose
 import com.ketch.android.cache.SharedPreferencesCacheProvider
 import com.ketch.android.loadFromFile
 import com.ketch.android.mock.MockResponses.Companion.mockGetConfigurationResponse
