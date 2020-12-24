@@ -7,11 +7,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.ketch.android.api.Result
-import com.ketch.android.api.model.BootstrapConfiguration
-import com.ketch.android.api.model.Configuration
 import com.ketch.android.api.model.ConfigurationV2
 import kotlinx.android.synthetic.main.fragment_full_config.*
 import kotlinx.coroutines.*
@@ -49,7 +46,7 @@ class GetFullConfigFragment : BaseFragment() {
         getFullConfig.setOnClickListener {
             if (environmentText.text.toString().isNotBlank()) {
                 job = CoroutineScope(Dispatchers.Main).launch {
-                    repositoryProvider?.getRepository()?.getConfigurationProto(environmentText.text.toString(),
+                    repositoryProvider?.getRepository()?.getConfiguration(environmentText.text.toString(),
                         countryCodeValue.text.toString(), languageCodeValue.text.toString())
                         ?.collect { result ->
                             when (result) {

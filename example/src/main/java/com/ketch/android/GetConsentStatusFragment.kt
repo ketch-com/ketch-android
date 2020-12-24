@@ -19,7 +19,6 @@ import kotlinx.android.synthetic.main.fragment_get_consent_status.consent1
 import kotlinx.android.synthetic.main.fragment_get_consent_status.consent2
 import kotlinx.android.synthetic.main.fragment_get_consent_status.identityKeyText
 import kotlinx.android.synthetic.main.fragment_get_consent_status.consent3
-import kotlinx.android.synthetic.main.fragment_set_consent_status.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
@@ -67,7 +66,7 @@ class GetConsentStatusFragment : BaseFragment() {
                         IdentityV2(it.key, identityKeyText.text.toString())
                     }
 
-                    repositoryProvider?.getRepository()?.getConsentStatusProto(
+                    repositoryProvider?.getRepository()?.getConsent(
                         configuration = config!!,
                         identities = identities,
                         purposes =  listOf(

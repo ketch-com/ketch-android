@@ -2,7 +2,6 @@ package com.ketch.android.repository
 
 import android.content.Context
 import android.util.Base64
-import android.util.Log
 import com.google.gson.Gson
 import com.ketch.android.api.*
 import com.ketch.android.api.model.*
@@ -65,7 +64,7 @@ class KetchRepositoryTest : DescribeSpec() {
                     client.blockingStub.getConfiguration(any())
                 } returns configProto
                 var result: Result<RequestError, ConfigurationV2>? = null
-                repo.getConfigurationProto("", "", "")
+                repo.getConfiguration("", "", "")
                     .collect {
                         result = it
                     }
@@ -93,7 +92,7 @@ class KetchRepositoryTest : DescribeSpec() {
                     client.blockingStub.getConfiguration(any())
                 } throws IOException("Not available")
                 var result: Result<RequestError, ConfigurationV2>? = null
-                repo.getConfigurationProto("", "", "")
+                repo.getConfiguration("", "", "")
                     .collect {
                         result = it
                     }
@@ -120,7 +119,7 @@ class KetchRepositoryTest : DescribeSpec() {
                     client.blockingStub.getConfiguration(any())
                 } throws StatusRuntimeException(Status.DEADLINE_EXCEEDED)
                 var result: Result<RequestError, ConfigurationV2>? = null
-                repo.getConfigurationProto("", "", "")
+                repo.getConfiguration("", "", "")
                     .collect {
                         result = it
                     }
@@ -164,7 +163,7 @@ class KetchRepositoryTest : DescribeSpec() {
                     client.blockingStub.getConsent(any())
                 } returns mockGetConsentResponse
                 var result: Result<RequestError, GetConsentStatusResponseV2>? = null
-                repo.getConsentStatusProto(
+                repo.getConsent(
                     config,
                     arrayListOf(IdentityV2("id1", "id1")),
                     arrayListOf(PurposeV2("id1", "id1", true))
@@ -198,7 +197,7 @@ class KetchRepositoryTest : DescribeSpec() {
                           } throws StatusRuntimeException(Status.DEADLINE_EXCEEDED)
 
                           var result: Result<RequestError, GetConsentStatusResponseV2>? = null
-                          repo.getConsentStatusProto(
+                          repo.getConsent(
                               config,
                               arrayListOf(IdentityV2("id1", "id1")),
                               arrayListOf(PurposeV2("id1", "id1", true))
@@ -233,7 +232,7 @@ class KetchRepositoryTest : DescribeSpec() {
                               client.blockingStub.getConsent(any())
                           } throws  StatusRuntimeException(Status.DEADLINE_EXCEEDED)
                           var result: Result<RequestError, GetConsentStatusResponseV2>? = null
-                          repo.getConsentStatusProto(
+                          repo.getConsent(
                               config,
                               arrayListOf(IdentityV2("id1", "id1")),
                               arrayListOf(PurposeV2("id1", "id1", true))
@@ -282,7 +281,7 @@ class KetchRepositoryTest : DescribeSpec() {
                 } returns MobileOuterClass.SetConsentResponse.newBuilder()
                     .setReceivedTime(System.currentTimeMillis()).build()
                 var result: Result<RequestError, Long>? = null
-                repo.updateConsentStatusProto(
+                repo.setConsent(
                     config,
                     arrayListOf(
                         IdentityV2("swb_dinghy", "swb_dinghy")
@@ -312,7 +311,7 @@ class KetchRepositoryTest : DescribeSpec() {
                 } throws StatusRuntimeException(Status.DEADLINE_EXCEEDED)
 
                 var result: Result<RequestError, Long>? = null
-                repo.updateConsentStatusProto(
+                repo.setConsent(
                     config,
                     arrayListOf(
                         IdentityV2("swb_dinghy", "swb_dinghy")
@@ -364,7 +363,7 @@ class KetchRepositoryTest : DescribeSpec() {
                 } returns MobileOuterClass.InvokeRightResponse.getDefaultInstance()
 
                 var result: Result<RequestError, Unit>? = null
-                repo.invokeRightsProto(
+                repo.invokeRights(
                     config,
                     arrayListOf(
                         IdentityV2("id", "_id")
@@ -395,7 +394,7 @@ class KetchRepositoryTest : DescribeSpec() {
                 } throws StatusRuntimeException(Status.DEADLINE_EXCEEDED)
 
                 var result: Result<RequestError, Unit>? = null
-                repo.invokeRightsProto(
+                repo.invokeRights(
                     config,
                     arrayListOf(
                         IdentityV2("id", "_id")

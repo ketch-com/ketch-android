@@ -12,11 +12,9 @@ import com.ketch.android.api.Result
 import com.ketch.android.api.model.Configuration
 import com.ketch.android.api.model.ConfigurationV2
 import com.ketch.android.api.model.IdentityV2
-import com.ketch.android.model.UserData
 import com.ketch.android.model.UserDataV2
 import kotlinx.android.synthetic.main.fragment_invoke_rights.*
 import kotlinx.android.synthetic.main.fragment_invoke_rights.identityKeyText
-import kotlinx.android.synthetic.main.fragment_set_consent_status.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
@@ -81,7 +79,7 @@ class InvokeRightsFragment : BaseFragment() {
                     IdentityV2(it.key, identityKeyText.text.toString())
                 }
                 job = CoroutineScope(Dispatchers.Main).launch {
-                    repositoryProvider?.getRepository()?.invokeRightsProto(
+                    repositoryProvider?.getRepository()?.invokeRights(
                         configuration = config!!,
                         identities = identities,
                         userData = userData,

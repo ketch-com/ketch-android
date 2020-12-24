@@ -11,7 +11,6 @@ import android.widget.Toast
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
-import com.ketch.android.api.MigrationOption
 import com.ketch.android.api.Result
 import com.ketch.android.api.model.*
 import com.ketch.android.model.ConsentStatus
@@ -62,7 +61,7 @@ class SetConsentStatusFragment : BaseFragment() {
                         IdentityV2(it.key, identityKeyText.text.toString())
                     }
 
-                    repositoryProvider?.getRepository()?.updateConsentStatusProto(
+                    repositoryProvider?.getRepository()?.setConsent(
                         configuration = config!!,
                         identities = identities,
                         purposes = mapOf(

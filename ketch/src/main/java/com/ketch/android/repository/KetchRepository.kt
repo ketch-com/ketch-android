@@ -1,6 +1,7 @@
 package com.ketch.android.repository
 
 import android.content.Context
+import android.util.Log
 import com.google.gson.Gson
 import com.ketch.android.api.*
 import com.ketch.android.api.adapter.ConfigurationDataAdapter
@@ -31,7 +32,7 @@ class KetchRepository internal constructor(
 
     private val gson = Gson()
 
-    fun getConfigurationProto(
+    fun getConfiguration(
         environment: String,
         countryCode: String,
         languageCode: String,
@@ -86,7 +87,7 @@ class KetchRepository internal constructor(
      * @param migrationOption rule that represents how updating should be performed
      * @return Flow of Result.Success if successful and with an error if request or its handling failed
      */
-    fun getConsentStatusProto(
+    fun getConsent(
         configuration: ConfigurationV2,
         identities: Iterable<IdentityV2>,
         purposes: Iterable<PurposeV2>
@@ -165,7 +166,7 @@ class KetchRepository internal constructor(
      * @param purposes map of consent names and information if this particular legalBasisCode should be allowed or not
      * @return Flow of Result.Success if successful and with an error if request or its handling failed
      */
-    fun updateConsentStatusProto(
+    fun setConsent(
         configuration: ConfigurationV2,
         identities: Iterable<IdentityV2>,
         purposes: Iterable<PurposeV2>
@@ -204,6 +205,8 @@ class KetchRepository internal constructor(
 
                 .build()
 
+            Log.d("gRPC", "request $request")
+
             val response = blockingStub.setConsent(request)
 
             emit(
@@ -227,7 +230,7 @@ class KetchRepository internal constructor(
      * @param rights list of strings of rights. Rights shouldn't bu null
      * @return Flow of Result.Success if successful and with an error if request or its handling failed
      */
-    fun invokeRightsProto(
+    fun invokeRights(
         configuration: ConfigurationV2,
         identities: Iterable<IdentityV2>,
         userData: UserDataV2,
