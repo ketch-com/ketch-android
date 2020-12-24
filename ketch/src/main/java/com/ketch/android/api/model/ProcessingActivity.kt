@@ -5,7 +5,7 @@ import kotlinx.android.parcel.Parcelize
 import transponder.Transponder
 
 @Parcelize
-data class Purpose(
+data class ConfigPurpose(
     val code: String?,
     val name: String?,
     val description: String?,
@@ -16,7 +16,7 @@ data class Purpose(
 ) : Parcelable
 
 @Parcelize
-data class PurposeV2(
+data class Purpose(
     val purpose: String,
     val legalBasis: String,
     val allowed: Boolean

@@ -9,7 +9,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import com.google.gson.GsonBuilder
 import com.ketch.android.api.Result
-import com.ketch.android.api.model.ConfigurationV2
+import com.ketch.android.api.model.Configuration
 import kotlinx.android.synthetic.main.fragment_full_config.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
@@ -18,7 +18,7 @@ import java.util.*
 class GetFullConfigFragment : BaseFragment() {
 
     private var repositoryProvider: RepositoryProvider? = null
-    private var config: ConfigurationV2? = null
+    private var config: Configuration? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)

@@ -20,16 +20,6 @@ sealed class Result<out E : Any, out T : Any> {
  * Classes for wrapping different kind of errors that could be received by the client
  */
 sealed class RequestError
-sealed class RemoteError : RequestError()
 
-object NoResultError : RemoteError()
-data class HttpError(val code: Int, val message: String?) : RemoteError()
-
-/**
- * Error not related to the server communication but represents mostly all kind of client errors:
- * no network, any kind of transformation/caching/type matching etc. exceptions
- */
-data class OtherError(val exception: Throwable) : RequestError()
-//io.grpc.StatusRuntimeException:
 class StatusError(internal val code: Status.Code, val description: String?) : RequestError()
-class OtherErrorV2(val exception: Throwable): RequestError()
+class OtherError(val exception: Throwable): RequestError()

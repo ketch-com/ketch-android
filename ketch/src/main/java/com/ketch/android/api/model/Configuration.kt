@@ -1,7 +1,6 @@
 package com.ketch.android.api.model
 
 import android.os.Parcelable
-import com.google.gson.annotations.SerializedName
 import kotlinx.android.parcel.Parcelize
 
 /**
@@ -10,23 +9,18 @@ import kotlinx.android.parcel.Parcelize
  */
 @Parcelize
 data class Configuration(
-    @SerializedName("v")
-    val version: Int?,
+    val applicationInfo: ApplicationInfo?,
     val language: String?,
     val organization: Organization?,
-    @SerializedName("app")
-    val applicationInfo: ApplicationInfo?,
-    val environments: List<Environment>?,
     val environment: Environment?,
     val deployment: Deployment?,
     val privacyPolicy: PolicyDocument?,
     val termsOfService: PolicyDocument?,
     val rights: List<Right>?,
     val regulations: List<String>?,
-    val purposes: List<Purpose>?,
+    val purposes: List<ConfigPurpose>?,
     val policyScope: PolicyScope?,
-    val identities: Map<String, Identity>?,
-    val scripts: List<String>?,
+    val identities: Map<String, IdentityType>?,
     val services: Map<String, String>?,
     val options: Map<String, Int>?,
     override val cachedAt: Long?
@@ -34,4 +28,8 @@ data class Configuration(
 
     override fun cacheableCopy(timestamp: Long): Cacheable =
         copy(cachedAt = timestamp)
+
+    companion object {
+        const val version = 1
+    }
 }

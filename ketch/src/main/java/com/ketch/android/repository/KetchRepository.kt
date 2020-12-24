@@ -1,14 +1,13 @@
 package com.ketch.android.repository
 
 import android.content.Context
-import android.util.Log
 import com.google.gson.Gson
 import com.ketch.android.api.*
 import com.ketch.android.api.adapter.ConfigurationDataAdapter
 import com.ketch.android.api.model.*
 import com.ketch.android.cache.CacheProvider
 import com.ketch.android.model.Consent
-import com.ketch.android.model.UserDataV2
+import com.ketch.android.model.UserData
 import io.grpc.StatusRuntimeException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -38,7 +37,7 @@ class KetchRepository internal constructor(
         languageCode: String,
         regionCode: String = "",
         IP: String = ""
-    ): Flow<Result<RequestError, ConfigurationV2>> {
+    ): Flow<Result<RequestError, Configuration>> {
         return flow {
             val blockingStub = client.blockingStub
             val request = MobileOuterClass.GetConfigurationRequest.newBuilder()
@@ -48,28 +47,28 @@ class KetchRepository internal constructor(
                 .setLanguageCode(languageCode)
                 .setCountryCode(countryCode)
                 .setRegionCode(regionCode)
-                .setIP("")
+                .setIP(IP)
                 .build()
 
             val response = blockingStub.getConfiguration(request)
             emit(response)
         }
-            .map { ConfigurationDataAdapter().toModel(it) }
-            .map<ConfigurationV2, Result<RequestError, ConfigurationV2>> {
+            .map { ConfigurationDataAdapter.toModel(it) }
+            .map<Configuration, Result<RequestError, Configuration>> {
                 Result.succeed(it)
             }
             .handleErrors()
             .wrapWithCache(
-                ConfigurationV2::class.java,
-                ConfigurationV2.version,
+                Configuration::class.java,
+                Configuration.version,
                 organizationCode,
                 applicationCode,
                 environment,
                 languageCode
             )
             .fallbackWithCache(
-                ConfigurationV2::class.java,
-                ConfigurationV2.version,
+                Configuration::class.java,
+                Configuration.version,
                 organizationCode,
                 applicationCode,
                 environment,
@@ -83,15 +82,14 @@ class KetchRepository internal constructor(
      * Uses organizationCode to form a full URL
      * @param configuration full configuration
      * @param identities map of identityCodes and identityValues. Keys and values shouldn't be null
-     * @param consents map of consent names and information if this particular legalBasisCode should be allowed or not
-     * @param migrationOption rule that represents how updating should be performed
+     * @param purposes map of consent names and information if this particular legalBasisCode should be allowed or not
      * @return Flow of Result.Success if successful and with an error if request or its handling failed
      */
     fun getConsent(
-        configuration: ConfigurationV2,
-        identities: Iterable<IdentityV2>,
-        purposes: Iterable<PurposeV2>
-    ): Flow<Result<RequestError, GetConsentStatusResponseV2>> =
+        configuration: Configuration,
+        identities: Iterable<IdentitySpace>,
+        purposes: Iterable<Purpose>
+    ): Flow<Result<RequestError, GetConsentStatusResponse>> =
         flow {
             val blockingStub = client.blockingStub
             val request = MobileOuterClass.GetConsentRequest.newBuilder()
@@ -112,7 +110,7 @@ class KetchRepository internal constructor(
                 .setContext(
                     MobileOuterClass.Context.newBuilder()
                         .setApplication(configuration.applicationInfo!!.code)
-                        .setCollectedFrom("phone")
+                        .setCollectedFrom(CONTEXT_COLLECTED_FROM)
                         .setEnvironment(configuration.environment!!.code)
                         .build()
                 )
@@ -125,9 +123,9 @@ class KetchRepository internal constructor(
                 response
             )
         }
-            .map<MobileOuterClass.GetConsentResponse, Result<RequestError, GetConsentStatusResponseV2>> {
+            .map<MobileOuterClass.GetConsentResponse, Result<RequestError, GetConsentStatusResponse>> {
                 Result.succeed(
-                    GetConsentStatusResponseV2(it.consentsList.map { consent ->
+                    GetConsentStatusResponse(it.consentsList.map { consent ->
                         Consent(
                             consent.purpose,
                             consent.legalBasis,
@@ -138,8 +136,8 @@ class KetchRepository internal constructor(
             }
             .handleErrors()
             .wrapWithCache(
-                GetConsentStatusResponseV2::class.java,
-                GetConsentStatusResponseV2.version,
+                GetConsentStatusResponse::class.java,
+                GetConsentStatusResponse.version,
                 organizationCode,
                 applicationCode,
                 configuration.environment?.code,
@@ -147,8 +145,8 @@ class KetchRepository internal constructor(
                 purposes
             )
             .fallbackWithCache(
-                GetConsentStatusResponseV2::class.java,
-                GetConsentStatusResponseV2.version,
+                GetConsentStatusResponse::class.java,
+                GetConsentStatusResponse.version,
                 organizationCode,
                 applicationCode,
                 configuration.environment?.code,
@@ -167,9 +165,9 @@ class KetchRepository internal constructor(
      * @return Flow of Result.Success if successful and with an error if request or its handling failed
      */
     fun setConsent(
-        configuration: ConfigurationV2,
-        identities: Iterable<IdentityV2>,
-        purposes: Iterable<PurposeV2>
+        configuration: Configuration,
+        identities: Iterable<IdentitySpace>,
+        purposes: Iterable<Purpose>
     ): Flow<Result<RequestError, Long>> =
         flow {
             val blockingStub = client.blockingStub
@@ -198,14 +196,12 @@ class KetchRepository internal constructor(
                 .setContext(
                     MobileOuterClass.Context.newBuilder()
                         .setApplication(configuration.applicationInfo!!.code)
-                        .setCollectedFrom("phone")
+                        .setCollectedFrom(CONTEXT_COLLECTED_FROM)
                         .setEnvironment(configuration.environment!!.code)
                         .build()
                 )
 
                 .build()
-
-            Log.d("gRPC", "request $request")
 
             val response = blockingStub.setConsent(request)
 
@@ -231,9 +227,9 @@ class KetchRepository internal constructor(
      * @return Flow of Result.Success if successful and with an error if request or its handling failed
      */
     fun invokeRights(
-        configuration: ConfigurationV2,
-        identities: Iterable<IdentityV2>,
-        userData: UserDataV2,
+        configuration: Configuration,
+        identities: Iterable<IdentitySpace>,
+        userData: UserData,
         rights: List<String>
     ): Flow<Result<RequestError, Unit>> =
         flow {
@@ -265,7 +261,7 @@ class KetchRepository internal constructor(
                 .setContext(
                     MobileOuterClass.Context.newBuilder()
                         .setApplication(configuration.applicationInfo!!.code)
-                        .setCollectedFrom("phone")
+                        .setCollectedFrom(CONTEXT_COLLECTED_FROM)
                         .setEnvironment(configuration.environment!!.code)
                         .build()
                 )
@@ -295,7 +291,7 @@ class KetchRepository internal constructor(
                     )
                 )
             )
-            else -> emit(Result.fail(OtherErrorV2(e)))
+            else -> emit(Result.fail(OtherError(e)))
         }
     }
 
@@ -373,5 +369,9 @@ class KetchRepository internal constructor(
                     cacheProvider = cacheProvider
                 )
             }
+    }
+
+    companion object {
+        private const val CONTEXT_COLLECTED_FROM: String = "phone"
     }
 }

@@ -15,8 +15,12 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
-
+    defaultConfig {
+        buildConfigField "String", "SERVER_NAME", "\"mobile.dev.b10s.io\""
+        buildConfigField "int", "SERVER_PORT", "443"
+    }
     buildTypes {
+
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'

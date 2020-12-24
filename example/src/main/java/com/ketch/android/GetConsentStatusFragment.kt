@@ -10,10 +10,10 @@ import android.widget.CheckBox
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.ketch.android.api.Result
-import com.ketch.android.api.model.ConfigurationV2
-import com.ketch.android.api.model.IdentityV2
+import com.ketch.android.api.model.Configuration
+import com.ketch.android.api.model.IdentitySpace
+import com.ketch.android.api.model.ConfigPurpose
 import com.ketch.android.api.model.Purpose
-import com.ketch.android.api.model.PurposeV2
 import kotlinx.android.synthetic.main.fragment_get_consent_status.*
 import kotlinx.android.synthetic.main.fragment_get_consent_status.consent1
 import kotlinx.android.synthetic.main.fragment_get_consent_status.consent2
@@ -27,7 +27,7 @@ import kotlinx.coroutines.launch
 class GetConsentStatusFragment : BaseFragment() {
 
     private var repositoryProvider: RepositoryProvider? = null
-    private var config: ConfigurationV2? = null
+    private var config: Configuration? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -49,9 +49,9 @@ class GetConsentStatusFragment : BaseFragment() {
 
         setupActionBar("Usage. Get Consent Status", true)
 
-        var config: ConfigurationV2? = null
+        var config: Configuration? = null
         arguments?.getString(CONFIG_JSON)?.let {
-            config = Gson().fromJson(it, ConfigurationV2::class.java)
+            config = Gson().fromJson(it, Configuration::class.java)
         }
 
         populateConsent(config?.purposes?.get(0), consent1)
@@ -62,8 +62,8 @@ class GetConsentStatusFragment : BaseFragment() {
             if (identityKeyText.text.toString().isNotBlank() && config != null) {
                 job = CoroutineScope(Dispatchers.Main).launch {
 
-                    val identities: List<IdentityV2> = config!!.identities!!.map {
-                        IdentityV2(it.key, identityKeyText.text.toString())
+                    val identities: List<IdentitySpace> = config!!.identities!!.map {
+                        IdentitySpace(it.key, identityKeyText.text.toString())
                     }
 
                     repositoryProvider?.getRepository()?.getConsent(
@@ -83,7 +83,7 @@ class GetConsentStatusFragment : BaseFragment() {
                         .filterNotNull()
                             .map {
                                 Log.d("~~~", "$it, ${it.legalBasisCode}")
-                                PurposeV2(it.code!!, it.legalBasisCode!!, false)
+                                Purpose(it.code!!, it.legalBasisCode!!, false)
                             }
                     )
                         ?.collect { result ->
@@ -105,8 +105,8 @@ class GetConsentStatusFragment : BaseFragment() {
 
     }
 
-    private fun populateConsent(purpose: Purpose?, checkBox: CheckBox) {
-        purpose?.code?.let {
+    private fun populateConsent(configPurpose: ConfigPurpose?, checkBox: CheckBox) {
+        configPurpose?.code?.let {
             checkBox.text = it
         } ?: run {
             checkBox.visibility = View.GONE
@@ -116,7 +116,7 @@ class GetConsentStatusFragment : BaseFragment() {
     companion object {
         const val CONFIG_JSON = "configJson"
 
-        fun newInstance(configuration: ConfigurationV2): GetConsentStatusFragment =
+        fun newInstance(configuration: Configuration): GetConsentStatusFragment =
             GetConsentStatusFragment().apply {
                 arguments = Bundle().apply {
                     putString(CONFIG_JSON, Gson().toJson(configuration))

@@ -5,5 +5,6 @@ import kotlinx.android.parcel.Parcelize
 
 @Parcelize
 data class Organization(
+    val name: String,
     val code: String?
 ) : Parcelable

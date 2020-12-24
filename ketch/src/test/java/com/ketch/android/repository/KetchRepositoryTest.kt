@@ -10,7 +10,7 @@ import com.ketch.android.loadFromFile
 import com.ketch.android.mock.MockResponses.Companion.mockGetConfigurationResponse
 import com.ketch.android.mock.MockResponses.Companion.mockGetConsentResponse
 import com.ketch.android.model.Consent
-import com.ketch.android.model.UserDataV2
+import com.ketch.android.model.UserData
 import io.grpc.ManagedChannel
 import io.grpc.Status
 import io.grpc.StatusRuntimeException
@@ -42,9 +42,9 @@ class KetchRepositoryTest : DescribeSpec() {
         describe("test getFullConfiguration") {
             val configProto = mockGetConfigurationResponse
             val config =
-                Gson().fromJson(loadJsonFromFile("config.json"), ConfigurationV2::class.java)
+                Gson().fromJson(loadJsonFromFile("config.json"), Configuration::class.java)
             val cachedConfig =
-                Gson().fromJson(loadJsonFromFile("config_cache.json"), ConfigurationV2::class.java)
+                Gson().fromJson(loadJsonFromFile("config_cache.json"), Configuration::class.java)
 
             mockkStatic(Base64::class.java.name)
             mockkStatic(AndroidChannelBuilder::class.java.name)
@@ -63,7 +63,7 @@ class KetchRepositoryTest : DescribeSpec() {
                 coEvery {
                     client.blockingStub.getConfiguration(any())
                 } returns configProto
-                var result: Result<RequestError, ConfigurationV2>? = null
+                var result: Result<RequestError, Configuration>? = null
                 repo.getConfiguration("", "", "")
                     .collect {
                         result = it
@@ -91,7 +91,7 @@ class KetchRepositoryTest : DescribeSpec() {
                 coEvery {
                     client.blockingStub.getConfiguration(any())
                 } throws IOException("Not available")
-                var result: Result<RequestError, ConfigurationV2>? = null
+                var result: Result<RequestError, Configuration>? = null
                 repo.getConfiguration("", "", "")
                     .collect {
                         result = it
@@ -118,7 +118,7 @@ class KetchRepositoryTest : DescribeSpec() {
                 coEvery {
                     client.blockingStub.getConfiguration(any())
                 } throws StatusRuntimeException(Status.DEADLINE_EXCEEDED)
-                var result: Result<RequestError, ConfigurationV2>? = null
+                var result: Result<RequestError, Configuration>? = null
                 repo.getConfiguration("", "", "")
                     .collect {
                         result = it
@@ -143,7 +143,7 @@ class KetchRepositoryTest : DescribeSpec() {
 
         describe("test getConsentStatus") {
             val config =
-                Gson().fromJson(loadJsonFromFile("config.json"), ConfigurationV2::class.java)
+                Gson().fromJson(loadJsonFromFile("config.json"), Configuration::class.java)
             val status = mockGetConsentResponse
 
             mockkStatic(Base64::class.java.name)
@@ -162,11 +162,11 @@ class KetchRepositoryTest : DescribeSpec() {
                 coEvery {
                     client.blockingStub.getConsent(any())
                 } returns mockGetConsentResponse
-                var result: Result<RequestError, GetConsentStatusResponseV2>? = null
+                var result: Result<RequestError, GetConsentStatusResponse>? = null
                 repo.getConsent(
                     config,
-                    arrayListOf(IdentityV2("id1", "id1")),
-                    arrayListOf(PurposeV2("id1", "id1", true))
+                    arrayListOf(IdentitySpace("id1", "id1")),
+                    arrayListOf(Purpose("id1", "id1", true))
                 )
                     .collect {
                         result = it
@@ -181,7 +181,7 @@ class KetchRepositoryTest : DescribeSpec() {
                     (result as Result.Success).value shouldNotBe null
                 }
                 it("result value should be expected") {
-                    (result as Result.Success).value shouldBe GetConsentStatusResponseV2(
+                    (result as Result.Success).value shouldBe GetConsentStatusResponse(
                         arrayListOf(
                             Consent(purpose = "id1", legalBasis = "opt_in", allowed = true),
                             Consent(purpose = "id2", legalBasis = "opt_out", allowed = false)
@@ -196,11 +196,11 @@ class KetchRepositoryTest : DescribeSpec() {
                               client.blockingStub.getConsent(any())
                           } throws StatusRuntimeException(Status.DEADLINE_EXCEEDED)
 
-                          var result: Result<RequestError, GetConsentStatusResponseV2>? = null
+                          var result: Result<RequestError, GetConsentStatusResponse>? = null
                           repo.getConsent(
                               config,
-                              arrayListOf(IdentityV2("id1", "id1")),
-                              arrayListOf(PurposeV2("id1", "id1", true))
+                              arrayListOf(IdentitySpace("id1", "id1")),
+                              arrayListOf(Purpose("id1", "id1", true))
                           )
                               .collect {
                                   result = it
@@ -216,7 +216,7 @@ class KetchRepositoryTest : DescribeSpec() {
                           }
                           it("result value should be expected") {
                               (result as Result.Success).value shouldBe
-                                      GetConsentStatusResponseV2(
+                                      GetConsentStatusResponse(
                                           arrayListOf(
                                               Consent(purpose = "id1", legalBasis = "opt_in", allowed = true),
                                               Consent(purpose = "id2", legalBasis = "opt_out", allowed = false)
@@ -231,11 +231,11 @@ class KetchRepositoryTest : DescribeSpec() {
                           coEvery {
                               client.blockingStub.getConsent(any())
                           } throws  StatusRuntimeException(Status.DEADLINE_EXCEEDED)
-                          var result: Result<RequestError, GetConsentStatusResponseV2>? = null
+                          var result: Result<RequestError, GetConsentStatusResponse>? = null
                           repo.getConsent(
                               config,
-                              arrayListOf(IdentityV2("id1", "id1")),
-                              arrayListOf(PurposeV2("id1", "id1", true))
+                              arrayListOf(IdentitySpace("id1", "id1")),
+                              arrayListOf(Purpose("id1", "id1", true))
                           )
                               .collect {
                                   result = it
@@ -259,8 +259,8 @@ class KetchRepositoryTest : DescribeSpec() {
                       }
         }
         describe("test setConsentStatus") {
-            val config: ConfigurationV2 =
-                Gson().fromJson(loadJsonFromFile("config.json"), ConfigurationV2::class.java)
+            val config: Configuration =
+                Gson().fromJson(loadJsonFromFile("config.json"), Configuration::class.java)
 
             mockkStatic(Base64::class.java.name)
             mockkStatic(AndroidChannelBuilder::class.java.name)
@@ -284,11 +284,11 @@ class KetchRepositoryTest : DescribeSpec() {
                 repo.setConsent(
                     config,
                     arrayListOf(
-                        IdentityV2("swb_dinghy", "swb_dinghy")
+                        IdentitySpace("swb_dinghy", "swb_dinghy")
                     ),
                     arrayListOf(
-                        PurposeV2("data_sales", "consent_opt_in", true),
-                        PurposeV2("test", "consent_opt_out", false)
+                        Purpose("data_sales", "consent_opt_in", true),
+                        Purpose("test", "consent_opt_out", false)
                     )
                 )
                     .collect {
@@ -314,11 +314,11 @@ class KetchRepositoryTest : DescribeSpec() {
                 repo.setConsent(
                     config,
                     arrayListOf(
-                        IdentityV2("swb_dinghy", "swb_dinghy")
+                        IdentitySpace("swb_dinghy", "swb_dinghy")
                     ),
                     arrayListOf(
-                        PurposeV2("data_sales", "consent_opt_in", true),
-                        PurposeV2("test", "consent_opt_out", false)
+                        Purpose("data_sales", "consent_opt_in", true),
+                        Purpose("test", "consent_opt_out", false)
                     )
                 )
                     .collect {
@@ -343,8 +343,8 @@ class KetchRepositoryTest : DescribeSpec() {
         }
 
         describe("test invokeRights") {
-            val config: ConfigurationV2 =
-                Gson().fromJson(loadJsonFromFile("config.json"), ConfigurationV2::class.java)
+            val config: Configuration =
+                Gson().fromJson(loadJsonFromFile("config.json"), Configuration::class.java)
 
             mockkStatic(Base64::class.java.name)
             mockkStatic(AndroidChannelBuilder::class.java.name)
@@ -366,9 +366,9 @@ class KetchRepositoryTest : DescribeSpec() {
                 repo.invokeRights(
                     config,
                     arrayListOf(
-                        IdentityV2("id", "_id")
+                        IdentitySpace("id", "_id")
                     ),
-                    UserDataV2(
+                    UserData(
                         email = "a@b.com",
                         first = "First", last = "Last", region = "CA", country = "US"
                     ),
@@ -397,9 +397,9 @@ class KetchRepositoryTest : DescribeSpec() {
                 repo.invokeRights(
                     config,
                     arrayListOf(
-                        IdentityV2("id", "_id")
+                        IdentitySpace("id", "_id")
                     ),
-                    UserDataV2(
+                    UserData(
                         email = "a@b.com",
                         first = "First", last = "Last", region = "CA", country = "US"
                     ),

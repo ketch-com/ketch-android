@@ -1,6 +1,7 @@
 package com.ketch.android.api.model
 
 import android.os.Parcelable
+import com.ketch.android.model.Consent
 import kotlinx.android.parcel.Parcelize
 
 /**
@@ -9,7 +10,7 @@ import kotlinx.android.parcel.Parcelize
  */
 @Parcelize
 data class GetConsentStatusResponse(
-    val purposes: Map<String, ApiConsentStatus>?,
+    val consents: List<Consent>,
     override val cachedAt: Long? = null
 ) : Parcelable, Cacheable {
 

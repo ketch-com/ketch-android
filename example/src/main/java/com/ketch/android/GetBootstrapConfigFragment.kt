@@ -1,19 +1,5 @@
 package com.ketch.android
 
-import android.content.Context
-import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import com.google.gson.GsonBuilder
-import com.ketch.android.api.Result
-import com.ketch.android.api.model.BootstrapConfiguration
-import kotlinx.android.synthetic.main.fragment_boot_config.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
-
 //class GetBootstrapConfigFragment : BaseFragment() {
 //
 //    private var repositoryProvider: RepositoryProvider? = null

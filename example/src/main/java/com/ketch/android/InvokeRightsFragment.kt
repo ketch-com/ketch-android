@@ -10,9 +10,8 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonObject
 import com.ketch.android.api.Result
 import com.ketch.android.api.model.Configuration
-import com.ketch.android.api.model.ConfigurationV2
-import com.ketch.android.api.model.IdentityV2
-import com.ketch.android.model.UserDataV2
+import com.ketch.android.api.model.IdentitySpace
+import com.ketch.android.model.UserData
 import kotlinx.android.synthetic.main.fragment_invoke_rights.*
 import kotlinx.android.synthetic.main.fragment_invoke_rights.identityKeyText
 import kotlinx.coroutines.CoroutineScope
@@ -23,7 +22,6 @@ import kotlinx.coroutines.launch
 class InvokeRightsFragment : BaseFragment() {
 
     private var repositoryProvider: RepositoryProvider? = null
-    private var config: Configuration? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -45,16 +43,16 @@ class InvokeRightsFragment : BaseFragment() {
 
         setupActionBar("Usage. Invoke Rights", true)
 
-        var config: ConfigurationV2? = null
+        var config: Configuration? = null
         arguments?.getString(CONFIG_JSON)?.let {
-            config = Gson().fromJson(it, ConfigurationV2::class.java)
+            config = Gson().fromJson(it, Configuration::class.java)
         }
 
         right1.text = config!!.rights?.get(0)?.code ?: ""
         right2.text = config!!.rights?.get(1)?.code ?: ""
         right3.text = config!!.rights?.get(2)?.code ?: ""
 
-        val userData = UserDataV2(
+        val userData = UserData(
             first = "Foo",
             last = "Bar",
             country = "US",
@@ -75,8 +73,8 @@ class InvokeRightsFragment : BaseFragment() {
                     .map {
                         it.text.toString()
                     }
-                val identities: List<IdentityV2> = config!!.identities!!.map {
-                    IdentityV2(it.key, identityKeyText.text.toString())
+                val identities: List<IdentitySpace> = config!!.identities!!.map {
+                    IdentitySpace(it.key, identityKeyText.text.toString())
                 }
                 job = CoroutineScope(Dispatchers.Main).launch {
                     repositoryProvider?.getRepository()?.invokeRights(
@@ -107,7 +105,7 @@ class InvokeRightsFragment : BaseFragment() {
     companion object {
         const val CONFIG_JSON = "configJson"
 
-        fun newInstance(configuration: ConfigurationV2): InvokeRightsFragment =
+        fun newInstance(configuration: Configuration): InvokeRightsFragment =
             InvokeRightsFragment().apply {
                 arguments = Bundle().apply {
                     putString(CONFIG_JSON, Gson().toJson(configuration))

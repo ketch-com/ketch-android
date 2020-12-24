@@ -72,55 +72,24 @@ KetchRepository.Builder()
 
 The next methods send requests to the back-end
 
-### Get BootstrapConfiguration
 
-Retrieves bootstrap configuration needed for full config.
-Uses `organizationCode` and `applicationCode` to form a full URL.
-Is executed on IO thread.
-Result will be cached for each unique pair of `organizationCode` and `applicationCode`.
-In case of response fail previously cached data will be allegedly returned as `Result.Success`.
-- Returns: `Flow` of `Result` with `BootstrapConfiguration` if successful and with an error if request or its handling failed
-
-```kotlin
-fun getBootstrapConfiguration(): Flow<Result<RequestError, BootstrapConfiguration>>
-```
-
-
-```kotlin
-job = CoroutineScope(Dispatchers.Main).launch {
-    repository.getBootstrapConfiguration()
-        .collect { result ->
-            when (result) {
-                is Result.Success -> // hande success
-                is Result.Error -> // hande error
-            }
-        }
-}
-job.cancel() //job could be cancelled
-```
-
-### Get FullConfiguration
-
-##### Get FullConfiguration with coordinates
-Retrieves full configuration data.
-Should be used if location latitude and longitude are provided.
-Tries to determine locationCode based on provided coordinates using Android components. If fails, fallbacks to using of Ketch resources.
-Is executed on IO thread.
+### Get Configuration
+Retrieves configuration data.
 Result will be cached for each unique set of  of `organizationCode`, `applicationCode`, `environment`, `scope` and `languageCode`.
-- Parameter `configuration`: bootstrap configuration
 - Parameter `environment`: environment value that should match one of environment patterns
-- Parameter `languageCode`: current locale code (e.g. en_US)
-- Parameter `latitude`: current location latitude
-- Parameter `longitude`:current location longitude
-- Returs:  `Flow` of `Result` with `Configuration` if successful and with an error if request or its handling failed
+- Parameter `countryCode`: current country code (e.g. US)
+- Parameter `languageCode`: current language code (e.g. en)
+- Parameter `regionCode`: current region code (e.g. CA)
+- Parameter `IP`: current IP address
+- Returns:  `Flow` of `Result` with `Configuration` if successful and with an error if request or its handling failed
 
 ```kotlin
-fun getFullConfiguration(
-    configuration: BootstrapConfiguration,
-    environment: String,
-    languageCode: String,
-    latitude: Double,
-    longitude: Double
+fun getConfiguration(
+        environment: String,
+        countryCode: String,
+        languageCode: String,
+        regionCode: String = "",
+        IP: String = ""
 ): Flow<Result<RequestError, Configuration>>
 ```
 ```kotlin
@@ -128,9 +97,10 @@ job = CoroutineScope(Dispatchers.Main).launch {
     repository.getFullConfiguration(
         configuration = bootstrapConfiguration,
         environment = <environmentUrl>,
+        countryCode = <countryCode>,
         languageCode = <languageCode>,
-        latitude = <currentLocationLatitude>,
-        longitude = <currentLocationlongitude>
+        regionCode = <regionCode>,
+        IP = <currentLocationIP>,
     )
         .collect { result ->
             when (result) {
@@ -143,66 +113,30 @@ job.cancel() //job could be cancelled
 ```
 
 
-##### Get FullConfiguration with IP address
-
-Retrieves full configuration data.
-Should be used if location latitude and longitude are absent or Android component failed to get location code.
-Tries to determine locationCode using Ketch ASTROLABE resource.
-Is executed on IO thread.
-Result will be cached for each unique set of  of `organizationCode`, `applicationCode`, `environment`, `scope` and `languageCode`.
-- Parameter `configuration`: bootstrap configuration
-- Parameter `environment`: environment value that should match one of environment patterns
-- Parameter `languageCode`: current locale code (e.g. en_US)
-- Returs:  `Flow` of `Result` with `Configuration` if successful and with an error if request or its handling failed
-
-```kotlin
-fun getFullConfiguration(
-    configuration: BootstrapConfiguration,
-    environment: String,
-    languageCode: String
-): Flow<Result<RequestError, Configuration>>
-```
-```kotlin
-job = CoroutineScope(Dispatchers.Main).launch {
-    repository.getFullConfiguration(
-        configuration = bootstrapConfiguration,
-        environment = <environmentUrl>,
-        languageCode = <languageCode>
-    )
-        .collect { result ->
-            when (result) {
-                is Result.Success -> // hande success
-                is Result.Error -> // hande error
-            }
-        }
-}
-job.cancel() //job could be cancelled
-```
-
-### Get Consent Status
+### Get Consent
 
 Retrieves currently set consent status.
 Uses `organizationCode` to form a full URL.
 Is executed on IO thread.
 Result will be cached for each unique set of  of `organizationCode`, `applicationCode`, `environment`, `identities` and `purposes`.
 - Parameter `configuration`: full configuration
-- Parameter `identities`: map of `identityCodes` and `identityValues`. Keys and values shouldn't be null
-- Parameter `purposes`: map of activity `names` and names of `legalBasisCode` of this activity. Keys and values shouldn't be null
+- Parameter `identities`: collection of `identityCodes` and `identityValues`. Keys and values shouldn't be null
+- Parameter `purposes`: collection of activity `names` and names of `legalBasisCode` of this activity. Keys and values shouldn't be null
 - Returns: `Flow` of `Result` with `Map<String, ConsentStatus>>` if successful and with an error if request or its handling failed
 
 ```kotlin
-fun getConsentStatus(
-    configuration: Configuration,
-    identities: Map<String, String>,
-    purposes: Map<String, String>
+fun getConsent(
+        configuration: Configuration,
+        identities: Iterable<IdentitySpace>,
+        purposes: Iterable<Purpose>
 ): Flow<Result<RequestError, Map<String, ConsentStatus>>>
 ```
 ```kotlin
 job = CoroutineScope(Dispatchers.Main).launch {
     repository.getConsentStatus(
         configuration = configuration,
-        identities = <identitiesMap>,
-        purposes = <purposesMap>
+        identities = <identitiesList>,
+        purposes = <purposesList>
     )
         .collect { result ->
             when (result) {
@@ -214,24 +148,22 @@ job = CoroutineScope(Dispatchers.Main).launch {
 job.cancel() //job could be cancelled
 ```
 
-### Update Consent Status
+### Set Consent
 
 Sends a request for updating consent status.
 Uses `organizationCode` to form a full URL.
 Is executed on IO thread.
-- Parameter `configuration`: full configuration
+- Parameter `configuration`: configuration
 - Parameter `identities`: map of `identityCodes` and `identityValues`. Keys and values shouldn't be null
-- Parameter `consents`: map of consent names and information if this particular legalBasisCode should be allowed or not. Keys and values shouldn't be null
-- Parameter `migrationOption`: rule that represents how updating should be performed
-- Returns: `Flow` of `Result.Success` if successful and with an error if request or its handling failed
+- Parameter `purposes`: map of consent names and information if this particular legalBasisCode should be allowed or not. Keys and values shouldn't be null
+- Returns: `Flow` of `Result.Success` with `<Long>` receivedTime if successful and with an error if request or its handling failed
 
 ```kotlin
-fun updateConsentStatus(
-    configuration: Configuration,
-    identities: Map<String, String>,
-    consents: Map<String, ConsentStatus>,
-    migrationOption: MigrationOption
-): Flow<Result<RequestError, Unit>>
+fun setConsent(
+        configuration: Configuration,
+        identities: Iterable<IdentitySpace>,
+        purposes: Iterable<Purpose>
+    ): Flow<Result<RequestError, Long>>
 ```
 ```kotlin
 job = CoroutineScope(Dispatchers.Main).launch {
@@ -264,10 +196,10 @@ Is executed on IO thread.
 
 ```kotlin
 fun invokeRights(
-    configuration: Configuration,
-    identities: Map<String, String>,
-    userData: UserData,
-    rights: List<String>
+        configuration: Configuration,
+        identities: Iterable<IdentitySpace>,
+        userData: UserData,
+        rights: List<String>
 ): Flow<Result<RequestError, Unit>>
 ```
 ```kotlin

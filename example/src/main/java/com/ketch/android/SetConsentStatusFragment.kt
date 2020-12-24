@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 class SetConsentStatusFragment : BaseFragment() {
 
     private var repositoryProvider: RepositoryProvider? = null
-    private var config: ConfigurationV2? = null
+    private var config: Configuration? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -45,9 +45,9 @@ class SetConsentStatusFragment : BaseFragment() {
 
         setupActionBar("Usage. Set Consent Status", true)
 
-        var config: ConfigurationV2? = null
+        var config: Configuration? = null
         arguments?.getString(CONFIG_JSON)?.let {
-            config = Gson().fromJson(it, ConfigurationV2::class.java)
+            config = Gson().fromJson(it, Configuration::class.java)
         }
 
         populateConsent(config?.purposes?.get(0), consent1)
@@ -57,8 +57,8 @@ class SetConsentStatusFragment : BaseFragment() {
         setConsentStatus.setOnClickListener {
             if (identityKeyText.text.toString().isNotBlank() && config != null) {
                 job = CoroutineScope(Dispatchers.Main).launch {
-                    val identities: List<IdentityV2> = config!!.identities!!.map {
-                        IdentityV2(it.key, identityKeyText.text.toString())
+                    val identities: List<IdentitySpace> = config!!.identities!!.map {
+                        IdentitySpace(it.key, identityKeyText.text.toString())
                     }
 
                     repositoryProvider?.getRepository()?.setConsent(
@@ -78,7 +78,7 @@ class SetConsentStatusFragment : BaseFragment() {
                             }.
                             map {(consent, consentStatus) ->
                                 Log.d("~~~", "$consent,${consentStatus.legalBasisCode}, ${consentStatus.allowed}")
-                                PurposeV2(consent, consentStatus.legalBasisCode!!, consentStatus.allowed ?: false)
+                                Purpose(consent, consentStatus.legalBasisCode!!, consentStatus.allowed ?: false)
                             }
                     )
                         ?.collect { result ->
@@ -102,8 +102,8 @@ class SetConsentStatusFragment : BaseFragment() {
         }
     }
 
-    private fun populateConsent(purpose: Purpose?, checkBox: CheckBox) {
-        purpose?.code?.let {
+    private fun populateConsent(configPurpose: ConfigPurpose?, checkBox: CheckBox) {
+        configPurpose?.code?.let {
             checkBox.text = it
         } ?: run {
             checkBox.visibility = View.GONE
@@ -113,7 +113,7 @@ class SetConsentStatusFragment : BaseFragment() {
     companion object {
         const val CONFIG_JSON = "configJson"
 
-        fun newInstance(configuration: ConfigurationV2): SetConsentStatusFragment =
+        fun newInstance(configuration: Configuration): SetConsentStatusFragment =
             SetConsentStatusFragment().apply {
                 arguments = Bundle().apply {
                     putString(CONFIG_JSON, Gson().toJson(configuration))
