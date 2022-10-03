@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <data>
+
+        <variable
+            name="theme"
+            type="com.ketch.android.ui.theme.ColorTheme" />
+    </data>
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/body"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fillViewport="true"
+        android:scrollbars="vertical">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <com.ketch.android.ui.view.DataCategoriesView
+                android:id="@+id/dataCategoriesView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+        </FrameLayout>
+
+    </androidx.core.widget.NestedScrollView>
+</layout>

@@ -1,0 +1,138 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlinx-serialization'
+apply plugin: 'kotlin-kapt'
+apply plugin: 'de.mannodermaus.android-junit5'
+apply plugin: 'jacoco'
+apply plugin: 'maven-publish'
+apply plugin: 'org.jetbrains.dokka'
+apply from: "${rootProject.projectDir}/scripts/gradle/jacoco/jacoco_android.gradle"
+
+android {
+    compileSdkVersion buildConfig.compileSdk
+
+    defaultConfig {
+        minSdkVersion buildConfig.minSdk
+        targetSdkVersion buildConfig.targetSdk
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunnerArgument "runnerBuilder", "de.mannodermaus.junit5.AndroidJUnit5Builder"
+
+        consumerProguardFiles "consumer-rules.pro"
+    }
+
+    packagingOptions {
+        exclude 'META-INF/*.kotlin_module'
+        exclude 'META-INF/LICENSE-notice.md'
+        pickFirst 'META-INF/AL2.0'
+        pickFirst 'META-INF/LGPL2.1'
+        pickFirst 'META-INF/LICENSE.md'
+        pickFirst 'lib/*/libc++_shared.so'
+    }
+
+    buildTypes {
+        debug {
+            minifyEnabled false
+        }
+        release {
+            minifyEnabled true
+            proguardFiles(
+                    getDefaultProguardFile("proguard-android.txt"),
+                    "proguard-rules.pro"
+            )
+        }
+    }
+
+    kotlinOptions {
+        jvmTarget = "11"
+        freeCompilerArgs += [
+                "-Xopt-in=kotlinx.coroutines.ExperimentalCoroutinesApi," +
+                        "kotlinx.coroutines.FlowPreview,kotlin.RequiresOptIn"
+        ]
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    buildFeatures {
+        viewBinding true
+        dataBinding true
+    }
+}
+
+dependencies {
+    implementation project(":core")
+
+    implementation "androidx.core:core-ktx:${versions.ktx}"
+    implementation "androidx.appcompat:appcompat:${versions.appcompat}"
+    implementation "com.google.android.material:material:${versions.material}"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:${versions.kotlin}"
+    implementation "com.google.android.material:material:${versions.material}"
+
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:${versions.coroutines}"
+
+    implementation "io.noties.markwon:core:${versions.markwon}"
+    implementation "io.noties.markwon:linkify:${versions.markwon}"
+
+    testImplementation "com.google.code.gson:gson:${versions.gson}"
+
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${versions.junit}"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${versions.junit}"
+    testRuntimeOnly "org.junit.vintage:junit-vintage-engine:${versions.junit}"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:${versions.junit}"
+
+    testImplementation "io.mockk:mockk:${versions.mockk}"
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:${versions.coroutines}"
+
+    testImplementation "org.mockito:mockito-core:${versions.mockito}"
+    testImplementation "com.squareup.okhttp3:mockwebserver:${versions.mockwebserver}"
+
+    androidTestImplementation "androidx.test:runner:${versions.runner}"
+    androidTestImplementation "androidx.test:rules:${versions.rules}"
+
+    androidTestImplementation "org.junit.jupiter:junit-jupiter-api:${versions.junit}"
+    androidTestImplementation "org.junit.jupiter:junit-jupiter-params:${versions.junit}"
+    androidTestRuntimeOnly "de.mannodermaus.junit5:android-test-runner:${versions.junitRunner}"
+    androidTestImplementation "de.mannodermaus.junit5:android-test-core:${versions.junitRunner}"
+
+    androidTestImplementation "androidx.test.ext:junit:${versions.testExt}"
+    androidTestImplementation "io.mockk:mockk-android:${versions.mockk}"
+    androidTestImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:${versions.coroutines}"
+}
+
+dokkaHtmlPartial.configure {
+    dokkaSourceSets {
+        named("main") {
+            // Used to remove a source set from documentation, test source sets are suppressed by default
+            suppress.set(false)
+
+            includeNonPublic.set(false)
+
+            // Do not output deprecated members. Applies globally, can be overridden by packageOptions
+            skipDeprecated.set(false)
+
+            // Emit warnings about not documented members. Applies globally, also can be overridden by packageOptions
+            reportUndocumented.set(true)
+
+            // Do not create index pages for empty packages
+            skipEmptyPackages.set(true)
+
+            displayName.set("Ketch Core UI")
+
+            // Disable linking to online kotlin-stdlib documentation
+            noStdlibLink.set(false)
+
+            // Disable linking to online JDK documentation
+            noJdkLink.set(false)
+
+            // Disable linking to online Android documentation (only applicable for Android projects)
+            noAndroidSdkLink.set(false)
+
+            // Include generated files in documentation
+            // By default Dokka will omit all files in folder named generated that is a child of buildDir
+            suppressGeneratedFiles.set(false)
+        }
+    }
+}

@@ -1,0 +1,37 @@
+apply plugin: 'kotlin'
+
+dependencies {
+    compileOnly "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${versions.kotlin}"
+    compileOnly "com.android.tools.lint:lint-api:${versions.lint}"
+    compileOnly "com.android.tools.lint:lint-checks:${versions.lint}"
+
+    testImplementation "org.junit.jupiter:junit-jupiter-api:${versions.junit}"
+    testImplementation "com.android.tools.lint:lint-tests:${versions.lint}"
+    testImplementation "com.android.tools.lint:lint:${versions.lint}"
+    testImplementation "com.android.tools:testutils:${versions.lint}"
+}
+
+jar {
+    manifest {
+        attributes('Lint-Registry-v2': 'com.ketch.lint.OneAppIssueRegistry')
+    }
+}
+
+task copyLintJar(type: Copy) {
+    dependsOn 'clean'
+    dependsOn 'assemble'
+    from "${project.buildDir.absolutePath}/libs/lint.jar"
+    into "${System.getProperty('user.home')}/.android/lint/"
+    tasks.findByName('assemble').mustRunAfter('clean')
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "11"
+}
+
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "11"
+}
+
+sourceCompatibility = JavaVersion.VERSION_11
+targetCompatibility = JavaVersion.VERSION_11

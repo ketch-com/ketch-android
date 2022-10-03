@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+
+    <issue id="VectorPath" severity="ignore" />
+
+    <issue id="SmallSp" severity="ignore" />
+
+    <issue id="VectorRaster" severity="informational" />
+
+    <issue id="IconLocation" severity="warning" />
+
+    <issue id="UnusedResources" severity="error">
+        <!--Some palette colors not used in an app-->
+        <ignore path="res/values/colors.xml" />
+    </issue>
+
+    <issue id="HardcodedText" severity="error" />
+
+    <issue id="DuplicateIncludedIds" severity="ignore" />
+
+    <issue id="ConvertToWebp" severity="error">
+        <ignore regexp="res\/mipmap-.*\/ic_launcher.png" />
+    </issue>
+
+    <issue id="DuplicateStrings" severity="error">
+        <!--Ignore all localized strings-->
+        <ignore regexp="res\/values-.*\/strings.xml" />
+    </issue>
+
+    <issue id="WeekBasedYear" severity="error" />
+
+    <issue id="ParcelCreator" severity="ignore" />
+
+    <issue id="MissingQuantity" severity="ignore" />
+
+    <issue id="StopShip" severity="fatal" />
+
+    <issue id="StringFormatInvalid" severity="error" />
+    <issue id="StringFormatCount" severity="error" />
+    <issue id="TypographyEllipsis" severity="error" />
+</lint>

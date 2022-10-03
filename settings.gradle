@@ -1,2 +1,7 @@
-include ':ketch'
-include ':example'
+include ':core'
+include ':lint'
+include ':tcf'
+include ':ccpa'
+include ':core-ui'
+
+rootProject.name = "KetchSDK"

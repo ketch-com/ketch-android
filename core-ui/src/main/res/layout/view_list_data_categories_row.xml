@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="theme"
+            type="com.ketch.android.ui.theme.ColorTheme" />
+
+        <variable
+            name="category"
+            type="com.ketch.android.api.response.PurposeCategory" />
+
+        <variable
+            name="expanded"
+            type="Boolean" />
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="4dp">
+
+        <CheckBox
+            android:id="@+id/expandButton"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="@android:color/transparent"
+            android:button="@drawable/expand"
+            android:checked="@{expanded}"
+            app:iconTint="@{theme.bodyTextColor}"
+            app:layout_constraintBaseline_toBaselineOf="@+id/title"
+            app:layout_constraintEnd_toStartOf="@+id/title"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <TextView
+            android:id="@+id/title"
+            style="@style/Label"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@{category.name}"
+            app:layout_constraintBottom_toTopOf="@+id/expandedPanel"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/expandButton"
+            app:layout_constraintTop_toTopOf="parent"
+            app:textColor="@{theme.bodyTextColor}"
+            tools:text="NETILUM (AFFILAE)" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/expandedPanel"
+            android:layout_width="0dp"
+            android:layout_marginTop="8dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@+id/title"
+            app:layout_constraintTop_toBottomOf="@+id/title"
+            tools:visibility="visible">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/retentionPeriodLayour"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:layout_constraintBottom_toTopOf="@+id/externalTransferLayour"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <androidx.constraintlayout.widget.Guideline
+                    android:id="@+id/guideline_1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    app:layout_constraintGuide_percent="0.5" />
+
+                <TextView
+                    android:id="@+id/retentionPeriodTitle"
+                    style="@style/SmallBody"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="@string/retention_period"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@+id/guideline_1"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_bias="0.0"
+                    app:textColor="@{theme.bodyTextColor}" />
+
+                <TextView
+                    android:id="@+id/retentionPeriod"
+                    style="@style/SmallBody"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="@{category.retentionPeriod}"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@+id/guideline_1"
+                    app:layout_constraintTop_toTopOf="@+id/retentionPeriodTitle"
+                    app:textColor="@{theme.bodyTextColor}"
+                    tools:text="180 days" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/externalTransferLayour"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:layout_constraintBottom_toTopOf="@+id/descriptionLayour"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/retentionPeriodLayour">
+
+                <androidx.constraintlayout.widget.Guideline
+                    android:id="@+id/guideline_2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    app:layout_constraintGuide_percent="0.5" />
+
+                <TextView
+                    android:id="@+id/externalTransferTitle"
+                    style="@style/SmallBody"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="@string/external_transfer"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@+id/guideline_2"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_bias="0.0"
+                    app:textColor="@{theme.bodyTextColor}" />
+
+                <TextView
+                    android:id="@+id/externalTransfer"
+                    style="@style/SmallBody"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="@{category.externalTransfers}"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@+id/guideline_2"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:textColor="@{theme.bodyTextColor}"
+                    tools:text="None" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/descriptionLayour"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/externalTransferLayour">
+
+                <androidx.constraintlayout.widget.Guideline
+                    android:id="@+id/guideline_3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    app:layout_constraintGuide_percent="0.5" />
+
+                <TextView
+                    android:id="@+id/descriptionTitle"
+                    style="@style/SmallBody"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="@string/description"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@+id/guideline_3"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_bias="0.0"
+                    app:textColor="@{theme.bodyTextColor}" />
+
+                <TextView
+                    android:id="@+id/description"
+                    style="@style/SmallBody"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="@{category.description}"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@+id/guideline_3"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:textColor="@{theme.bodyTextColor}"
+                    tools:text="Identifiers such as name, address, unique personal identifier, email, or phone number." />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</layout>

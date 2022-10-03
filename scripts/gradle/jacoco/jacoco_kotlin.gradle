@@ -1,0 +1,12 @@
+apply from: "${rootProject.projectDir}/scripts/gradle/jacoco/jacoco_common.gradle"
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+        html.enabled true
+    }
+
+    classDirectories.from(classDirectories.files.collect {
+        fileTree(dir: it, exclude: jacocoExcludes)
+    })
+}
