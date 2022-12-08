@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="theme"
+            type="com.ketch.android.ui.theme.ColorTheme" />
+    </data>
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/body"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scrollbars="vertical">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="18dp">
+
+            <TextView
+                android:id="@+id/bodyTitle"
+                style="@style/H3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:textColor="@{theme.bodyTextColor}"
+                tools:text="Your Privacy" />
+
+            <TextView
+                android:id="@+id/bodyDescription"
+                style="@style/Body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                app:layout_constraintBottom_toTopOf="@+id/request"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/bodyTitle"
+                app:textColor="@{theme.bodyTextColor}"
+                app:textColorLink="@{theme.bodyLinkColor}"
+                tools:text="Welcome! We’re glad you’re here and want you to know that we respect your privacy and your right to control how we collect, use, and share your personal data." />
+
+            <TextView
+                android:id="@+id/request"
+                style="@style/H4"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:text="@string/request"
+                app:layout_constraintBottom_toTopOf="@+id/rightsList"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/bodyDescription"
+                app:textColor="@{theme.bodyTextColor}"
+                app:textColorLink="@{theme.bodyLinkColor}" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rightsList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:nestedScrollingEnabled="false"
+                app:itemAnimator="@{null}"
+                app:layout_constraintBottom_toTopOf="@+id/requestDetailsLayout"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/request"
+                tools:itemCount="3"
+                tools:listitem="@layout/view_list_right_row" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/requestDetailsLayout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:hint="@string/request_details"
+                app:boxBackgroundColor="@{theme.bodyBackgroundColor}"
+                app:boxStrokeColor="@color/frame"
+                app:boxStrokeWidth="1dp"
+                app:hintTextAppearance="@style/EditTextAppearance"
+                app:layout_constraintBottom_toTopOf="@+id/personalDetailsTitle"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/rightsList">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/requestDetails"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="top|left"
+                    android:inputType="textMultiLine"
+                    android:lines="5" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:id="@+id/personalDetailsTitle"
+                style="@style/H3"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:layout_weight="1"
+                android:text="@string/personal_details"
+                app:layout_constraintBottom_toTopOf="@+id/firstNameLayout"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/requestDetailsLayout"
+                app:textColor="@{theme.bodyTextColor}" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/firstNameLayout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:hint="@string/first_name"
+                app:boxBackgroundColor="@{theme.bodyBackgroundColor}"
+                app:boxStrokeColor="@color/frame"
+                app:boxStrokeWidth="1dp"
+                app:hintTextAppearance="@style/EditTextAppearance"
+                app:layout_constraintBottom_toTopOf="@+id/lastNameLayout"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/personalDetailsTitle">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/firstName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPersonName" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/lastNameLayout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:hint="@string/last_name"
+                app:boxBackgroundColor="@{theme.bodyBackgroundColor}"
+                app:boxStrokeColor="@color/frame"
+                app:boxStrokeWidth="1dp"
+                app:hintTextAppearance="@style/EditTextAppearance"
+                app:layout_constraintBottom_toTopOf="@+id/emailLayout"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/firstNameLayout">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/lastName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPersonName" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/emailLayout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:hint="@string/email"
+                app:boxBackgroundColor="@{theme.bodyBackgroundColor}"
+                app:boxStrokeColor="@color/frame"
+                app:boxStrokeWidth="1dp"
+                app:hintTextAppearance="@style/EditTextAppearance"
+                app:layout_constraintBottom_toTopOf="@+id/phoneLayout"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/lastNameLayout">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/email"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textEmailAddress" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/phoneLayout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:hint="@string/phone"
+                app:boxBackgroundColor="@{theme.bodyBackgroundColor}"
+                app:boxStrokeColor="@color/frame"
+                app:boxStrokeWidth="1dp"
+                app:hintTextAppearance="@style/EditTextAppearance"
+                app:layout_constraintBottom_toTopOf="@+id/countryLayout"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/emailLayout">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/phone"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="phone" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/countryLayout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:hint="@string/country"
+                app:boxBackgroundColor="@{theme.bodyBackgroundColor}"
+                app:boxStrokeColor="@color/frame"
+                app:boxStrokeWidth="1dp"
+                app:hintTextAppearance="@style/EditTextAppearance"
+                app:layout_constraintBottom_toTopOf="@+id/postalCodeLayout"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/phoneLayout">
+
+                <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                    android:id="@+id/country"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none"
+                    android:singleLine="true" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/postalCodeLayout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:hint="@string/postal_code"
+                app:boxBackgroundColor="@{theme.bodyBackgroundColor}"
+                app:boxStrokeColor="@color/frame"
+                app:boxStrokeWidth="1dp"
+                app:hintTextAppearance="@style/EditTextAppearance"
+                app:layout_constraintBottom_toTopOf="@+id/addressLine1Layout"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/countryLayout">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/postalCode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/addressLine1Layout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:hint="@string/address_line_1"
+                android:orientation="vertical"
+                app:boxBackgroundColor="@{theme.bodyBackgroundColor}"
+                app:boxStrokeColor="@color/frame"
+                app:boxStrokeWidth="1dp"
+                app:hintTextAppearance="@style/EditTextAppearance"
+                app:layout_constraintBottom_toTopOf="@+id/addressLine2Layout"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/postalCodeLayout">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/addressLine1"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPostalAddress" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/addressLine2Layout"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:hint="@string/address_line_2"
+                android:orientation="vertical"
+                app:boxBackgroundColor="@{theme.bodyBackgroundColor}"
+                app:boxStrokeColor="@color/frame"
+                app:boxStrokeWidth="1dp"
+                app:hintTextAppearance="@style/EditTextAppearance"
+                app:layout_constraintBottom_toTopOf="@+id/invokeRightButton"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/addressLine1Layout">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/addressLine2"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPostalAddress" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/invokeRightButton"
+                style="@style/Button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:textAllCaps="false"
+                app:backgroundColor="@{theme.firstButtonBackgroundColor}"
+                app:borderRadius="@{theme.buttonBorderRadius}"
+                app:layout_constraintBottom_toTopOf="@+id/exitSettingsButton"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/addressLine2Layout"
+                app:strokeColor="@{theme.firstButtonBorderColor}"
+                app:strokeWidth="1dp"
+                app:textColor="@{theme.firstButtonTextColor}"
+                tools:text="Save choices" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/exitSettingsButton"
+                style="@style/Button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="18dp"
+                android:text="@string/exit_settings"
+                android:textAllCaps="false"
+                app:backgroundColor="@{theme.secondButtonBackgroundColor}"
+                app:borderRadius="@{theme.buttonBorderRadius}"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/invokeRightButton"
+                app:strokeColor="@{theme.secondButtonBorderColor}"
+                app:strokeWidth="1dp"
+                app:textColor="@{theme.secondButtonTextColor}" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.core.widget.NestedScrollView>
+</layout>

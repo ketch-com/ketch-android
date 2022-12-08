@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="theme"
+            type="com.ketch.android.ui.theme.ColorTheme" />
+    </data>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:backgroundColor="@{theme.headerBackgroundColor}"
+            tools:background="@android:color/black">
+
+            <ImageView
+                android:id="@+id/powered_by_ketch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="18dp"
+                android:contentDescription="@string/powered_by"
+                android:src="@drawable/ic_powered_by"
+                app:drawableTint="@{theme.headerTextColor}"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:tint="@android:color/white" />
+
+            <TextView
+                android:id="@+id/title"
+                style="@style/H2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginVertical="20dp"
+                android:layout_marginStart="12dp"
+                app:layout_constraintBottom_toTopOf="@+id/tabLayout"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/powered_by_ketch"
+                app:textColor="@{theme.headerTextColor}"
+                tools:text="Your Privacy"
+                tools:textColor="@android:color/white" />
+
+            <com.google.android.material.tabs.TabLayout
+                android:id="@+id/tabLayout"
+                style="@style/TabLayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/title"
+                app:tabGravity="fill"
+                app:tabIndicatorColor="@{theme.headerTextColor}"
+                app:tabMaxWidth="0dp"
+                app:tabMode="fixed"
+                app:tabTextColor="@{theme.headerTextColor}" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <FrameLayout
+            android:id="@+id/body"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1.0"
+            app:backgroundColor="@{theme.bodyBackgroundColor}"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/header"
+            tools:background="@android:color/white">
+
+            <include
+                android:id="@+id/overview"
+                layout="@layout/preferences_overview" />
+
+            <include
+                android:id="@+id/consents"
+                layout="@layout/preferences_consents"
+                android:visibility="gone" />
+
+            <include
+                android:id="@+id/rights"
+                layout="@layout/preferences_rights"
+                android:visibility="gone" />
+
+            <include
+                android:id="@+id/invokeRightSent"
+                layout="@layout/preferences_rights_sent"
+                android:visibility="gone" />
+
+        </FrameLayout>
+    </androidx.appcompat.widget.LinearLayoutCompat>
+</layout>

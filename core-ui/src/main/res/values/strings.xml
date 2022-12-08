@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="powered_by">Powered by Ketch</string>
+    <string name="close">Close</string>
+    <string name="exit_settings">Exit Settings</string>
+
+    <string name="accept_all">Accept All</string>
+    <string name="reject_all">Reject All</string>
+
+    <string name="legal_basic_name">Legal Basic: %s</string>
+    <string name="legal_basic_description"><![CDATA[<b>Legal Basic:</b> %s]]></string>
+    <string name="purpose_description"><![CDATA[<b>Purpose:</b> %s]]></string>
+
+    <string name="vendors">Vendors</string>
+    <string name="purposes">Purposes</string>
+    <string name="special_purposes">Special Purposes</string>
+    <string name="features">Features</string>
+    <string name="special_features">Special Features</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="feature_text"><![CDATA[<b>- %1$s</b> (Legal Basic: %2$s)]]></string>
+    <string name="request">Request</string>
+
+    <string name="data_categories">Data Categories</string>
+    <string name="retention_period">Retention Period</string>
+    <string name="external_transfer">External Transfer</string>
+    <string name="description">Description</string>
+
+    <string name="personal_details">Personal details</string>
+    <string name="first_name">First Name</string>
+    <string name="last_name">Last Name</string>
+    <string name="email">Email</string>
+    <string name="phone">Phone</string>
+    <string name="country">Country</string>
+    <string name="select_country">Select Country</string>
+    <string name="postal_code">Postal code</string>
+    <string name="state">State</string>
+    <string name="address_line_1">Address 1</string>
+    <string name="address_line_2">Address 2</string>
+    <string name="request_details">Request details</string>
+
+    <string name="invoke_right_sent_title">Thank You!</string>
+    <string name="invoke_right_sent_description">We have received your request and will reach out to the provided email address if we have any questions. Once we have completed your request, we will send you an email to confirm</string>
+    <string name="invoke_right_submit_new_request">Submit New Request</string>
+
+    <string name="error_field_required">Required</string>
+    <string name="error_invalid_email">Please enter a valid email address</string>
+</resources>

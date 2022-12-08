@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <data>
+
+        <variable
+            name="theme"
+            type="com.ketch.android.ui.theme.ColorTheme" />
+    </data>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <include
+            android:id="@+id/purposes"
+            layout="@layout/preferences_consents_purposes"
+            app:theme="@{theme}" />
+
+        <include
+            android:id="@+id/vendors"
+            layout="@layout/preferences_consents_vendors"
+            android:visibility="gone"
+            app:theme="@{theme}" />
+
+        <include
+            android:id="@+id/categories"
+            layout="@layout/preferences_consents_data_categories"
+            android:visibility="gone"
+            app:theme="@{theme}" />
+
+    </FrameLayout>
+</layout>
