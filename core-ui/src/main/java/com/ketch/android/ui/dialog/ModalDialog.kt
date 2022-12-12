@@ -24,13 +24,12 @@ import com.ketch.android.ui.theme.ColorTheme
  */
 internal class ModalDialog(
     context: Context,
-    private val configuration: FullConfiguration,
+    configuration: FullConfiguration,
     consent: Consent,
     private val listener: ModalDialogListener,
-) : BaseDialog(context) {
+) : BaseDialog(context, configuration, consent) {
 
     private lateinit var binding: ModalBinding
-    private val consent = consent.copy()
 
     @SuppressLint("NotifyDataSetChanged")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -114,7 +113,13 @@ internal class ModalDialog(
 
     private fun buildDataCategories(theme: ColorTheme?, binding: ModalBinding, item: PurposeItem) {
         binding.theme = theme
-        binding.categoriesView.buildUi(theme, item.purpose.name, item.purpose.description, item.purpose.categories, configuration)
+        binding.categoriesView.buildUi(
+            theme,
+            item.purpose.name,
+            item.purpose.description,
+            item.purpose.categories,
+            configuration
+        )
         binding.categoriesView.onBackClickListener = {
             binding.purposesPanel.isVisible = true
             binding.categoriesPanel.isVisible = false

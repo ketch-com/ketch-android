@@ -39,14 +39,12 @@ import java.util.Locale
  */
 internal class PreferenceDialog(
     context: Context,
-    private val configuration: FullConfiguration,
+    configuration: FullConfiguration,
     consent: Consent,
     private val listener: PreferencesDialogListener,
-) : BaseDialog(context) {
+) : BaseDialog(context, configuration, consent) {
 
     private val invokeRightSent = MutableStateFlow(false)
-
-    var consent = consent.copy()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -186,7 +184,13 @@ internal class PreferenceDialog(
 
     private fun buildDataCategories(theme: ColorTheme?, binding: PreferencesConsentsBinding, item: PurposeItem) {
         binding.theme = theme
-        binding.categories.dataCategoriesView.buildUi(theme, item.purpose.name, item.purpose.description, item.purpose.categories, configuration)
+        binding.categories.dataCategoriesView.buildUi(
+            theme,
+            item.purpose.name,
+            item.purpose.description,
+            item.purpose.categories,
+            configuration
+        )
         binding.categories.dataCategoriesView.onBackClickListener = {
             binding.purposes.root.isVisible = true
             binding.categories.root.isVisible = false
