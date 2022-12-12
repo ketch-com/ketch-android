@@ -4,6 +4,8 @@ import android.app.Dialog
 import android.content.Context
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.whenStateAtLeast
+import com.ketch.android.api.response.Consent
+import com.ketch.android.api.response.FullConfiguration
 import com.ketch.android.ui.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,10 +16,35 @@ import kotlinx.coroutines.launch
 /**
  * Base Ketch Dialog
  */
-internal abstract class BaseDialog(context: Context) : Dialog(context, R.style.FullScreenTheme) {
-    protected val lifecycleOwner by lazy { DialogLifecycleOwner() }
+internal abstract class BaseDialog(
+    context: Context,
+    protected val configuration: FullConfiguration,
+    consent: Consent
+) : Dialog(context, R.style.FullScreenTheme) {
+    private val lifecycleOwner by lazy { DialogLifecycleOwner() }
 
     private val scope = CoroutineScope(Dispatchers.Main)
+
+    protected val consent = consent.copy()
+
+    init {
+        if (consent.purposes.isNullOrEmpty()) {
+            consent.vendors = configuration.vendors?.map {
+                it.id
+            }
+        }
+
+        consent.purposes = configuration.purposes?.associate {
+            val requiresDisplay = it.requiresDisplay == true
+            val enabled = it.allowsOptOut == true
+            val requiresOptIn = it.requiresOptIn == true
+
+            val accepted = !requiresDisplay ||
+                    !enabled ||
+                    consent.purposes?.get(it.code)?.toBoolean() ?: !requiresOptIn
+            it.code to accepted.toString()
+        }
+    }
 
     override fun onStart() {
         super.onStart()

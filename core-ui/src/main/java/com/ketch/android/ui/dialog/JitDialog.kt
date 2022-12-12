@@ -25,12 +25,10 @@ import com.ketch.android.ui.theme.ColorTheme
  */
 internal class JitDialog(
     context: Context,
-    private val configuration: FullConfiguration,
+    configuration: FullConfiguration,
     consent: Consent,
     private val listener: JitDialogListener,
-) : BaseDialog(context) {
-
-    private val consent = consent.copy()
+) : BaseDialog(context, configuration, consent) {
 
     @SuppressLint("NotifyDataSetChanged")
     override fun onCreate(savedInstanceState: Bundle?) {

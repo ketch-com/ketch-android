@@ -59,8 +59,7 @@ class PurposesView @JvmOverloads constructor(
             it.requiresDisplay == true
         }?.map { purpose ->
             val enabled = purpose.allowsOptOut == true
-            val accepted = !enabled ||
-                consent.purposes?.get(purpose.code)?.toBoolean() ?: !(purpose.requiresOptIn == true)
+            val accepted = consent.purposes?.get(purpose.code)?.toBoolean() == true
             PurposeItem(
                 purpose = purpose,
                 enabled = enabled,
