@@ -10,8 +10,9 @@ import androidx.core.view.isVisible
 import com.ketch.android.api.response.Consent
 import com.ketch.android.api.response.FullConfiguration
 import com.ketch.android.api.response.Jit
-import com.ketch.android.ui.adapter.PurposeItem
+import com.ketch.android.api.response.Purpose
 import com.ketch.android.ui.databinding.JitBinding
+import com.ketch.android.ui.extension.MarkdownUtils
 import com.ketch.android.ui.extension.poweredByKetch
 import com.ketch.android.ui.theme.ColorTheme
 
@@ -27,6 +28,7 @@ internal class JitDialog(
     context: Context,
     configuration: FullConfiguration,
     consent: Consent,
+    private val purpose: Purpose,
     private val listener: JitDialogListener,
 ) : BaseDialog(context, configuration, consent) {
 
@@ -45,7 +47,14 @@ internal class JitDialog(
                 cancel()
             }
 
-            buildPurposes(theme, binding, jit)
+            MarkdownUtils.markdown(
+                context,
+                binding.bodyDescription,
+                jit.bodyDescription ?: "",
+                configuration
+            )
+
+            buildPurpose(theme, binding, jit, purpose)
 
             setContentView(binding.root)
             setCanceledOnTouchOutside(false)
@@ -56,17 +65,17 @@ internal class JitDialog(
         }
     }
 
-    private fun buildPurposes(theme: ColorTheme?, binding: JitBinding, jit: Jit) {
-        binding.purposesView.buildUi(theme, jit.title, jit.bodyDescription, configuration, consent)
+    private fun buildPurpose(theme: ColorTheme?, binding: JitBinding, jit: Jit, purpose: Purpose) {
+        binding.purposeView.buildUi(theme, configuration, purpose)
 
-        binding.purposesView.categoryClickListener = {
+        binding.purposeView.categoryClickListener = {
             buildDataCategories(theme, binding, it)
 
             binding.purposesPanel.isVisible = false
             binding.categoriesPanel.isVisible = true
         }
 
-        binding.purposesView.vendorClickListener = {
+        binding.purposeView.vendorClickListener = {
             buildVendors(theme, binding, it)
 
             binding.purposesPanel.isVisible = false
@@ -78,9 +87,15 @@ internal class JitDialog(
             isVisible = jit.acceptButtonText.isNotEmpty() == true
 
             setOnClickListener {
-                val purposes: Map<String, String> = binding.purposesView.items.associate {
-                    it.purpose.code to it.accepted.toString()
-                }
+                val purposes: Map<String, String>? = consent.purposes?.map {
+                    val accepted = if (it.key == purpose.code) {
+                        true.toString()
+                    } else {
+                        it.value
+                    }
+                    Pair(it.key, accepted)
+                }?.toMap()
+
                 consent.purposes = purposes
                 listener.onFirstButtonClick(this@JitDialog, consent)
             }
@@ -91,7 +106,17 @@ internal class JitDialog(
             isVisible = jit.declineButtonText.isNotEmpty() == true
 
             setOnClickListener {
-                listener.onSecondButtonClick(this@JitDialog)
+                val purposes: Map<String, String>? = consent.purposes?.map {
+                    val accepted = if (purpose.allowsOptOut == true && it.key == purpose.code) {
+                        false.toString()
+                    } else {
+                        it.value
+                    }
+                    Pair(it.key, accepted)
+                }?.toMap()
+
+                consent.purposes = purposes
+                listener.onSecondButtonClick(this@JitDialog, consent)
             }
         }
 
@@ -109,13 +134,13 @@ internal class JitDialog(
         }
     }
 
-    private fun buildDataCategories(theme: ColorTheme?, binding: JitBinding, item: PurposeItem) {
+    private fun buildDataCategories(theme: ColorTheme?, binding: JitBinding, purpose: Purpose) {
         binding.theme = theme
         binding.categoriesView.buildUi(
             theme,
-            item.purpose.name,
-            item.purpose.description,
-            item.purpose.categories,
+            purpose.name,
+            purpose.description,
+            purpose.categories,
             configuration
         )
         binding.categoriesView.onBackClickListener = {
@@ -124,8 +149,8 @@ internal class JitDialog(
         }
     }
 
-    private fun buildVendors(theme: ColorTheme?, binding: JitBinding, item: PurposeItem) {
-        binding.vendorsView.buildUi(theme, item.purpose.name, item.purpose.description, configuration, consent)
+    private fun buildVendors(theme: ColorTheme?, binding: JitBinding, purpose: Purpose) {
+        binding.vendorsView.buildUi(theme, purpose.name, purpose.description, configuration, consent)
         binding.vendorsView.onBackClickListener = {
             consent.vendors = binding.vendorsView.items.filter {
                 it.accepted
@@ -147,7 +172,7 @@ internal class JitDialog(
         fun onShow(jitDialog: JitDialog)
         fun onHide(jitDialog: JitDialog)
         fun onFirstButtonClick(jitDialog: JitDialog, consent: Consent)
-        fun onSecondButtonClick(jitDialog: JitDialog)
+        fun onSecondButtonClick(jitDialog: JitDialog, consent: Consent)
         fun onThirdButtonClick(jitDialog: JitDialog)
         fun showModal(jitDialog: JitDialog)
     }

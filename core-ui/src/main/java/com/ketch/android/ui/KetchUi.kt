@@ -10,6 +10,7 @@ import com.ketch.android.api.response.ExperienceButtonAction
 import com.ketch.android.api.response.ExperienceButtonDestination
 import com.ketch.android.api.response.ExperienceDefault
 import com.ketch.android.api.response.FullConfiguration
+import com.ketch.android.api.response.Purpose
 import com.ketch.android.api.response.Right
 import com.ketch.android.ui.common.PreferenceService
 import com.ketch.android.ui.dialog.BannerDialog
@@ -165,11 +166,17 @@ class KetchUi(private val context: Context, private val ketch: Ketch) {
      * Show Just in Time Popup
      * @param configuration - [com.ketch.android.api.response.FullConfiguration]
      * @param consent - [com.ketch.android.api.response.Consent]
+     * @param purpose - [com.ketch.android.api.response.Purpose]
      * @param listener - [com.ketch.android.ui.KetchUi.DialogListener]
      */
-    fun showJit(configuration: FullConfiguration, consent: Consent, listener: DialogListener? = null) {
+    fun showJit(
+        configuration: FullConfiguration,
+        consent: Consent,
+        purpose: Purpose,
+        listener: DialogListener? = null
+    ) {
         configuration.experiences?.consentExperience?.jit?.let { jit ->
-            val dialog = JitDialog(context, configuration, consent, object : JitDialog.JitDialogListener {
+            val dialog = JitDialog(context, configuration, consent, purpose, object : JitDialog.JitDialogListener {
 
                 override fun onShow(jitDialog: JitDialog) {
                     listener?.onShow()
@@ -185,8 +192,9 @@ class KetchUi(private val context: Context, private val ketch: Ketch) {
                     jitDialog.dismiss()
                 }
 
-                override fun onSecondButtonClick(jitDialog: JitDialog) {
+                override fun onSecondButtonClick(jitDialog: JitDialog, consent: Consent) {
                     listener?.onSecondButtonClick()
+                    buttonAction(configuration, consent, ExperienceButtonAction.SAVE_CURRENT_STATE)
                     jitDialog.dismiss()
                 }
 

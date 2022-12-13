@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+
+        <variable
+            name="theme"
+            type="com.ketch.android.ui.theme.ColorTheme" />
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:backgroundColor="@{theme.bodyBackgroundColor}">
+
+        <TextView
+            android:id="@+id/purposeTitle"
+            style="@style/H4"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toTopOf="@+id/purposeDescription"
+            app:textColor="@{theme.bodyTextColor}"
+            tools:text="User ID Linking" />
+
+        <TextView
+            android:id="@+id/purposeDescription"
+            style="@style/Body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:layout_constraintBottom_toTopOf="@+id/legalBasisName"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/purposeTitle"
+            app:textColor="@{theme.bodyTextColor}"
+            tools:text="Collection and processing of personal data to enable functionality that is essential to providing our services, including security activities, debugging, authentication, and fraud prevention, as well as contacting you with information related to products/services you have used or purchased; we may set essential cookies or other trackers for these purposes." />
+
+        <TextView
+            android:id="@+id/legalBasisName"
+            style="@style/Label"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/purposeDescription"
+            app:layout_constraintBottom_toTopOf="@+id/legalBasicDescription"
+            app:textColor="@{theme.bodyTextColor}"
+            tools:text="Legal Basis: Consent Opt In" />
+
+        <TextView
+            android:id="@+id/legalBasicDescription"
+            style="@style/Body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:layout_constraintBottom_toTopOf="@+id/categories"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/legalBasisName"
+            app:textColor="@{theme.bodyTextColor}"
+            tools:text="Data subject has been provided with adequate disclosure regarding the processing" />
+
+        <TextView
+            android:id="@+id/categories"
+            style="@style/Label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:clickable="true"
+            android:drawablePadding="6dp"
+            android:focusable="true"
+            android:text="@string/data_categories"
+            android:visibility="gone"
+            app:drawableEndCompat="@drawable/ic_link"
+            app:iconTint="@{theme.bodyTextColor}"
+            app:layout_constraintBottom_toTopOf="@+id/vendors"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/legalBasicDescription"
+            app:textColor="@{theme.bodyTextColor}"
+            tools:visibility="visible" />
+
+        <TextView
+            android:id="@+id/vendors"
+            style="@style/Label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:clickable="true"
+            android:drawablePadding="6dp"
+            android:focusable="true"
+            android:text="@string/vendors"
+            android:visibility="gone"
+            app:drawableEndCompat="@drawable/ic_link"
+            app:iconTint="@{theme.bodyTextColor}"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/categories"
+            app:textColor="@{theme.bodyTextColor}"
+            tools:visibility="visible" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</layout>

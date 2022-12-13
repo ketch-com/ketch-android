@@ -10,6 +10,7 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ketch.android.api.response.Consent
 import com.ketch.android.api.response.FullConfiguration
+import com.ketch.android.api.response.Purpose
 import com.ketch.android.ui.R
 import com.ketch.android.ui.adapter.PurposeItem
 import com.ketch.android.ui.adapter.PurposeListAdapter
@@ -29,8 +30,8 @@ class PurposesView @JvmOverloads constructor(
     FrameLayout(context, attributeSet, defStyleAttr) {
 
     internal var items: List<PurposeItem> = emptyList()
-    internal var vendorClickListener: (item: PurposeItem) -> Unit = {}
-    internal var categoryClickListener: (item: PurposeItem) -> Unit = {}
+    internal var vendorClickListener: (purpose: Purpose) -> Unit = {}
+    internal var categoryClickListener: (purpose: Purpose) -> Unit = {}
 
     private var binding: ViewPurposesBinding =
         ViewPurposesBinding.inflate(LayoutInflater.from(context), this, true)
@@ -70,11 +71,11 @@ class PurposesView @JvmOverloads constructor(
         adapter.submitList(items)
 
         adapter.categoryClickListener = {
-            categoryClickListener.invoke(it)
+            categoryClickListener.invoke(it.purpose)
         }
 
         adapter.vendorClickListener = {
-            vendorClickListener.invoke(it)
+            vendorClickListener.invoke(it.purpose)
         }
 
         val drawable = ContextCompat.getDrawable(context, R.drawable.horizontal_divider)
@@ -95,7 +96,9 @@ class PurposesView @JvmOverloads constructor(
 
         binding.purposesListView.rejectAllButton.setOnClickListener {
             adapter.currentList.onEach {
-                it.accepted = false
+                if (it.enabled) {
+                    it.accepted = false
+                }
             }
             adapter.notifyDataSetChanged()
         }

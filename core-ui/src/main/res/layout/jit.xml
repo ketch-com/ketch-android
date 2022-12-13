@@ -23,6 +23,7 @@
             android:paddingHorizontal="24dp"
             android:paddingVertical="20dp"
             app:backgroundColor="@{theme.headerBackgroundColor}"
+            app:layout_constraintBottom_toTopOf="@+id/body"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -75,14 +76,48 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent">
 
-                    <com.ketch.android.ui.view.PurposesView
-                        android:id="@+id/purposesView"
+                    <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        app:layout_constraintBottom_toTopOf="@+id/footer"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
+                        android:padding="18dp"
+                        app:backgroundColor="@{theme.bodyBackgroundColor}">
+
+                        <TextView
+                            android:id="@+id/bodyDescription"
+                            style="@style/Body"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:layout_constraintBottom_toTopOf="@+id/divider"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:textColor="@{theme.bodyTextColor}"
+                            app:textColorLink="@{theme.bodyLinkColor}"
+                            tools:text="Welcome! We’re glad you’re here and want you to know that we respect your privacy and your right to control how we collect, use, and share your personal data."
+                            tools:textColor="@android:color/white" />
+
+                        <View
+                            android:id="@+id/divider"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginTop="24dp"
+                            android:background="@color/divider"
+                            app:layout_constraintBottom_toTopOf="@+id/purposeView"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/bodyDescription" />
+
+                        <com.ketch.android.ui.view.PurposeView
+                            android:id="@+id/purposeView"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="24dp"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toBottomOf="@+id/divider" />
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
 
                 </androidx.core.widget.NestedScrollView>
 
@@ -112,7 +147,7 @@
                         app:strokeColor="@{theme.firstButtonBorderColor}"
                         app:strokeWidth="1dp"
                         app:textColor="@{theme.firstButtonTextColor}"
-                        tools:text="Save choices" />
+                        tools:text="Accept" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/secondButton"
@@ -130,7 +165,7 @@
                         app:strokeColor="@{theme.secondButtonBorderColor}"
                         app:strokeWidth="1dp"
                         app:textColor="@{theme.secondButtonTextColor}"
-                        tools:text="Cancel" />
+                        tools:text="Deny" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/thirdButton"
