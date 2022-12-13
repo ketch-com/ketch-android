@@ -14,10 +14,10 @@ import com.ketch.android.api.response.Consent
 import com.ketch.android.api.response.ConsentsTab
 import com.ketch.android.api.response.FullConfiguration
 import com.ketch.android.api.response.OverviewTab
+import com.ketch.android.api.response.Purpose
 import com.ketch.android.api.response.Right
 import com.ketch.android.api.response.RightsTab
 import com.ketch.android.ui.R
-import com.ketch.android.ui.adapter.PurposeItem
 import com.ketch.android.ui.adapter.RightListAdapter
 import com.ketch.android.ui.databinding.PreferencesBinding
 import com.ketch.android.ui.databinding.PreferencesConsentsBinding
@@ -153,9 +153,15 @@ internal class PreferenceDialog(
             isVisible = consentsTab.buttonText.isNotEmpty() == true
 
             setOnClickListener {
-                val purposes: Map<String, String> = binding.purposes.purposesView.items.associate {
+                val items = binding.purposes.purposesView.items.associate {
                     it.purpose.code to it.accepted.toString()
                 }
+
+                val purposes: Map<String, String>? = consent.purposes?.map {
+                    val accepted = items[it.key] ?: it.value
+                    Pair(it.key, accepted)
+                }?.toMap()
+
                 consent.purposes = purposes
 
                 listener.onConsentsButtonClick(this@PreferenceDialog, consent)
@@ -167,9 +173,9 @@ internal class PreferenceDialog(
         }
     }
 
-    private fun buildVendors(theme: ColorTheme?, binding: PreferencesConsentsBinding, item: PurposeItem) {
+    private fun buildVendors(theme: ColorTheme?, binding: PreferencesConsentsBinding, purpose: Purpose) {
         binding.theme = theme
-        binding.vendors.vendorsView.buildUi(theme, item.purpose.name, item.purpose.description, configuration, consent)
+        binding.vendors.vendorsView.buildUi(theme, purpose.name, purpose.description, configuration, consent)
         binding.vendors.vendorsView.onBackClickListener = {
             consent.vendors = binding.vendors.vendorsView.items.filter {
                 it.accepted
@@ -182,13 +188,13 @@ internal class PreferenceDialog(
         }
     }
 
-    private fun buildDataCategories(theme: ColorTheme?, binding: PreferencesConsentsBinding, item: PurposeItem) {
+    private fun buildDataCategories(theme: ColorTheme?, binding: PreferencesConsentsBinding, purpose: Purpose) {
         binding.theme = theme
         binding.categories.dataCategoriesView.buildUi(
             theme,
-            item.purpose.name,
-            item.purpose.description,
-            item.purpose.categories,
+            purpose.name,
+            purpose.description,
+            purpose.categories,
             configuration
         )
         binding.categories.dataCategoriesView.onBackClickListener = {

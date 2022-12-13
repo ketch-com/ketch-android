@@ -9,7 +9,7 @@ import androidx.core.view.isVisible
 import com.ketch.android.api.response.Consent
 import com.ketch.android.api.response.FullConfiguration
 import com.ketch.android.api.response.Modal
-import com.ketch.android.ui.adapter.PurposeItem
+import com.ketch.android.api.response.Purpose
 import com.ketch.android.ui.databinding.ModalBinding
 import com.ketch.android.ui.extension.poweredByKetch
 import com.ketch.android.ui.theme.ColorTheme
@@ -102,22 +102,28 @@ internal class ModalDialog(
             isVisible = modal.buttonText.isNotEmpty() == true
 
             setOnClickListener {
-                val purposes: Map<String, String> = binding.purposesView.items.associate {
+                val items = binding.purposesView.items.associate {
                     it.purpose.code to it.accepted.toString()
                 }
+
+                val purposes: Map<String, String>? = consent.purposes?.map {
+                    val accepted = items[it.key] ?: it.value
+                    Pair(it.key, accepted)
+                }?.toMap()
+
                 consent.purposes = purposes
                 listener.onButtonClick(this@ModalDialog, consent)
             }
         }
     }
 
-    private fun buildDataCategories(theme: ColorTheme?, binding: ModalBinding, item: PurposeItem) {
+    private fun buildDataCategories(theme: ColorTheme?, binding: ModalBinding, purpose: Purpose) {
         binding.theme = theme
         binding.categoriesView.buildUi(
             theme,
-            item.purpose.name,
-            item.purpose.description,
-            item.purpose.categories,
+            purpose.name,
+            purpose.description,
+            purpose.categories,
             configuration
         )
         binding.categoriesView.onBackClickListener = {
@@ -126,8 +132,8 @@ internal class ModalDialog(
         }
     }
 
-    private fun buildVendors(theme: ColorTheme?, binding: ModalBinding, item: PurposeItem) {
-        binding.vendorsView.buildUi(theme, item.purpose.name, item.purpose.description, configuration, consent)
+    private fun buildVendors(theme: ColorTheme?, binding: ModalBinding, purpose: Purpose) {
+        binding.vendorsView.buildUi(theme, purpose.name, purpose.description, configuration, consent)
         binding.vendorsView.onBackClickListener = {
             consent.vendors = binding.vendorsView.items.filter {
                 it.accepted

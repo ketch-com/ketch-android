@@ -29,19 +29,17 @@ internal abstract class BaseDialog(
 
     init {
         if (consent.purposes.isNullOrEmpty()) {
-            consent.vendors = configuration.vendors?.map {
+            this.consent.vendors = configuration.vendors?.map {
                 it.id
             }
         }
 
-        consent.purposes = configuration.purposes?.associate {
+        this.consent.purposes = configuration.purposes?.associate {
             val requiresDisplay = it.requiresDisplay == true
             val enabled = it.allowsOptOut == true
             val requiresOptIn = it.requiresOptIn == true
 
-            val accepted = !requiresDisplay ||
-                    !enabled ||
-                    consent.purposes?.get(it.code)?.toBoolean() ?: !requiresOptIn
+            val accepted = consent.purposes?.get(it.code)?.toBoolean() ?: (!requiresDisplay || !enabled || !requiresOptIn)
             it.code to accepted.toString()
         }
     }
