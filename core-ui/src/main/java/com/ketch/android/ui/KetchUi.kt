@@ -370,6 +370,7 @@ class KetchUi(private val context: Context, private val ketch: Ketch) {
         }?.toMap() ?: emptyMap()
         val vendors: List<String> = consent.vendors ?: emptyList()
         ketch.updateConsent(purposes, vendors)
+        preferenceService.updateConsentVersion(configuration.experiences?.consentExperience?.version)
     }
 
     private fun invokeRight(right: Right, user: User) {
