@@ -17,10 +17,11 @@ internal class OrganizationConfigUseCase(
 
     suspend fun getFullConfiguration(
         organization: String,
-        property: String
+        property: String,
+        language: String
     ): Flow<Result<FullConfiguration>> = flow {
         val result = withContext(Dispatchers.IO) {
-            repository.getFullConfiguration(organization, property)
+            repository.getFullConfiguration(organization, property, language)
         }
         emit(result)
     }

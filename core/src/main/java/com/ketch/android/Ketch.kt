@@ -130,7 +130,7 @@ class Ketch internal constructor(
      */
     fun loadConfiguration() {
         scope.launch {
-            organizationConfigUseCase.getFullConfiguration(organization, property)
+            organizationConfigUseCase.getFullConfiguration(organization, property, Locale.getDefault().language)
                 .collect {
                     _loading.value = it is Result.Loading
 

@@ -5,16 +5,19 @@ import com.ketch.android.api.request.InvokeRightsRequest
 import com.ketch.android.api.request.UpdateConsentRequest
 import com.ketch.android.api.response.Consent
 import com.ketch.android.api.response.FullConfiguration
+import com.ketch.android.api.response.Language
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 internal interface KetchApi {
     @GET(EndPoints.CONFIG)
     suspend fun getFullConfiguration(
         @Path("organization") organization: String,
         @Path("property") property: String,
+        @Query("language") language: String
     ): FullConfiguration
 
     @GET(EndPoints.FULL_CONFIG)
