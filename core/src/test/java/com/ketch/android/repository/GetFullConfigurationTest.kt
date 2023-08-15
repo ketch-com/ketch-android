@@ -275,8 +275,7 @@ class GetFullConfigurationTest {
         runBlocking {
             organizationConfigUseCase.getFullConfiguration(
                 organization = ORGANIZATION,
-                property = PROPERTY,
-                language = LANGUAGE
+                property = PROPERTY
             ).collect { result ->
                 if (!(result is Result.Loading)) {
                     assertTrue(result is Result.Success, "Is the result successful?")

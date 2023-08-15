@@ -45,9 +45,9 @@ data class ColorTheme(
                 firstButtonBorderColor = theme.bannerButtonColor,
                 firstButtonTextColor = theme.bannerBackgroundColor,
 
-                secondButtonBackgroundColor = if (theme.bannerSecondaryButtonVariant == "outlined") theme.bannerBackgroundColor else theme.bannerSecondaryButtonColor,
-                secondButtonBorderColor = if (theme.bannerSecondaryButtonVariant == "outlined") theme.bannerSecondaryButtonColor else theme.bannerButtonColor,
-                secondButtonTextColor = if (theme.bannerSecondaryButtonVariant == "outlined") theme.bannerSecondaryButtonColor else theme.bannerButtonColor,
+                secondButtonBackgroundColor = theme.bannerSecondaryButtonColor,
+                secondButtonBorderColor = theme.bannerButtonColor,
+                secondButtonTextColor = theme.bannerButtonColor,
             )
 
         fun modalColorTheme(theme: Theme): ColorTheme =

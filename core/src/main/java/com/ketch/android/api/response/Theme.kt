@@ -15,7 +15,6 @@ data class Theme(
     @SerializedName("bannerContentColor") val bannerContentColor: String?,
     @SerializedName("bannerButtonColor") val bannerButtonColor: String?,
     @SerializedName("bannerSecondaryButtonColor") val bannerSecondaryButtonColor: String?,
-    @SerializedName("bannerSecondaryButtonVariant") val bannerSecondaryButtonVariant: String = "outlined",
     @SerializedName("bannerPosition") val bannerPosition: BannerPosition?,
 
     @SerializedName("modalHeaderBackgroundColor") val modalHeaderBackgroundColor: String?,
