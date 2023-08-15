@@ -127,6 +127,7 @@
     "bannerButtonColor":"#ffffff",
     "bannerContentColor":"#ffffff",
     "bannerPosition":1,
+    "bannerSecondaryButtonVariant": "outlined",
     "buttonBorderRadius":5,
     "code":"default",
     "description":"Ketch default theme",
