@@ -11,8 +11,9 @@ internal class Repository(
 ) {
     suspend fun getFullConfiguration(
         organization: String,
-        property: String
-    ): FullConfiguration = api.getFullConfiguration(organization, property)
+        property: String,
+        language: String
+    ): FullConfiguration = api.getFullConfiguration(organization, property, language)
 
     suspend fun getFullConfiguration(
         organization: String,
