@@ -67,10 +67,11 @@ internal class ModalDialog(
         var translations = configuration.translations
         if (translations != null) {
             //use translations provided by config
-            binding.closeButton.contentDescription = translations["preference_consents_exit_button_text"]
+            binding.firstButton.text = translations["preference_consents_exit_button_text"]
             binding.poweredByKetch.contentDescription = translations["powered_by"]
         } else {
             //use translations from local
+            binding.firstButton.text = "Close"
         }
     }
 
