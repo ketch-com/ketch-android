@@ -232,7 +232,8 @@ class CCPATest {
             modalSwitchOffColor = null
         ),
         scripts = null,
-        vendors = null
+        vendors = null,
+        translations = null
     )
 
     private val consent = Consent(
