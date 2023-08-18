@@ -23,4 +23,5 @@ data class FullConfiguration(
     @SerializedName("theme") val theme: Theme?,
     @SerializedName("scripts") val scripts: List<String>?,
     @SerializedName("vendors") val vendors: List<Vendor>?,
+    @SerializedName("translations") val translations: Map<String, String>?
 )

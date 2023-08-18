@@ -228,7 +228,8 @@ class GetFullConfigurationTest {
             modalSwitchOnColor = null
         ),
         scripts = null,
-        vendors = null
+        vendors = null,
+        translations = null
     )
 
     @Before
