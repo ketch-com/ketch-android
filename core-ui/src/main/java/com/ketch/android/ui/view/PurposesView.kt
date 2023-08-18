@@ -102,5 +102,11 @@ class PurposesView @JvmOverloads constructor(
             }
             adapter.notifyDataSetChanged()
         }
+
+        var translations = configuration.translations
+        if (translations != null) {
+            binding.purposesListView.acceptAllButton.text = translations["accept_all"]
+            binding.purposesListView.rejectAllButton.text = translations["reject_all"]
+        }
     }
 }
