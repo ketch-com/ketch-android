@@ -47,16 +47,22 @@ class PurposeView @JvmOverloads constructor(
 
         if (configuration.experiences?.consentExperience?.modal?.hideLegalBases == true || configuration.experiences?.preference?.consents?.extensions?.get("hideLegalBases") == "true") {
             binding.legalBasisName.text = purpose.legalBasisName
-        } else {
 
+            MarkdownUtils.markdown(
+                context,
+                binding.legalBasicDescription,
+                purpose.legalBasisDescription ?: "",
+                configuration
+            )
+        } else {
+            binding.legalBasisName.isVisible = false
+            binding.legalBasicDescription.isVisible = false
         }
 
-        MarkdownUtils.markdown(
-            context,
-            binding.legalBasicDescription,
-            purpose.legalBasisDescription ?: "",
-            configuration
-        )
+        val translations = configuration.translations
+        if (translations != null) {
+            binding.legalBasisName.text = translations["legal_basis"] + ": " +  purpose.legalBasisName
+        }
 
         binding.categories.isVisible = purpose.categories?.isNotEmpty() == true
         binding.categories.setOnClickListener {
