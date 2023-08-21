@@ -11,6 +11,7 @@ import com.ketch.android.api.response.FullConfiguration
 import com.ketch.android.api.response.Purpose
 import com.ketch.android.ui.databinding.ViewPurposeBinding
 import com.ketch.android.ui.extension.MarkdownUtils
+import com.ketch.android.ui.R
 import com.ketch.android.ui.theme.ColorTheme
 
 /**
@@ -62,6 +63,8 @@ class PurposeView @JvmOverloads constructor(
         val translations = configuration.translations
         if (translations != null) {
             binding.legalBasisName.text = translations["legal_basis"] + ": " +  purpose.legalBasisName
+        } else {
+            binding.legalBasisName.text = context.getString(R.string.legal_basic_name, purpose.legalBasisName)
         }
 
         binding.categories.isVisible = purpose.categories?.isNotEmpty() == true

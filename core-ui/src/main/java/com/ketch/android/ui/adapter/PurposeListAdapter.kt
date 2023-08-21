@@ -57,8 +57,10 @@ internal class PurposeListAdapter(private val theme: ColorTheme?, private val tr
             context.getString(R.string.legal_basic_description, item.purpose.legalBasisDescription)
 
         if (translations != null ){
-            purposeDescription = "<![CDATA[<b>$translations['purpose']:</b> item.purpose.description]]>"
-            legalBasisDescription = "<![CDATA[<b>$translations['legal_bases']:</b> $item.purpose.legalBasisDescription]]>"
+            val translatedPurpose = translations["purpose"]
+            val translatedLegalBasis = translations["legal_bases"]
+            purposeDescription = "<![CDATA[<b>$translatedPurpose:</b> $item.purpose.description]]>"
+            legalBasisDescription = "<![CDATA[<b>$translatedLegalBasis:</b> $item.purpose.legalBasisDescription]]>"
         }
 
         holder.binding.purposeDescription.text = Html.fromHtml(purposeDescription, Html.FROM_HTML_MODE_LEGACY)
