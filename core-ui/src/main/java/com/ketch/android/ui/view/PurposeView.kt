@@ -46,6 +46,9 @@ class PurposeView @JvmOverloads constructor(
         )
 
         if (configuration.experiences?.consentExperience?.modal?.hideLegalBases == true || configuration.experiences?.preference?.consents?.extensions?.get("hideLegalBases") == "true") {
+            binding.legalBasisName.isVisible = false
+            binding.legalBasicDescription.isVisible = false
+        } else {
             binding.legalBasisName.text = purpose.legalBasisName
 
             MarkdownUtils.markdown(
@@ -54,9 +57,6 @@ class PurposeView @JvmOverloads constructor(
                 purpose.legalBasisDescription ?: "",
                 configuration
             )
-        } else {
-            binding.legalBasisName.isVisible = false
-            binding.legalBasicDescription.isVisible = false
         }
 
         val translations = configuration.translations

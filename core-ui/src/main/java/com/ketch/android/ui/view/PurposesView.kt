@@ -55,7 +55,7 @@ class PurposesView @JvmOverloads constructor(
             configuration
         )
 
-        val adapter = PurposeListAdapter(theme)
+        val adapter = PurposeListAdapter(theme, configuration.translations)
         items = configuration.purposes?.filter {
             it.requiresDisplay == true
         }?.map { purpose ->

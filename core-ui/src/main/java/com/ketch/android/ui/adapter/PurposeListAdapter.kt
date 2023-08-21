@@ -17,7 +17,7 @@ import com.ketch.android.ui.theme.ColorTheme
 /**
  * Purpose List Adapter
  */
-internal class PurposeListAdapter(private val theme: ColorTheme?) :
+internal class PurposeListAdapter(private val theme: ColorTheme?, private val translations: Map<String, String>?) :
     ListAdapter<PurposeItem, PurposeListAdapter.PurposesViewHolder>(DIFF_CALLBACK) {
 
     var vendorClickListener: (item: PurposeItem) -> Unit = {}
@@ -51,11 +51,17 @@ internal class PurposeListAdapter(private val theme: ColorTheme?) :
             vendorClickListener.invoke(item)
         }
 
-        val purposeDescription = context.getString(R.string.purpose_description, item.purpose.description)
-        holder.binding.purposeDescription.text = Html.fromHtml(purposeDescription, Html.FROM_HTML_MODE_LEGACY)
+        var purposeDescription = context.getString(R.string.purpose_description, item.purpose.description)
 
-        val legalBasisDescription =
+        var legalBasisDescription =
             context.getString(R.string.legal_basic_description, item.purpose.legalBasisDescription)
+
+        if (translations != null ){
+            purposeDescription = "<![CDATA[<b>$translations['purpose']:</b> item.purpose.description]]>"
+            legalBasisDescription = "<![CDATA[<b>$translations['legal_bases']:</b> $item.purpose.legalBasisDescription]]>"
+        }
+
+        holder.binding.purposeDescription.text = Html.fromHtml(purposeDescription, Html.FROM_HTML_MODE_LEGACY)
         holder.binding.legalBasicDescription.text = Html.fromHtml(legalBasisDescription, Html.FROM_HTML_MODE_LEGACY)
 
         holder.binding.acceptSwitch.setOnCheckedChangeListener { _, isChecked ->
