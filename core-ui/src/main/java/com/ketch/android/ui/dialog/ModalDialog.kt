@@ -68,7 +68,7 @@ internal class ModalDialog(
         var translations = configuration.translations
         if (translations != null) {
             //use translations provided by config
-            binding.poweredByKetch.contentDescription = translations["powered_by"] ?: getString(R.string.powered_by_ketch)
+            binding.poweredByKetch.contentDescription = translations["powered_by"] ?: context.getString(R.string.powered_by_ketch)
         } else {
             //use translations from local
         }

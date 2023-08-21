@@ -49,6 +49,8 @@ class PurposeView @JvmOverloads constructor(
             binding.legalBasisName.text = purpose.legalBasisName
         } else {
 
+        }
+
         MarkdownUtils.markdown(
             context,
             binding.legalBasicDescription,
