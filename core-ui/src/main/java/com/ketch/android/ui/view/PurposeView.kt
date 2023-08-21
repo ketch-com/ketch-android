@@ -45,7 +45,9 @@ class PurposeView @JvmOverloads constructor(
             configuration
         )
 
-        binding.legalBasisName.text = purpose.legalBasisName
+        if (configuration.experiences?.consentExperience?.modal?.hideLegalBases == true || configuration.experiences?.preference?.consents?.extensions?.get("hideLegalBases") == "true") {
+            binding.legalBasisName.text = purpose.legalBasisName
+        } else {
 
         MarkdownUtils.markdown(
             context,
