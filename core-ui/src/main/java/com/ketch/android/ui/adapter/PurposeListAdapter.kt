@@ -10,6 +10,7 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.ketch.android.api.response.Experience
 import com.ketch.android.api.response.Purpose
 import com.ketch.android.ui.R
 import com.ketch.android.ui.databinding.ViewListPurposeRowBinding
@@ -18,7 +19,7 @@ import com.ketch.android.ui.theme.ColorTheme
 /**
  * Purpose List Adapter
  */
-internal class PurposeListAdapter(private val theme: ColorTheme?, private val translations: Map<String, String>?) :
+internal class PurposeListAdapter(private val theme: ColorTheme?, private val translations: Map<String, String>?, private val experiences: Experience?) :
     ListAdapter<PurposeItem, PurposeListAdapter.PurposesViewHolder>(DIFF_CALLBACK) {
 
     var vendorClickListener: (item: PurposeItem) -> Unit = {}
@@ -58,12 +59,21 @@ internal class PurposeListAdapter(private val theme: ColorTheme?, private val tr
             context.getString(R.string.legal_basic_description, item.purpose.legalBasisDescription)
 
         if (translations != null ){
+            holder.binding.legalBasisName.text = translations["legal_basis"] + ": " +  item.purpose.legalBasisName
+
             val translatedPurpose = translations["purpose"] ?: "Purpose"
             val translatedLegalBasis = translations["legal_basis"] ?: "Legal Basis"
             val pDescription = item.purpose.description ?: ""
             val lbDescription = item.purpose.legalBasisDescription ?: ""
-            purposeDescription = "<![CDATA[<b>$translatedPurpose:</b> $pDescription]]>"
-            legalBasisDescription = "<![CDATA[<b>$translatedLegalBasis:</b> $lbDescription]]>"
+            purposeDescription = "<b>$translatedPurpose:</b> $pDescription"
+            legalBasisDescription = "<b>$translatedLegalBasis:</b> $lbDescription"
+        }
+
+        val consentHideLegalBasis = experiences?.consentExperience?.modal?.hideLegalBases
+        val prefHideLegalBasis = experiences?.preference?.consents?.extensions?.get("hideLegalBases")
+        if (consentHideLegalBasis == true || prefHideLegalBasis == "true") {
+            holder.binding.legalBasisName.isVisible = false
+            holder.binding.legalBasicDescription.isVisible = false
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {

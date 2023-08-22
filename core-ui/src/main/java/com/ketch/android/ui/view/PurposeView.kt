@@ -46,9 +46,10 @@ class PurposeView @JvmOverloads constructor(
             purpose.description ?: "",
             configuration
         )
-        Log.d("legal basis consent visibility check", configuration.experiences?.consentExperience?.modal?.hideLegalBases.toString())
-        Log.d("legal basis preference visibility check",configuration.experiences?.preference?.consents?.extensions?.get("hideLegalBases") ?: "not found")
-        if (configuration.experiences?.consentExperience?.modal?.hideLegalBases == true || configuration.experiences?.preference?.consents?.extensions?.get("hideLegalBases") == "true") {
+
+        val consentHideLegalBasis = configuration.experiences?.consentExperience?.modal?.hideLegalBases
+        val prefHideLegalBasis = configuration.experiences?.preference?.consents?.extensions?.get("hideLegalBases")
+        if (consentHideLegalBasis == true || prefHideLegalBasis == "true") {
             binding.legalBasisName.isVisible = false
             binding.legalBasicDescription.isVisible = false
         } else {

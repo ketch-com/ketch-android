@@ -89,7 +89,9 @@ internal class PreferenceDialog(
 
             buildOverviewTab(theme, binding.overview, preference.overview)
             buildConsentsTab(theme, binding.consents, preference.consents, configuration)
-            buildRightsTab(theme, binding.rights, preference.rights, configuration.rights)
+            if (configuration.rights != null) {
+                buildRightsTab(theme, binding.rights, preference.rights, configuration.rights)
+            }
             buildRightSentTab(theme, binding.invokeRightSent)
 
             setContentView(binding.root)
