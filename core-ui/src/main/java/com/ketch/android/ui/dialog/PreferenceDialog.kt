@@ -85,8 +85,10 @@ internal class PreferenceDialog(
 
             collectState(invokeRightSent) {
                 binding.rights.root.isVisible = binding.tabLayout.selectedTabPosition == 2 && !it
-                (binding.rights.rightsList.adapter as RightListAdapter).reset()
-                binding.rights.requestDetails.text = null
+                if (preference.rights != null) {
+                    (binding.rights.rightsList.adapter as RightListAdapter).reset()
+                    binding.rights.requestDetails.text = null
+                }
                 binding.invokeRightSent.root.isVisible =
                     binding.tabLayout.selectedTabPosition == 2 && it
             }
