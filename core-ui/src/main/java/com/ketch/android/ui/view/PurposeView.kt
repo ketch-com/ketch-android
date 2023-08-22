@@ -3,6 +3,7 @@ package com.ketch.android.ui.view
 import android.annotation.SuppressLint
 import android.content.Context
 import android.util.AttributeSet
+import android.util.Log
 import android.view.LayoutInflater
 import android.widget.FrameLayout
 import androidx.core.view.isVisible
@@ -45,7 +46,8 @@ class PurposeView @JvmOverloads constructor(
             purpose.description ?: "",
             configuration
         )
-
+        Log.d("legal basis consent visibility check", configuration.experiences?.consentExperience?.modal?.hideLegalBases.toString())
+        Log.d("legal basis preference visibility check",configuration.experiences?.preference?.consents?.extensions?.get("hideLegalBases") ?: "not found")
         if (configuration.experiences?.consentExperience?.modal?.hideLegalBases == true || configuration.experiences?.preference?.consents?.extensions?.get("hideLegalBases") == "true") {
             binding.legalBasisName.isVisible = false
             binding.legalBasicDescription.isVisible = false

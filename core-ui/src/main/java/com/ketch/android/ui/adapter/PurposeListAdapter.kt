@@ -1,5 +1,6 @@
 package com.ketch.android.ui.adapter
 
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.text.Html
@@ -65,8 +66,14 @@ internal class PurposeListAdapter(private val theme: ColorTheme?, private val tr
             legalBasisDescription = "<![CDATA[<b>$translatedLegalBasis:</b> $lbDescription]]>"
         }
 
-        holder.binding.purposeDescription.text = Html.fromHtml(purposeDescription, Html.FROM_HTML_MODE_LEGACY)
-        holder.binding.legalBasicDescription.text = Html.fromHtml(legalBasisDescription, Html.FROM_HTML_MODE_LEGACY)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            holder.binding.purposeDescription.text = Html.fromHtml(purposeDescription, Html.FROM_HTML_MODE_COMPACT)
+            holder.binding.legalBasicDescription.text = Html.fromHtml(legalBasisDescription, Html.FROM_HTML_MODE_COMPACT)
+        } else {
+            holder.binding.purposeDescription.text = Html.fromHtml(purposeDescription, Html.FROM_HTML_MODE_LEGACY)
+            holder.binding.legalBasicDescription.text = Html.fromHtml(legalBasisDescription, Html.FROM_HTML_MODE_LEGACY)
+        }
+
 
         holder.binding.acceptSwitch.setOnCheckedChangeListener { _, isChecked ->
             item.accepted = isChecked

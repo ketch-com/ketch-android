@@ -7,8 +7,8 @@
     <string name="accept_all">Accept All</string>
     <string name="reject_all">Reject All</string>
 
-    <string name="legal_basic_name">Legal Basic: %s</string>
-    <string name="legal_basic_description"><![CDATA[<b>Legal Basic:</b> %s]]></string>
+    <string name="legal_basic_name">Legal Basis: %s</string>
+    <string name="legal_basic_description"><![CDATA[<b>Legal Basis:</b> %s]]></string>
     <string name="purpose_description"><![CDATA[<b>Purpose:</b> %s]]></string>
 
     <string name="vendors">Vendors</string>
