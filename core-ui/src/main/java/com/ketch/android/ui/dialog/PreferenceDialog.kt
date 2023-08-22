@@ -60,8 +60,12 @@ internal class PreferenceDialog(
 
             binding.tabLayout.apply {
                 addTab(newTab().setText(preference.overview.tabName))
-                addTab(newTab().setText(preference.consents.tabName))
-                addTab(newTab().setText(preference.rights.tabName))
+                if (preference.consents != null) {
+                    addTab(newTab().setText(preference.consents.tabName))
+                }
+                if (preference.rights != null) {
+                    addTab(newTab().setText(preference.rights.tabName))
+                }
 
                 addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
                     override fun onTabSelected(tab: TabLayout.Tab?) {
@@ -88,11 +92,13 @@ internal class PreferenceDialog(
             }
 
             buildOverviewTab(theme, binding.overview, preference.overview)
-            buildConsentsTab(theme, binding.consents, preference.consents, configuration)
-            if (configuration.rights != null) {
-                buildRightsTab(theme, binding.rights, preference.rights, configuration.rights)
+            if (preference.consents != null) {
+                buildConsentsTab(theme, binding.consents, preference.consents, configuration)
             }
-            buildRightSentTab(theme, binding.invokeRightSent)
+            if (preference.rights != null) {
+                buildRightsTab(theme, binding.rights, preference.rights, configuration.rights)
+                buildRightSentTab(theme, binding.invokeRightSent)
+            }
 
             setContentView(binding.root)
             setCanceledOnTouchOutside(false)
