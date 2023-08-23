@@ -3,6 +3,7 @@ package com.ketch.android.ui.view
 import android.annotation.SuppressLint
 import android.content.Context
 import android.util.AttributeSet
+import android.util.Log
 import android.view.LayoutInflater
 import android.widget.FrameLayout
 import androidx.core.view.isVisible
@@ -11,6 +12,7 @@ import com.ketch.android.api.response.FullConfiguration
 import com.ketch.android.api.response.Purpose
 import com.ketch.android.ui.databinding.ViewPurposeBinding
 import com.ketch.android.ui.extension.MarkdownUtils
+import com.ketch.android.ui.R
 import com.ketch.android.ui.theme.ColorTheme
 
 /**
@@ -45,14 +47,28 @@ class PurposeView @JvmOverloads constructor(
             configuration
         )
 
-        binding.legalBasisName.text = purpose.legalBasisName
+        val consentHideLegalBasis = configuration.experiences?.consentExperience?.modal?.hideLegalBases
+        val prefHideLegalBasis = configuration.experiences?.preference?.consents?.extensions?.get("hideLegalBases")
+        if (consentHideLegalBasis == true || prefHideLegalBasis == "true") {
+            binding.legalBasisName.isVisible = false
+            binding.legalBasicDescription.isVisible = false
+        } else {
+            binding.legalBasisName.text = purpose.legalBasisName
 
-        MarkdownUtils.markdown(
-            context,
-            binding.legalBasicDescription,
-            purpose.legalBasisDescription ?: "",
-            configuration
-        )
+            MarkdownUtils.markdown(
+                context,
+                binding.legalBasicDescription,
+                purpose.legalBasisDescription ?: "",
+                configuration
+            )
+        }
+
+        val translations = configuration.translations
+        if (translations != null) {
+            binding.legalBasisName.text = translations["legal_basis"] + ": " +  purpose.legalBasisName
+        } else {
+            binding.legalBasisName.text = context.getString(R.string.legal_basic_name, purpose.legalBasisName)
+        }
 
         binding.categories.isVisible = purpose.categories?.isNotEmpty() == true
         binding.categories.setOnClickListener {

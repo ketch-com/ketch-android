@@ -12,6 +12,7 @@ import com.ketch.android.api.response.Modal
 import com.ketch.android.api.response.Purpose
 import com.ketch.android.ui.databinding.ModalBinding
 import com.ketch.android.ui.extension.poweredByKetch
+import com.ketch.android.ui.R
 import com.ketch.android.ui.theme.ColorTheme
 
 /**
@@ -62,6 +63,14 @@ internal class ModalDialog(
                 listener.onShow(this)
             }
             setOnDismissListener { listener.onHide(this) }
+        }
+
+        var translations = configuration.translations
+        if (translations != null) {
+            //use translations provided by config
+            binding.poweredByKetch.contentDescription = translations["powered_by"] ?: context.getString(R.string.powered_by_ketch)
+        } else {
+            //use translations from local
         }
     }
 

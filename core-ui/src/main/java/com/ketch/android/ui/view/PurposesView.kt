@@ -55,7 +55,7 @@ class PurposesView @JvmOverloads constructor(
             configuration
         )
 
-        val adapter = PurposeListAdapter(theme)
+        val adapter = PurposeListAdapter(theme, configuration.translations, configuration.experiences)
         items = configuration.purposes?.filter {
             it.requiresDisplay == true
         }?.map { purpose ->
@@ -101,6 +101,13 @@ class PurposesView @JvmOverloads constructor(
                 }
             }
             adapter.notifyDataSetChanged()
+        }
+
+        val translations = configuration.translations
+        if (translations != null) {
+            binding.purposesListView.purposeTitle.text = translations["purposes"] ?: context.getString(R.string.purposes)
+            binding.purposesListView.acceptAllButton.text = translations["accept_all"]  ?: context.getString(R.string.accept_all)
+            binding.purposesListView.rejectAllButton.text = translations["reject_all"]  ?: context.getString(R.string.reject_all)
         }
     }
 }

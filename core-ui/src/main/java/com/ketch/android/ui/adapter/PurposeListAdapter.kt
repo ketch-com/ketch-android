@@ -1,5 +1,6 @@
 package com.ketch.android.ui.adapter
 
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.text.Html
@@ -9,6 +10,7 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.ketch.android.api.response.Experience
 import com.ketch.android.api.response.Purpose
 import com.ketch.android.ui.R
 import com.ketch.android.ui.databinding.ViewListPurposeRowBinding
@@ -17,7 +19,7 @@ import com.ketch.android.ui.theme.ColorTheme
 /**
  * Purpose List Adapter
  */
-internal class PurposeListAdapter(private val theme: ColorTheme?) :
+internal class PurposeListAdapter(private val theme: ColorTheme?, private val translations: Map<String, String>?, private val experiences: Experience?) :
     ListAdapter<PurposeItem, PurposeListAdapter.PurposesViewHolder>(DIFF_CALLBACK) {
 
     var vendorClickListener: (item: PurposeItem) -> Unit = {}
@@ -51,12 +53,37 @@ internal class PurposeListAdapter(private val theme: ColorTheme?) :
             vendorClickListener.invoke(item)
         }
 
-        val purposeDescription = context.getString(R.string.purpose_description, item.purpose.description)
-        holder.binding.purposeDescription.text = Html.fromHtml(purposeDescription, Html.FROM_HTML_MODE_LEGACY)
+        var purposeDescription = context.getString(R.string.purpose_description, item.purpose.description)
 
-        val legalBasisDescription =
+        var legalBasisDescription =
             context.getString(R.string.legal_basic_description, item.purpose.legalBasisDescription)
-        holder.binding.legalBasicDescription.text = Html.fromHtml(legalBasisDescription, Html.FROM_HTML_MODE_LEGACY)
+
+        if (translations != null ){
+            holder.binding.legalBasisName.text = translations["legal_basis"] + ": " +  item.purpose.legalBasisName
+
+            val translatedPurpose = translations["purpose"] ?: "Purpose"
+            val translatedLegalBasis = translations["legal_basis"] ?: "Legal Basis"
+            val pDescription = item.purpose.description ?: ""
+            val lbDescription = item.purpose.legalBasisDescription ?: ""
+            purposeDescription = "<b>$translatedPurpose:</b> $pDescription"
+            legalBasisDescription = "<b>$translatedLegalBasis:</b> $lbDescription"
+        }
+
+        val consentHideLegalBasis = experiences?.consentExperience?.modal?.hideLegalBases
+        val prefHideLegalBasis = experiences?.preference?.consents?.extensions?.get("hideLegalBases")
+        if (consentHideLegalBasis == true || prefHideLegalBasis == "true") {
+            holder.binding.legalBasisName.isVisible = false
+            holder.binding.legalBasicDescription.isVisible = false
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            holder.binding.purposeDescription.text = Html.fromHtml(purposeDescription, Html.FROM_HTML_MODE_COMPACT)
+            holder.binding.legalBasicDescription.text = Html.fromHtml(legalBasisDescription, Html.FROM_HTML_MODE_COMPACT)
+        } else {
+            holder.binding.purposeDescription.text = Html.fromHtml(purposeDescription, Html.FROM_HTML_MODE_LEGACY)
+            holder.binding.legalBasicDescription.text = Html.fromHtml(legalBasisDescription, Html.FROM_HTML_MODE_LEGACY)
+        }
+
 
         holder.binding.acceptSwitch.setOnCheckedChangeListener { _, isChecked ->
             item.accepted = isChecked

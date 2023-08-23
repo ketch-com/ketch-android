@@ -60,8 +60,12 @@ internal class PreferenceDialog(
 
             binding.tabLayout.apply {
                 addTab(newTab().setText(preference.overview.tabName))
-                addTab(newTab().setText(preference.consents.tabName))
-                addTab(newTab().setText(preference.rights.tabName))
+                if (preference.consents != null) {
+                    addTab(newTab().setText(preference.consents.tabName))
+                }
+                if (preference.rights != null) {
+                    addTab(newTab().setText(preference.rights.tabName))
+                }
 
                 addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
                     override fun onTabSelected(tab: TabLayout.Tab?) {
@@ -81,16 +85,22 @@ internal class PreferenceDialog(
 
             collectState(invokeRightSent) {
                 binding.rights.root.isVisible = binding.tabLayout.selectedTabPosition == 2 && !it
-                (binding.rights.rightsList.adapter as RightListAdapter).reset()
-                binding.rights.requestDetails.text = null
+                if (preference.rights != null) {
+                    (binding.rights.rightsList.adapter as RightListAdapter).reset()
+                    binding.rights.requestDetails.text = null
+                }
                 binding.invokeRightSent.root.isVisible =
                     binding.tabLayout.selectedTabPosition == 2 && it
             }
 
             buildOverviewTab(theme, binding.overview, preference.overview)
-            buildConsentsTab(theme, binding.consents, preference.consents, configuration)
-            buildRightsTab(theme, binding.rights, preference.rights, configuration.rights)
-            buildRightSentTab(theme, binding.invokeRightSent)
+            if (preference.consents != null) {
+                buildConsentsTab(theme, binding.consents, preference.consents, configuration)
+            }
+            if (preference.rights != null) {
+                buildRightsTab(theme, binding.rights, preference.rights, configuration.rights)
+                buildRightSentTab(theme, binding.invokeRightSent)
+            }
 
             setContentView(binding.root)
             setCanceledOnTouchOutside(false)
