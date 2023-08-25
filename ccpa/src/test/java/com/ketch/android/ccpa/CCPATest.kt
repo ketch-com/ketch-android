@@ -229,7 +229,8 @@ class CCPATest {
             formSwitchOnColor = null,
             formSwitchOffColor = null,
             modalSwitchOnColor = null,
-            modalSwitchOffColor = null
+            modalSwitchOffColor = null,
+            purposeButtonsLookIdentical = null
         ),
         scripts = null,
         vendors = null,

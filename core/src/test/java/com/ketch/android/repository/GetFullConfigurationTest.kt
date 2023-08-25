@@ -225,7 +225,8 @@ class GetFullConfigurationTest {
             formSwitchOffColor = null,
             formSwitchOnColor = null,
             modalSwitchOffColor = null,
-            modalSwitchOnColor = null
+            modalSwitchOnColor = null,
+            purposeButtonsLookIdentical = null
         ),
         scripts = null,
         vendors = null,

@@ -34,14 +34,14 @@
             android:layout_marginEnd="8dp"
             android:text="@string/reject_all"
             android:textAllCaps="false"
-            app:backgroundColor="@{theme.bodyBackgroundColor}"
+            app:backgroundColor="@{theme.rejectAllButtonBackgroundColor}"
             app:borderRadius="@{theme.buttonBorderRadius}"
             app:layout_constraintBottom_toBottomOf="@+id/acceptAllButton"
             app:layout_constraintEnd_toStartOf="@+id/acceptAllButton"
             app:layout_constraintTop_toTopOf="@+id/acceptAllButton"
-            app:strokeColor="@{theme.bodyTextColor}"
+            app:strokeColor="@{theme.rejectAllButtonBorderColor}"
             app:strokeWidth="1dp"
-            app:textColor="@{theme.bodyTextColor}" />
+            app:textColor="@{theme.rejectAllButtonTextColor}" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/acceptAllButton"
@@ -51,14 +51,14 @@
             android:layout_marginBottom="18dp"
             android:text="@string/accept_all"
             android:textAllCaps="false"
-            app:backgroundColor="@{theme.bodyBackgroundColor}"
+            app:backgroundColor="@{theme.acceptAllButtonBackgroundColor}"
             app:borderRadius="@{theme.buttonBorderRadius}"
             app:layout_constraintBottom_toTopOf="@+id/purposesList"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:strokeColor="@{theme.bodyTextColor}"
+            app:strokeColor="@{theme.acceptAllButtonBorderColor}"
             app:strokeWidth="1dp"
-            app:textColor="@{theme.bodyTextColor}" />
+            app:textColor="@{theme.acceptAllButtonTextColor}" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/purposesList"
