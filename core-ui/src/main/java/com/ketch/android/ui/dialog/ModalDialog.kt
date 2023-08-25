@@ -73,7 +73,7 @@ internal class ModalDialog(
             //use translations from local
         }
 
-        binding.poweredByKetch.isVisible = configuration.theme?.watermark ?: true
+        binding.poweredByKetch.isVisible = configuration.theme?.watermark ?: false
     }
 
     override fun onBackPressed() {

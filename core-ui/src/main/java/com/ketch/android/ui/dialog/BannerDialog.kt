@@ -99,6 +99,8 @@ internal class BannerDialog(
             listener.onShow(this)
         }
         setOnDismissListener { listener.onHide(this) }
+
+        binding.poweredByKetch.isVisible = configuration.theme?.watermark ?: false
     }
 
     interface BannerDialogListener {
