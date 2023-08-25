@@ -108,6 +108,8 @@ internal class PreferenceDialog(
 
             setOnShowListener { listener.onShow(this) }
             setOnDismissListener { listener.onHide(this) }
+
+            binding.poweredByKetch.isVisible = configuration.theme?.watermark ?: true
         }
     }
 
