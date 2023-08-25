@@ -32,6 +32,7 @@ data class Theme(
     @SerializedName("formButtonColor") val formButtonColor: String?,
     @SerializedName("formSwitchOffColor") val formSwitchOffColor: String?,
     @SerializedName("formSwitchOnColor") val formSwitchOnColor: String?,
+    @SerializedName("purposeButtonsLookIdentical") val purposeButtonsLookIdentical: Boolean?
 )
 
 enum class BannerPosition {

@@ -25,6 +25,14 @@ data class ColorTheme(
     val secondButtonBackgroundColor: String?,
     val secondButtonBorderColor: String?,
     val secondButtonTextColor: String?,
+
+    val rejectAllButtonBackgroundColor: String?,
+    val rejectAllButtonBorderColor: String?,
+    val rejectAllButtonTextColor: String?,
+
+    val acceptAllButtonBackgroundColor: String?,
+    val acceptAllButtonBorderColor: String?,
+    val acceptAllButtonTextColor: String?,
 ) {
     companion object {
         fun bannerColorTheme(theme: Theme): ColorTheme =
@@ -48,6 +56,14 @@ data class ColorTheme(
                 secondButtonBackgroundColor = if (theme.bannerSecondaryButtonVariant == "outlined") theme.bannerBackgroundColor else theme.bannerSecondaryButtonColor,
                 secondButtonBorderColor = if (theme.bannerSecondaryButtonVariant == "outlined") theme.bannerSecondaryButtonColor else theme.bannerButtonColor,
                 secondButtonTextColor = if (theme.bannerSecondaryButtonVariant == "outlined") theme.bannerSecondaryButtonColor else theme.bannerButtonColor,
+
+                rejectAllButtonBackgroundColor = null,
+                rejectAllButtonBorderColor = null,
+                rejectAllButtonTextColor = null,
+
+                acceptAllButtonBackgroundColor = null,
+                acceptAllButtonBorderColor = null,
+                acceptAllButtonTextColor = null
             )
 
         fun modalColorTheme(theme: Theme): ColorTheme =
@@ -71,6 +87,14 @@ data class ColorTheme(
                 secondButtonBackgroundColor = theme.modalHeaderBackgroundColor,
                 secondButtonBorderColor = theme.modalButtonColor,
                 secondButtonTextColor = theme.modalButtonColor,
+
+                rejectAllButtonBackgroundColor = "#F2F2F7FF",
+                rejectAllButtonBorderColor = "#F2F2F7FF",
+                rejectAllButtonTextColor = theme.modalContentColor,
+
+                acceptAllButtonBackgroundColor = if (theme.purposeButtonsLookIdentical != null && theme.purposeButtonsLookIdentical == true) "#F2F2F7FF" else "#ffffff",
+                acceptAllButtonBorderColor = if (theme.purposeButtonsLookIdentical != null && theme.purposeButtonsLookIdentical == true) "#F2F2F7FF" else theme.modalContentColor,
+                acceptAllButtonTextColor = theme.modalContentColor
             )
 
         fun preferenceColorTheme(theme: Theme): ColorTheme =
@@ -94,6 +118,14 @@ data class ColorTheme(
                 secondButtonBackgroundColor = "#ffffff",
                 secondButtonBorderColor = theme.formButtonColor,
                 secondButtonTextColor = theme.formButtonColor,
+
+                rejectAllButtonBackgroundColor = "#F2F2F7FF",
+                rejectAllButtonBorderColor = "#F2F2F7FF",
+                rejectAllButtonTextColor = theme.modalContentColor,
+
+                acceptAllButtonBackgroundColor = "#ffffff",
+                acceptAllButtonBorderColor = theme.modalContentColor,
+                acceptAllButtonTextColor = theme.modalContentColor
             )
     }
 }
