@@ -10,7 +10,7 @@ data class Vendor(
     @SerializedName("features") val features: List<VendorPurpose>?,
     @SerializedName("specialFeatures") val specialFeatures: List<VendorPurpose>?,
     @SerializedName("policyUrl") val policyUrl: String?,
-    @SerializedName("cookieMaxAgeSeconds") val cookieMaxAgeSeconds: Int?,
+    @SerializedName("cookieMaxAgeSeconds") val cookieMaxAgeSeconds: Long?,
     @SerializedName("usesCookies") val usesCookies: Boolean?,
     @SerializedName("usesNonCookieAccess") val usesNonCookieAccess: Boolean?,
 )
