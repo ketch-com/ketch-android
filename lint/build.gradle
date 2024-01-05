@@ -13,7 +13,7 @@ dependencies {
 
 jar {
     manifest {
-        attributes('Lint-Registry-v2': 'com.ketch.lint.OneAppIssueRegistry')
+        attributes('Lint-Registry-v2': 'com.savantsystems.oneapp.lint.OneAppIssueRegistry')
     }
 }
 

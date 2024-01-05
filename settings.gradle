@@ -1,7 +1,5 @@
-include ':core'
 include ':lint'
-include ':tcf'
-include ':ccpa'
-include ':core-ui'
 
 rootProject.name = "KetchSDK"
+include ':websdk'
+include ':app'

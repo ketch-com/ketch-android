@@ -1,44 +1,27 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
 apply plugin: "com.github.ben-manes.versions"
 apply plugin: "org.jlleitschuh.gradle.ktlint"
 apply plugin: 'com.jfrog.artifactory'
 apply plugin: 'maven-publish'
-apply plugin: "jacoco"
 apply plugin: "org.jetbrains.dokka"
-apply from: "${rootProject.projectDir}/scripts/gradle/jacoco/jacoco_common.gradle"
 
 buildscript {
     ext.buildConfig = [
             'minSdk'    : 28,
-            'targetSdk' : 32,
-            'compileSdk': 32,
+            'targetSdk' : 33,
+            'compileSdk': 33,
     ]
     ext.versions = [
-            'ketch'        : "0.2.+",
-            'kotlin'       : '1.7.10',
-            'ktx'          : '1.8.0',
-            'coroutines'   : '1.6.1',
-            'dagger'       : '2.44',
+            'javaVersion'  :  17,
+            'buildTools'   : '33.0.2',
+            'kotlin'       : '1.8.21',
+            'ktx'          : '1.9.0',
             'lint'         : '27.2.0',
-            'lifecycle'    : '2.5.1',
             'appcompat'    : '1.5.1',
-            'fragment'     : '1.5.1',
             'material'     : '1.7.0',
-            'retrofit'     : '2.9.0',
-            'okhttp'       : '4.10.0',
-            'serialization': '1.2.2',
+            'dokka'        : '1.7.20',
             'junit'        : '5.7.1',
-            'junit4'       : '4.13.1',
-            'mockk'        : '1.11.0',
-            'runner'       : '1.4.0',
-            'rules'        : '1.4.0',
-            'junitRunner'  : '1.2.2',
-            'testExt'      : '1.1.3',
-            'mockito'      : '3.1.0',
-            'mockwebserver': '4.7.2',
             'gson'         : '2.9.1',
-            'markwon'      : '4.3.0',
-            'dokka'        : '1.7.20'
+            'webkit'       : '1.5.0'
     ]
     repositories {
         google()
@@ -46,12 +29,12 @@ buildscript {
         maven { url "https://plugins.gradle.org/m2/" }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.2.0'
+        classpath 'com.android.tools.build:gradle:8.0.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
         classpath "org.jetbrains.kotlin:kotlin-serialization:${versions.kotlin}"
         classpath "de.mannodermaus.gradle.plugins:android-junit5:1.7.1.1"
-        classpath "com.github.ben-manes:gradle-versions-plugin:0.42.0"
-        classpath "org.jlleitschuh.gradle:ktlint-gradle:10.3.0"
+        classpath "com.github.ben-manes:gradle-versions-plugin:0.44.0"
+        classpath "org.jlleitschuh.gradle:ktlint-gradle:11.6.0"
         classpath("org.jfrog.buildinfo:build-info-extractor-gradle:4.29.0") {
             exclude group: 'org.codehaus.groovy'
         }
@@ -78,135 +61,12 @@ allprojects {
     }
 }
 
-task jacocoRootReport(type: JacocoReport, group: 'Coverage reports') {
-    description = 'Generates an aggregate report from all subprojects'
-    def excludes = jacocoExcludes
-
-    subprojects.each { subproject ->
-        subproject.afterEvaluate {
-            if (!subproject.plugins.withType(JacocoPlugin).isEmpty()) {
-
-                // class directories for android modules
-                def javaClasses = fileTree(dir: "${subproject.buildDir}/intermediates/javac", excludes: excludes)
-                def kotlinClasses = fileTree(dir: "${subproject.buildDir}/tmp/kotlin-classes", excludes: excludes)
-
-                // class directories for java and kotlin modules
-                def javaClasses2 = fileTree(dir: "${subproject.buildDir}/classes/java", excludes: excludes)
-                def kotlinClasses2 = fileTree(dir: "${subproject.buildDir}/classes/kotlin", excludes: excludes)
-
-                classDirectories.from([javaClasses, kotlinClasses, javaClasses2, kotlinClasses2])
-
-                sourceDirectories.from([
-                        "${subproject.projectDir}/src/main/java",
-                        "${subproject.projectDir}/src/main/kotlin",
-                ])
-
-
-                executionData(
-                        fileTree(
-                                dir: "${subproject.buildDir}",
-                                includes: [
-                                        'coverage.ec',
-                                        'jacoco/*.exec',
-                                        "outputs/code_coverage/*/connected/*.ec"
-                                ]
-                        )
-                )
-            }
-        }
-    }
-
-    reports {
-        html.required = true
-        xml.required = true
-    }
-}
-
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
 
 ext {
-    ketch_version = '0.2.' + System.getenv('GITHUB_RUN_NUMBER')
-}
-
-project('core') {
-    publishing {
-        publications {
-            core(MavenPublication) {
-                groupId 'com.ketch.android'
-                version ketch_version
-                artifactId 'core'
-
-                artifact("$buildDir/outputs/aar/core-release.aar")
-            }
-        }
-    }
-}
-
-project('ccpa') {
-    publishing {
-        publications {
-            ccpa(MavenPublication) {
-                groupId 'com.ketch.android'
-                version ketch_version
-                artifactId 'ccpa'
-
-                artifact("$buildDir/outputs/aar/ccpa-release.aar")
-            }
-        }
-    }
-}
-
-project('tcf') {
-    publishing {
-        publications {
-            tcf(MavenPublication) {
-                groupId 'com.ketch.android'
-                version ketch_version
-                artifactId 'tcf'
-
-                artifact("$buildDir/outputs/aar/tcf-release.aar")
-            }
-        }
-    }
-}
-
-project('core-ui') {
-    publishing {
-        publications {
-            coreui(MavenPublication) {
-                groupId 'com.ketch.android'
-                version ketch_version
-                artifactId 'core-ui'
-
-                artifact("$buildDir/outputs/aar/core-ui-release.aar")
-            }
-        }
-    }
-}
-
-artifactory {
-    contextUrl = 'https://ketch.jfrog.io/artifactory/'
-
-    publish {
-        repository {
-            repoKey = 'android'
-
-            username = System.getenv('ARTIFACTORY_USERNAME')
-            password = System.getenv('ARTIFACTORY_PASSWORD')
-        }
-
-        defaults {
-            publications('core', 'coreui', 'ccpa', 'tcf', 'doczip')
-            publishBuildInfo = false   //Publish build-info to Artifactory (true by default)
-            publishArtifacts = true   //Publish artifacts to Artifactory (true by default)
-            publishPom = true   //Publish generated POM files to Artifactory (true by default).
-            publishIvy = false
-            //Publish generated Ivy descriptor files to Artifactory (true by default).
-            properties = ['qa.level': 'basic', 'q.os': 'android']
-        }
-    }
+    ketch_version = '0.3.' + System.getenv('GITHUB_RUN_NUMBER')
 }
 
 dokkaHtmlMultiModule.configure {
@@ -227,19 +87,3 @@ task packageDoc(type: Zip) {
     destinationDirectory = file("$buildDir/doc")
     from "$buildDir/dokka/htmlMultiModule/"
 }
-
-publishing {
-    publications{
-        doczip(MavenPublication) {
-            artifact packageDoc
-            version ketch_version
-            artifactId 'sdk-doc'
-            artifact("$buildDir/doc/sdk-doc.zip")
-        }
-    }
-}
-
-artifactoryPublish {
-    publications('doczip')
-}
-
