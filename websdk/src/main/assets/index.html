@@ -76,7 +76,7 @@
             var e=document.createElement("script");
             e.type="text/javascript";
             // TODO: make this configurable via SDK parameters
-            e.src=`https://dev.ketchcdn.com/web/v2/config/${orgCode}/${propertyName}/boot.js`;
+            e.src=`https://dev.ketchcdn.com/web/v3/config/${orgCode}/${propertyName}/boot.js`;
             e.defer=e.async=!0;
             document.getElementsByTagName("head")[0].appendChild(e);
             window.semaphore=window.semaphore||[];
