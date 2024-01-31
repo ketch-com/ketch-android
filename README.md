@@ -1,108 +1,178 @@
-# ketch
+# Ketch Android SDK v3.0
+
 Mobile SDK for Android
 
-SDK includes core, ccpa, tcf and core-ui modules 
-Core - Base SDK module. It icludes all necessary request to work with our backend
-CCPA and TCF - Specific protocol plugins. 
-Core UI - UI Module. It includes all predefined dialogs for users.
+Minimum Android API version supported: 31
 
-## Build SDK
-1. Add your jfrog credential (ARTIFACTORY_USERNAME and ARTIFACTORY_PASSWORD) and sdk version (GITHUB_RUN_NUMBER) to environment values
-2. Build Core ./gradlew core:build
-3. Build CCPA Plugin ./gradlew ccpa:build
-4. Build TCF Plugin ./gradlew tcf:build
-5. Build Core UI ./gradlew core-ui:build
-6. Publish .aar libraries to jfrog ./gradlew artifactoryPublish
+## Prerequisites
+- Registered [Ketch organization account](https://app.ketch.com/settings/organization)
+- Configured [application property](https://app.ketch.com/deployment/applications) record
+- [Android Studio](https://developer.android.com/studio) + follow the setup wizard to install SDK and Emulator
 
-## Core Module
-KetchSdk - Factory to create the Ketch singleton. It creates `KetchApi` using `retrofit` and `KetchApi::class.java`, 
-`Repository` and usecases (`OrganizationConfigUseCase`, `ConsentUseCase`, `RightsUseCase`)
+## Running the Sample app
 
-Ketch - Main Ketch SDK class. This class includes all methods to work with the backend. It using `config` and `consent` StateFlow calls
-`configLoaded` and `consentChanged` methods in all attached plugins.
-
-KetchApi - describes all API requests.
-
-com.ketch.android.api.request package - includes API requests
-com.ketch.android.api.response package - includes API responses
-
-com.ketch.android.api.usecase package - includes `OrganizationConfigUseCase`, `ConsentUseCase`, `RightsUseCase`
-
-com.ketch.android.plugin.Plugin - base class for plugins. If you want to create your plugin you should extend this abstract class:
-```kotlin
-class CustomPlugin(listener: (encodedString: String?, applied: Boolean) -> Unit) : Plugin(listener) {
-    
-    override fun isApplied(): Boolean = 
-        configuration?.regulations?.contains(REGULATION) == true
-
-    override fun consentChanged(consent: Consent) {
-        ...
-        listener.invoke(encodedString, applied)
-    }
-
-    override fun hashCode(): Int {
-        return REGULATION.hashCode()
-    }
-
-    override fun equals(other: Any?): Boolean {
-        return REGULATION.equals(other)
-    }
-
-    companion object {
-        private const val REGULATION = "<your regulation>"
-    }
-}
+### Step 1. Clone the repository
 
 ```
-
-## CCPA module
-CCPA Plugin. It extends Plugin class and can encode CCPA string from `config` and `consent`
-
-## TCF module
-TCF Plugin. It extends Plugin class and can encode TCF string from `config` and `consent`
-
-## Core UI Module
-KetchUI - main class of core-ui. It contains methods to show `Banner`, `Modal`, `Just In Time` and `Preferences` Popups.
-com.ketch.android.ui.dialog package includes all dialog ui implementations.
-com.ketch.android.ui.adapter package contains adapters for used lists (`DataCategory`, `Purposes`, `Rights` and `Vendors`).
-com.ketch.android.ui.view package contains `DataCategoriesView`, `PurposesView` and `VendorsView`
-com.ketch.android.ui.extension.ThemeBindingAdapter.kt includes binding adapters to work with the color theme
-```kotlin
-@ColorInt
-private fun getColor(hex: String): Int = try {
-    Color.parseColor(hex)
-} catch (ex: IllegalArgumentException) {
-    android.R.color.transparent
-}
-
-@BindingAdapter("backgroundColor")
-fun setBackgroundColor(view: View, color: String?) {
-    color?.let {
-        view.setBackgroundColor(getColor(it))
-    }
-}
-...
+git clone git@github.com:ketch-com/ketch-android.git
+cd ketch-android
+git checkout sdk-3
 ```
+
+### Step 2. Run the app in Android Studio
+
+Open the project directory `ketch-android` in the Android Studio.
+
+Add your organization code, property code to
+`ketch-android/app/src/main/java/com/ketch/sample/MainActivity.kt`:
+
+```kotlin
+private const val ORG_CODE = "????????????????"
+private const val PROPERTY = "????????????????"
+```
+
+Click Run to build and run the app on the simulator or a device.
+
+
+
+# Developer's Documentations
+
+Mobile WebSDK for Android
+
+SDK includes Ketch, KetchSdk, KetchSharedPreferences, KetchWebView, KetchDialogFragment classes 
+Ketch - Main SDK class. 
+KetchSdk - Ketch creator. 
+KetchSharedPreferences - SharedPreferences class to save TCP/USPrivacy/Gpp strings
+
+
+## Adding WebSDK in your project
+1. Copy and paste websdk module to your project
+2. Add "include ':websdk'" to settings.graddle 
+3. Add dependency into your main module:
+```kotlin
+   "implementation project(':websdk')"
+```
+4. Add constants to companion object of your activity
+```kotlin
+        private const val ORG_CODE = "<your organization code>"
+        private const val PROPERTY = "<property>"
+        private const val ADVERTISING_ID_CODE = "aaid"
+```
+4. Add listener and Ketch to your activity:
+```kotlin
+   private val listener = object : Ketch.Listener {
+
+        override fun onEnvironmentUpdated(environment: String?) {
+            Log.d(TAG, "onEnvironmentUpdated: environment = $environment")
+        }
+
+        override fun onRegionInfoUpdated(regionInfo: String?) {
+            Log.d(TAG, "onRegionInfoUpdated: regionInfo = $regionInfo")
+        }
+
+        override fun onJurisdictionUpdated(jurisdiction: String?) {
+            Log.d(TAG, "onJurisdictionUpdated: jurisdiction = $jurisdiction")
+        }
+
+        override fun onIdentitiesUpdated(identities: String?) {
+            Log.d(TAG, "onIdentitiesUpdated: identities = $identities")
+        }
+
+        override fun onConsentUpdated(consent: Consent) {
+            val consentJson = Gson().toJson(consent)
+            Log.d(TAG, "onConsentUpdated: consent = $consentJson")
+        }
+
+        override fun onError(errMsg: String?) {
+            Log.e(TAG, "onError: errMsg = $errMsg")
+        }
+
+        override fun onUSPrivacyUpdated(values: Map<String, Any?>) {
+            Log.d(TAG, "onUSPrivacyUpdated: $values")
+        }
+
+        override fun onTCFUpdated(values: Map<String, Any?>) {
+            Log.d(TAG, "onTCFUpdated: $values")
+        }
+
+        override fun onGPPUpdated(values: Map<String, Any?>) {
+            Log.d(TAG, "onGPPUpdated: $values")
+        }
+   }
+
+   private val ketch: Ketch by lazy {
+        KetchSdk.create(
+            this,
+            supportFragmentManager,
+            ORG_CODE,
+            PROPERTY,
+            listener
+        ).build()
+   }
+```
+5. Add advertising loading code and set it in Ketch object and call load() method
+```kotlin
+    with(ketch) {
+        setIdentities(mapOf(ADVERTISING_ID_CODE to advertisingIdCode))
+        load()
+    }
+```
+
+## Ketch methods:
+1. load() - loads web content and displays a dialog if necessary
+1. getSavedString(key: String) - returns a saved TCF/USPrivacy/Gpp strings and other protocol parameters by key
+2. getTCFTCString() - returns a saved TCF string
+3. getUSPrivacyString() - returns a saved USPrivacy string
+4. getGPPHDRGppString() - returns a saved GPP string
+5. forceShowConsent() - loads web content and forces Consent Dialog (Banner or Modal) 
+6. showPreferences() - loads web content and displays Preferences Dialog
+
+## Dialog Position and animation
+Ketch automatically uses the dialog position and animation from your configuration.
+If you want to use a different position, you can set it using these methods:
+```kotlin
+   setBannerWindowPosition(position: WindowPosition?)
+   setModalWindowPosition(position: WindowPosition?)
+```
+
+## Dialog Sizes resources:
+```xml
+<resources>
+   ...
+    <style name="KetchBannerTopBottom">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">620dp</item>
+    </style>
+    <style name="KetchBannerLeftRightCenter">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">620dp</item>
+    </style>
+
+    <style name="KetchModalTopBottom">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">720dp</item>
+    </style>
+    <style name="KetchModalLeftRightCenter">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">720dp</item>
+    </style>
+
+</resources>
+```
+## Dialog Animations resources:
+fade_in_center.xml
+slide_from_bottom.xml
+slide_from_left.xml
+slide_from_right.xml
+slide_from_top.xml
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools">
-
-    <data>
-
-        <variable
-            name="theme"
-            type="com.ketch.android.ui.theme.ColorTheme" />
-    </data>
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingHorizontal="18dp"
-        app:backgroundColor="@{theme.bodyBackgroundColor}">
-        
-        ...
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+    <alpha
+        android:duration="600"
+        android:fromAlpha="0.0"
+        android:startOffset="500"
+        android:toAlpha="1.0" />
+</set>
 ```
-

@@ -1,0 +1,36 @@
+<resources>
+    <style name="SlideFromBottomAnimation">
+        <item name="android:windowEnterAnimation">@anim/slide_from_bottom</item>
+    </style>
+    <style name="SlideFromTopAnimation">
+        <item name="android:windowEnterAnimation">@anim/slide_from_top</item>
+    </style>
+    <style name="SlideFromLeftAnimation">
+        <item name="android:windowEnterAnimation">@anim/slide_from_left</item>
+    </style>
+    <style name="SlideFromRightAnimation">
+        <item name="android:windowEnterAnimation">@anim/slide_from_right</item>
+    </style>
+    <style name="FadeInCenterAnimation">
+        <item name="android:windowEnterAnimation">@anim/fade_in_center</item>
+    </style>
+
+    <style name="KetchBannerTopBottom">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">620dp</item>
+    </style>
+    <style name="KetchBannerLeftRightCenter">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">620dp</item>
+    </style>
+
+    <style name="KetchModalTopBottom">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">720dp</item>
+    </style>
+    <style name="KetchModalLeftRightCenter">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">720dp</item>
+    </style>
+
+</resources>

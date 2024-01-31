@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Ketch SDK Sample</string>
+    <string name="cannot_get_advertising_id_toast">Cannot get AdvertisingId</string>
+    <string name="device_offline">No internet connection</string>
+    <string name="server_not_available">Server is not available</string>
+
+    <string name="button_show_banner">Show Banner</string>
+    <string name="button_show_modal">Show Modal</string>
+    <string name="button_show_jit">Show Jit</string>
+    <string name="button_show_preference">Show Preference</string>
+</resources>
