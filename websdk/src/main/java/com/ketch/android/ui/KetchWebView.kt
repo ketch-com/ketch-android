@@ -18,7 +18,6 @@ import com.google.gson.FieldNamingPolicy
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonParseException
-import com.google.gson.internal.LinkedTreeMap
 import com.ketch.android.Ketch
 import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
@@ -117,7 +116,7 @@ class KetchWebView(context: Context) : WebView(context) {
     }
 
     fun showPreferencesTab(tab: Ketch.PreferencesTab) {
-        this.forceShow = Ketch.ExperienceType.PREFERENCES_TAB
+        this.forceShow = Ketch.ExperienceType.PREFERENCES
         this.preferencesTab = tab
         load()
     }
@@ -146,12 +145,9 @@ class KetchWebView(context: Context) : WebView(context) {
             "https://appassets.androidplatform.net/assets/index.html?ketch_lang=$language&orgCode=$orgCode&propertyName=$property"
 
         forceShow?.let {
-            if (it == Ketch.ExperienceType.PREFERENCES_TAB) {
-                preferencesTab?.let {
-                    url += "&ketch_preferences_tab=${it.getUrlParameter()}"
-                }
-            } else {
-                url += "&ketch_show=${it.getUrlParameter()}"
+            url += "&ketch_show=${it.getUrlParameter()}"
+            preferencesTab?.let {
+                url += "&ketch_preferences_tab=${it.getUrlParameter()}"
             }
         }
 
