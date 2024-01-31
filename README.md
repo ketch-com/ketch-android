@@ -1,53 +1,18 @@
-# Ketch Android SDK v3.0
+# Ketch Mobile SDK for Android
 
-Mobile SDK for Android
+The Ketch Mobile SDK allows to manage and collect a visitor's consent preferences for an organization on the mobile platforms.
 
-Minimum Android API version supported: 31
+## Requirements
 
-## Prerequisites
-- Registered [Ketch organization account](https://app.ketch.com/settings/organization)
-- Configured [application property](https://app.ketch.com/deployment/applications) record
-- [Android Studio](https://developer.android.com/studio) + follow the setup wizard to install SDK and Emulator
+Minimum Android API version supported is 31
 
-## Running the Sample app
+The use of the Mobile SDK requires an [Ketch organization account](https://app.ketch.com/settings/organization)
+with the [application property](https://app.ketch.com/deployment/applications)  configured.
 
-### Step 1. Clone the repository
+## Quick Start
 
-```
-git clone git@github.com:ketch-com/ketch-android.git
-cd ketch-android
-git checkout sdk-3
-```
-
-### Step 2. Run the app in Android Studio
-
-Open the project directory `ketch-android` in the Android Studio.
-
-Add your organization code, property code to
-`ketch-android/app/src/main/java/com/ketch/sample/MainActivity.kt`:
-
-```kotlin
-private const val ORG_CODE = "????????????????"
-private const val PROPERTY = "????????????????"
-```
-
-Click Run to build and run the app on the simulator or a device.
-
-
-
-# Developer's Documentations
-
-Mobile WebSDK for Android
-
-SDK includes Ketch, KetchSdk, KetchSharedPreferences, KetchWebView, KetchDialogFragment classes 
-Ketch - Main SDK class. 
-KetchSdk - Ketch creator. 
-KetchSharedPreferences - SharedPreferences class to save TCP/USPrivacy/Gpp strings
-
-
-## Adding WebSDK in your project
 1. Copy and paste websdk module to your project
-2. Add "include ':websdk'" to settings.graddle 
+2. Add "include ':websdk'" to settings.graddle
 3. Add dependency into your main module:
 ```kotlin
    "implementation project(':websdk')"
@@ -118,6 +83,15 @@ KetchSharedPreferences - SharedPreferences class to save TCP/USPrivacy/Gpp strin
     }
 ```
 
+# Developer's Documentations
+
+SDK includes Ketch, KetchSdk, KetchSharedPreferences, KetchWebView, KetchDialogFragment classes 
+Ketch - Is the where the SDK functionality resides. 
+KetchSdk - Class used to initialize the Ketch SDK 
+KetchSharedPreferences - SharedPreferences class is used for saving the TCF/USPrivacy/GPP strings
+
+## Adding WebSDK in your project
+
 ## Ketch methods:
 1. load() - loads web content and displays a dialog if necessary
 1. getSavedString(key: String) - returns a saved TCF/USPrivacy/Gpp strings and other protocol parameters by key
@@ -176,3 +150,30 @@ slide_from_top.xml
         android:toAlpha="1.0" />
 </set>
 ```
+
+## Running the Sample app
+
+### Prerequisites
+- [Android Studio](https://developer.android.com/studio) + follow the setup wizard to install SDK and Emulator
+
+### Step 1. Clone the repository
+
+```
+git clone git@github.com:ketch-com/ketch-android.git
+cd ketch-android
+git checkout sdk-3
+```
+
+### Step 2. Run the app in Android Studio
+
+Open the project directory `ketch-android` in the Android Studio.
+
+Add your organization code, property code to
+`ketch-android/app/src/main/java/com/ketch/sample/MainActivity.kt`:
+
+```kotlin
+private const val ORG_CODE = "????????????????"
+private const val PROPERTY = "????????????????"
+```
+
+Click Run to build and run the app on the simulator or a device.
