@@ -253,25 +253,25 @@ class Ketch private constructor(
 
     enum class ExperienceType {
         CONSENT,
-        PREFERENCES,
-        PREFERENCES_TAB;
+        PREFERENCES;
 
         fun getUrlParameter(): String = when (this) {
             CONSENT -> "cd"
             PREFERENCES -> "preferences"
-            PREFERENCES_TAB -> ""
         }
     }
 
     enum class PreferencesTab {
         OVERVIEW,
         RIGHTS,
-        CONSENTS;
+        CONSENTS,
+        SUBSCRIPTIONS;
 
         fun getUrlParameter(): String = when (this) {
             OVERVIEW -> "overviewTab"
             RIGHTS -> "rightsTab"
             CONSENTS -> "consentsTab"
+            SUBSCRIPTIONS -> "subscriptionsTab"
         }
     }
 
