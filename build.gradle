@@ -51,13 +51,6 @@ allprojects {
         maven { url 'https://jitpack.io' }
         maven { url "https://dl.cloudsmith.io/public/indooratlas/mvn-public/maven" }
         maven { url "https://software.mobile.pendo.io/artifactory/android-release" }
-        maven {
-            url "https://ketch.jfrog.io/artifactory/android/"
-            credentials {
-                username = System.getenv('ARTIFACTORY_USERNAME')
-                password = System.getenv('ARTIFACTORY_PASSWORD')
-            }
-        }
     }
 }
 
