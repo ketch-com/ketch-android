@@ -21,20 +21,23 @@ object KetchSdk {
      * @param organization - your organization code
      * @param property - the property name
      * @param listener - Ketch.Listener
+     * @param override url
      */
     fun create(
         context: Context,
         fragmentManager: FragmentManager,
         organization: String,
         property: String,
-        listener: Ketch.Listener
+        listener: Ketch.Listener,
+        url: String? = null
     ): Ketch.Builder {
         return Ketch.Builder.create(
             context = context,
             fragmentManager = fragmentManager,
             orgCode = organization,
             property = property,
-            listener = listener
+            listener = listener,
+            url = url
         )
     }
 }

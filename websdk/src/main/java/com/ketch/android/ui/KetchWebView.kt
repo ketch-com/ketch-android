@@ -27,10 +27,12 @@ import com.ketch.android.data.KetchConfig
 
 @SuppressLint("SetJavaScriptEnabled")
 class KetchWebView(context: Context) : WebView(context) {
+    private var envirementUrl: String? = null
     private lateinit var orgCode: String
     private lateinit var property: String
     private var identities: List<Identity> = emptyList()
     private var forceShow: Ketch.ExperienceType? = null
+    private var preferencesTabs: List<Ketch.PreferencesTab> = emptyList()
     private var preferencesTab: Ketch.PreferencesTab? = null
     private var language: String = ENGLISH
     private var jurisdiction: String? = null
@@ -101,22 +103,26 @@ class KetchWebView(context: Context) : WebView(context) {
     fun load(
         orgCode: String,
         property: String,
-        identities: List<Identity> = emptyList()
+        identities: List<Identity> = emptyList(),
+        url: String?
     ) {
         this.orgCode = orgCode
         this.property = property
         this.identities = identities
+        this.envirementUrl = url
         load()
     }
 
     fun forceShow(forceShow: Ketch.ExperienceType?) {
         this.forceShow = forceShow
+        this.preferencesTabs = emptyList()
         this.preferencesTab = null
         load()
     }
 
-    fun showPreferencesTab(tab: Ketch.PreferencesTab) {
+    fun showPreferencesTab(tabs: List<Ketch.PreferencesTab>, tab: Ketch.PreferencesTab) {
         this.forceShow = Ketch.ExperienceType.PREFERENCES
+        this.preferencesTabs = tabs
         this.preferencesTab = tab
         load()
     }
@@ -124,18 +130,21 @@ class KetchWebView(context: Context) : WebView(context) {
     fun setLanguage(language: String) {
         this.forceShow = null
         this.preferencesTab = null
+        this.preferencesTabs = emptyList()
         this.language = language
     }
 
     fun setJurisdiction(jurisdiction: String?) {
         this.forceShow = null
         this.preferencesTab = null
+        this.preferencesTabs = emptyList()
         this.jurisdiction = jurisdiction
     }
 
     fun setRegion(region: String?) {
         this.forceShow = null
         this.preferencesTab = null
+        this.preferencesTabs = emptyList()
         this.region = region
     }
 
@@ -144,8 +153,15 @@ class KetchWebView(context: Context) : WebView(context) {
         var url =
             "https://appassets.androidplatform.net/assets/index.html?ketch_lang=$language&orgCode=$orgCode&propertyName=$property"
 
+        envirementUrl?.let {
+            url += "&ketch_mobilesdk_url=${it}"
+        }
+
         forceShow?.let {
             url += "&ketch_show=${it.getUrlParameter()}"
+            if (preferencesTabs.isNotEmpty()) {
+                url += "&ketch_preferences_tabs=${preferencesTabs.map { it.getUrlParameter() }.joinToString(",")}"
+            }
             preferencesTab?.let {
                 url += "&ketch_preferences_tab=${it.getUrlParameter()}"
             }
