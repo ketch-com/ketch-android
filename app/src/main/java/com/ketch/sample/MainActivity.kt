@@ -3,6 +3,7 @@ package com.ketch.sample
 import android.os.Bundle
 import android.util.Log
 import android.widget.ArrayAdapter
+import android.widget.CompoundButton
 import android.widget.Toast
 import androidx.core.view.isVisible
 import com.google.android.gms.ads.identifier.AdvertisingIdClient
@@ -74,7 +75,8 @@ class MainActivity : BaseActivity() {
             supportFragmentManager,
             ORG_CODE,
             PROPERTY,
-            listener
+            listener,
+            TEST_URL
         ).build()
     }
 
@@ -125,9 +127,39 @@ class MainActivity : BaseActivity() {
                 ketch.showPreferences()
             }
 
+            val preferenceTabAdapter: ArrayAdapter<Ketch.PreferencesTab> =
+                ArrayAdapter<Ketch.PreferencesTab>(this@MainActivity, android.R.layout.simple_spinner_dropdown_item)
+            spPreferencesTab.adapter = preferenceTabAdapter
+
+            val cbListener = CompoundButton.OnCheckedChangeListener { buttonView, isChecked ->
+                val preferencesTabs = getMultiselectedPreferencesTab()
+                val selectedItem = spPreferencesTab.selectedItemPosition.let {
+                    if (it >= 0) {
+                        preferenceTabAdapter.getItem(it)
+                    } else null
+                }
+                preferenceTabAdapter.clear()
+                preferenceTabAdapter.addAll(preferencesTabs)
+                selectedItem?.let {
+                    val index = preferencesTabs.indexOf(it)
+                    if (index >= 0) {
+                        spPreferencesTab.setSelection(index)
+                    }
+                }
+            }
+            cbOverviewTab.setOnCheckedChangeListener(cbListener)
+            cbRightsTab.setOnCheckedChangeListener(cbListener)
+            cbConsentsTab.setOnCheckedChangeListener(cbListener)
+            cbSubscriptionsTab.setOnCheckedChangeListener(cbListener)
+
             buttonShowPreferencesTab.setOnClickListener {
-                getPreferencesTab()?.let {
-                    ketch.showPreferencesTab(it)
+                val multiselectedTabs = getMultiselectedPreferencesTab()
+                if (multiselectedTabs.isNotEmpty()) {
+                    val selectedTab = spPreferencesTab.selectedItemPosition.let {
+                        preferenceTabAdapter.getItem(it)
+                    }?.let {
+                        ketch.showPreferencesTab(multiselectedTabs, it)
+                    }
                 }
             }
 
@@ -170,12 +202,21 @@ class MainActivity : BaseActivity() {
         else -> Ketch.WindowPosition.BOTTOM_MIDDLE
     }
 
-    private fun getPreferencesTab(): Ketch.PreferencesTab? = when (binding.rgPreferencesTab.checkedRadioButtonId) {
-        R.id.rbOverviewTab -> Ketch.PreferencesTab.OVERVIEW
-        R.id.rbRightsTab -> Ketch.PreferencesTab.RIGHTS
-        R.id.rbConsentsTab -> Ketch.PreferencesTab.CONSENTS
-        R.id.rbSubscriptionsTab -> Ketch.PreferencesTab.SUBSCRIPTIONS
-        else -> null
+    private fun getMultiselectedPreferencesTab(): List<Ketch.PreferencesTab> {
+        val tabs = mutableListOf<Ketch.PreferencesTab>()
+        if (binding.cbOverviewTab.isChecked) {
+            tabs.add(Ketch.PreferencesTab.OVERVIEW)
+        }
+        if (binding.cbRightsTab.isChecked) {
+            tabs.add(Ketch.PreferencesTab.RIGHTS)
+        }
+        if (binding.cbConsentsTab.isChecked) {
+            tabs.add(Ketch.PreferencesTab.CONSENTS)
+        }
+        if (binding.cbSubscriptionsTab.isChecked) {
+            tabs.add(Ketch.PreferencesTab.SUBSCRIPTIONS)
+        }
+        return tabs
     }
 
     private fun getSharedPreferencesString(): String? = when (binding.rgSharedPreferences.checkedRadioButtonId) {
@@ -215,5 +256,7 @@ class MainActivity : BaseActivity() {
         private const val ORG_CODE = "bluebird"
         private const val PROPERTY = "mobile"
         private const val ADVERTISING_ID_CODE = "aaid"
+
+        private const val TEST_URL = "https://dev.ketchcdn.com/web/v2"
     }
 }

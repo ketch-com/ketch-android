@@ -23,7 +23,8 @@ class Ketch private constructor(
     private val fragmentManager: FragmentManager,
     private val orgCode: String,
     private val property: String,
-    private val listener: Listener
+    private val listener: Listener,
+    private val url: String? = null
 ) {
     private val preferences: KetchSharedPreferences = KetchSharedPreferences(context)
 
@@ -211,7 +212,7 @@ class Ketch private constructor(
             it.listener?.onConfigUpdated(null)
             it.load(orgCode, property, identities.map {
                 Identity(it.key, it.value)
-            })
+            }, url)
         }
     }
 
@@ -223,8 +224,8 @@ class Ketch private constructor(
         webView.forceShow(ExperienceType.PREFERENCES)
     }
 
-    fun showPreferencesTab(tab: PreferencesTab) {
-        webView.showPreferencesTab(tab)
+    fun showPreferencesTab(tabs: List<PreferencesTab>, tab: PreferencesTab) {
+        webView.showPreferencesTab(tabs, tab)
     }
 
     fun setIdentities(identities: Map<String, String>) {
@@ -292,7 +293,8 @@ class Ketch private constructor(
         private val fragmentManager: FragmentManager,
         private val orgCode: String,
         private val property: String,
-        private val listener: Listener
+        private val listener: Listener,
+        private val url: String?
     ) {
 
         fun build(): Ketch =
@@ -301,7 +303,8 @@ class Ketch private constructor(
                 fragmentManager,
                 orgCode,
                 property,
-                listener
+                listener,
+                url
             )
 
         companion object {
@@ -310,8 +313,9 @@ class Ketch private constructor(
                 fragmentManager: FragmentManager,
                 orgCode: String,
                 property: String,
-                listener: Listener
-            ) = Builder(context, fragmentManager, orgCode, property, listener)
+                listener: Listener,
+                url: String?
+            ) = Builder(context, fragmentManager, orgCode, property, listener, url)
         }
     }
 
