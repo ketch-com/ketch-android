@@ -174,6 +174,7 @@ class MainActivity : BaseActivity() {
         R.id.rbOverviewTab -> Ketch.PreferencesTab.OVERVIEW
         R.id.rbRightsTab -> Ketch.PreferencesTab.RIGHTS
         R.id.rbConsentsTab -> Ketch.PreferencesTab.CONSENTS
+        R.id.rbSubscriptionsTab -> Ketch.PreferencesTab.SUBSCRIPTIONS
         else -> null
     }
 
