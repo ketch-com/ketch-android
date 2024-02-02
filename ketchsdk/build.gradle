@@ -1,0 +1,132 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-parcelize'
+apply plugin: 'kotlin-kapt'
+apply plugin: 'org.jetbrains.kotlin.android'
+apply plugin: 'maven-publish'
+apply plugin: 'org.jetbrains.dokka'
+
+group = 'com.ketch.android'
+version = '3.0'
+
+android {
+    namespace 'com.ketch.android'
+    compileSdkVersion buildConfig.compileSdk
+    buildToolsVersion versions.buildTools
+
+    defaultConfig {
+        minSdk 28
+        targetSdk 33
+        versionCode 3
+        versionName "3.0"
+
+        minSdkVersion buildConfig.minSdk
+        targetSdkVersion buildConfig.targetSdk
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunnerArgument "runnerBuilder", "de.mannodermaus.junit5.AndroidJUnit5Builder"
+
+        consumerProguardFiles "consumer-rules.pro"
+    }
+
+    packagingOptions {
+        exclude 'META-INF/*.kotlin_module'
+        exclude 'META-INF/LICENSE-notice.md'
+        pickFirst 'META-INF/AL2.0'
+        pickFirst 'META-INF/LGPL2.1'
+        pickFirst 'META-INF/LICENSE.md'
+        pickFirst 'lib/*/libc++_shared.so'
+    }
+
+    buildTypes {
+        debug {
+            minifyEnabled false
+        }
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility versions.javaVersion
+        targetCompatibility versions.javaVersion
+    }
+
+    kotlin {
+        jvmToolchain(versions.javaVersion)
+    }
+
+    buildFeatures {
+        viewBinding true
+        dataBinding true
+    }
+
+    lint {
+        abortOnError true
+        baseline file('lint-baseline.xml')
+        checkReleaseBuilds false
+    }
+}
+
+dependencies {
+
+    implementation "androidx.core:core-ktx:1.9.0"
+    implementation "androidx.appcompat:appcompat:1.5.1"
+    implementation "com.google.android.material:material:1.7.0"
+    implementation "org.jetbrains.kotlin:kotlin-parcelize-runtime:1.8.21"
+    implementation "com.google.code.gson:gson:2.9.1"
+    implementation "androidx.webkit:webkit:1.5.0"
+
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+}
+
+
+afterEvaluate {
+    publishing {
+        publications {
+            // Creates a Maven publication called "release".
+            release(MavenPublication) {
+                from components.release
+                groupId = 'com.ketch.android'
+                artifactId = 'ketchsdk'
+                version = '3.0'
+            }
+        }
+    }
+}
+
+dokkaHtmlPartial.configure {
+    dokkaSourceSets {
+        named("main") {
+            // Used to remove a source set from documentation, test source sets are suppressed by default
+            suppress.set(false)
+
+            includeNonPublic.set(false)
+
+            // Do not output deprecated members. Applies globally, can be overridden by packageOptions
+            skipDeprecated.set(false)
+
+            // Emit warnings about not documented members. Applies globally, also can be overridden by packageOptions
+            reportUndocumented.set(true)
+
+            // Do not create index pages for empty packages
+            skipEmptyPackages.set(true)
+
+            displayName.set("Ketch SDK")
+
+            // Disable linking to online kotlin-stdlib documentation
+            noStdlibLink.set(false)
+
+            // Disable linking to online JDK documentation
+            noJdkLink.set(false)
+
+            // Disable linking to online Android documentation (only applicable for Android projects)
+            noAndroidSdkLink.set(false)
+
+            // Include generated files in documentation
+            // By default Dokka will omit all files in folder named generated that is a child of buildDir
+            suppressGeneratedFiles.set(false)
+        }
+    }
+}
