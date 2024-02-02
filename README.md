@@ -181,7 +181,7 @@ slide_from_top.xml
 </set>
 ```
 
-## Running [the Sample app](https://github.com/ketch-sdk/ketch-samples) 
+## [the Sample app](https://github.com/ketch-sdk/ketch-samples)
 
 ### Prerequisites
 - [Android Studio](https://developer.android.com/studio) + follow the setup wizard to install SDK and Emulator
@@ -190,6 +190,7 @@ slide_from_top.xml
 
 ```
 git clone git@github.com:ketch-sdk/ketch-samples.git
+git checkout main
 cd ketch-android/Android Native SDK Sample
 ```
 
