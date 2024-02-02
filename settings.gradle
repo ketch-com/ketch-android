@@ -1,4 +1,2 @@
-include ':lint'
-
 rootProject.name = "KetchSDK"
 include ':ketchsdk'
