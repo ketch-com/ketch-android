@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
+import android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND
 import android.widget.FrameLayout
 import androidx.annotation.StyleRes
 import androidx.fragment.app.DialogFragment
@@ -74,7 +75,7 @@ class KetchDialogFragment() : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         dialog?.window?.also { window ->
-            //window.clearFlags(FLAG_DIM_BEHIND)
+            window.clearFlags(FLAG_DIM_BEHIND)
             window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
             val displayMetrics = requireActivity().resources.displayMetrics
 
