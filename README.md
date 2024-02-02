@@ -31,13 +31,23 @@ with the [application property](https://app.ketch.com/deployment/applications)  
 
 ## Quick Start
 
-1. Copy and paste websdk module to your project
-2. Add "include ':websdk'" to settings.graddle
-3. Add dependency into your main module:
-```kotlin
-   "implementation project(':websdk')"
-```
-4. Add constants to companion object of your activity
+1. Using sources
+   1.1. Copy and paste ketchsdk module to your project
+   1.2. Add "include ':ketchsdk'" to settings.graddle
+   1.3. Add dependency into your main module:
+    ```kotlin
+       implementation project(':ketchsdk')
+    ```
+2. Using .aar lib
+   2.1. clone and build sdk
+   2.2. Copy and paste "ketchsdk-release.aar" to libs folder in your project
+   2.3. Add dependency into your module:
+    ```kotlin
+       implementation fileTree(include: ['*.aar'], dir: 'libs')
+    ```
+   If you want you can use our [Sample](https://github.com/ketch-sdk/ketch-samples)
+
+3. Add constants to companion object of your activity
 ```kotlin
         private const val ORG_CODE = "<your organization code>"
         private const val PROPERTY = "<property>"
@@ -110,7 +120,7 @@ Ketch - Is the where the SDK functionality resides.
 KetchSdk - Class used to initialize the Ketch SDK 
 KetchSharedPreferences - SharedPreferences class is used for saving the TCF/USPrivacy/GPP strings
 
-## Adding WebSDK in your project
+## Adding KetchSDK in your project
 
 ## Ketch methods:
 1. load() - loads web content and displays a dialog if necessary
@@ -171,7 +181,7 @@ slide_from_top.xml
 </set>
 ```
 
-## Running the Sample app
+## Running [the Sample app](https://github.com/ketch-sdk/ketch-samples) 
 
 ### Prerequisites
 - [Android Studio](https://developer.android.com/studio) + follow the setup wizard to install SDK and Emulator
@@ -179,14 +189,13 @@ slide_from_top.xml
 ### Step 1. Clone the repository
 
 ```
-git clone git@github.com:ketch-com/ketch-android.git
-cd ketch-android
-git checkout sdk-3
+git clone git@github.com:ketch-sdk/ketch-samples.git
+cd ketch-android/Android Native SDK Sample
 ```
 
 ### Step 2. Run the app in Android Studio
 
-Open the project directory `ketch-android` in the Android Studio.
+Open the project directory `Android Native SDK Sample` in the Android Studio.
 
 Add your organization code, property code to
 `ketch-android/app/src/main/java/com/ketch/sample/MainActivity.kt`:
