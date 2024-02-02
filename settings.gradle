@@ -1,5 +1,2 @@
-include ':lint'
-
 rootProject.name = "KetchSDK"
-include ':websdk'
-include ':app'
+include ':ketchsdk'
