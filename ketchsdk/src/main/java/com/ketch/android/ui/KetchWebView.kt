@@ -179,7 +179,7 @@ class KetchWebView(context: Context) : WebView(context) {
             url += "&ketch_region=$it"
         }
 
-        url += "&mobile_device=phone"
+        url += "&mobile_os=android"
 
         Log.d(TAG, "load: $url")
 
