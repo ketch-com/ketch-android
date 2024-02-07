@@ -90,20 +90,20 @@
             }
         }
 
-        function triggerDialogEvent() {
+        function triggerDialogEvent(experienceType) {
             var dialogDimensions = getDialogDimensions();
             if (!dialogDimensions) {
-                setTimeout(pollDialog, 500)
+                setTimeout(() => triggerDialogEvent(experienceType), 500)
             } else {
-                emitEvent("hasShowsExperience", dialogDimensions);
+                emitEvent("hasShownExperience", [experienceType, dialogDimensions]);
             }
         }
 
         // emulate hasShowsExperience after willShowExperience
         function hasShownExperiencePlugin(host, _config) {
             // Receive every consent change notification
-            host.on('willShowExperience', () => {
-                triggerDialogEvent();
+            host.on('willShowExperience', experienceType => {
+                triggerDialogEvent(experienceType);
             });
         }
 
