@@ -90,7 +90,7 @@
             }
         }
 
-        function pollDialogEvent() {
+        function triggerDialogEvent() {
             var dialogDimensions = getDialogDimensions();
             if (!dialogDimensions) {
                 setTimeout(pollDialog, 500)
@@ -103,12 +103,11 @@
         function hasShownExperiencePlugin(host, _config) {
             // Receive every consent change notification
             host.on('willShowExperience', () => {
-                pollDialogEvent();
+                triggerDialogEvent();
             });
         }
 
         ketch('registerPlugin', hasShownExperiencePlugin);
-
 
         // Get query parameters
         let params = (new URL(document.location)).searchParams;
