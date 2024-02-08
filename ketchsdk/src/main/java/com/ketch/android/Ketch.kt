@@ -143,7 +143,7 @@ class Ketch private constructor(
                             bannerPosition ?: DEFAULT_BANNER_POSITION
                         }
 
-                        (it as? KetchDialogFragment)?.changeDialog(display, windowPosition)
+                        (it as? KetchDialogFragment)?.changeDialog(windowPosition)
                     }
                 }
 
@@ -193,9 +193,7 @@ class Ketch private constructor(
                         bannerPosition ?: DEFAULT_BANNER_POSITION
                     }
 
-                    val styleRes = consentWindowType.getStyle(windowPosition)
-
-                    val dialog = KetchDialogFragment.newInstance(windowPosition, styleRes)
+                    val dialog = KetchDialogFragment.newInstance(windowPosition)
                     fragmentManager.let {
                         dialog.show(it, webView)
                     }
@@ -324,7 +322,10 @@ class Ketch private constructor(
         BOTTOM(R.style.SlideFromBottomAnimation, Gravity.CENTER_HORIZONTAL.or(Gravity.BOTTOM)),
         BOTTOM_LEFT(R.style.SlideFromLeftAnimation, Gravity.LEFT.or(Gravity.BOTTOM)),
         BOTTOM_RIGHT(R.style.SlideFromRightAnimation, Gravity.RIGHT.or(Gravity.BOTTOM)),
-        BOTTOM_MIDDLE(R.style.SlideFromBottomAnimation, Gravity.CENTER_HORIZONTAL.or(Gravity.BOTTOM)),
+        BOTTOM_MIDDLE(
+            R.style.SlideFromBottomAnimation,
+            Gravity.CENTER_HORIZONTAL.or(Gravity.BOTTOM)
+        ),
         CENTER(R.style.FadeInCenterAnimation, Gravity.CENTER)
     }
 
@@ -335,8 +336,6 @@ class Ketch private constructor(
     ) : Parcelable
 
     companion object {
-        private val TAG = Ketch::class.java.simpleName
-
         const val IAB_TCF_TC_STRING = "IABTCF_TCString"
         const val IAB_US_PRIVACY_STRING = "IABUSPrivacy_String"
         const val IAB_GPP_HDR_GPP_STRING = "IABGPP_HDR_GppString"
