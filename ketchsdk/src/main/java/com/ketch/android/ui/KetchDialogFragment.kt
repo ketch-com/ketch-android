@@ -88,13 +88,13 @@ class KetchDialogFragment() : DialogFragment() {
             val params = window.attributes.apply {
                 this.width = width
                 this.height = height
-                gravity = windowPosition?.gravity ?: Gravity.CENTER
+                gravity = Gravity.CENTER
             }
 
             window.attributes = params
 
             windowPosition?.let {
-                window.setWindowAnimations(it.animId)
+                // window.setWindowAnimations(it.animId)
             }
         }
     }
@@ -102,24 +102,6 @@ class KetchDialogFragment() : DialogFragment() {
     fun show(manager: FragmentManager, webView: KetchWebView) {
         this.webView = webView
         super.show(manager, TAG)
-    }
-
-    fun changeDialog(windowPosition: Ketch.WindowPosition) {
-        this@KetchDialogFragment.windowPosition = windowPosition
-
-        val args = arguments?.apply {
-            putSerializable(POSITION_KEY, windowPosition)
-        }
-
-        arguments = args
-
-        dialog?.window?.also { window ->
-            val params = window.attributes.apply {
-                gravity = windowPosition.gravity
-            }
-            window.attributes = params
-            window.setWindowAnimations(windowPosition.animId)
-        }
     }
 
     companion object {
