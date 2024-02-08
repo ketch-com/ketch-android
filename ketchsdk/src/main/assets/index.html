@@ -76,39 +76,6 @@
             // };
         })(window.console);
 
-        // A temporary workaround to get banner/modal dimensions on tablets
-        // TODO: remove this once there will be a way to get dialogs position from JS SDK
-        function getDialogDimensions() {
-            var domElem = document.querySelector('#lanyard_root div[role="dialog"]');
-            if (!domElem) {
-                return;
-            }
-            var domRect = domElem.getBoundingClientRect();
-            if (domRect) {
-                var dialogDimensions = [domRect.width, domRect.height];
-                return dialogDimensions;
-            }
-        }
-
-        function triggerDialogEvent(experienceType) {
-            var dialogDimensions = getDialogDimensions();
-            if (!dialogDimensions) {
-                setTimeout(() => triggerDialogEvent(experienceType), 500)
-            } else {
-                emitEvent("hasShownExperience", [experienceType, dialogDimensions]);
-            }
-        }
-
-        // emulate hasShowsExperience after willShowExperience
-        function hasShownExperiencePlugin(host, _config) {
-            // Receive every consent change notification
-            host.on('willShowExperience', experienceType => {
-                triggerDialogEvent(experienceType);
-            });
-        }
-
-        ketch('registerPlugin', hasShownExperiencePlugin);
-
         // Get query parameters
         let params = (new URL(document.location)).searchParams;
 

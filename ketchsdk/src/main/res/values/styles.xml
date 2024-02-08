@@ -14,23 +14,4 @@
     <style name="FadeInCenterAnimation">
         <item name="android:windowEnterAnimation">@anim/fade_in_center</item>
     </style>
-
-    <style name="KetchBannerTopBottom">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">620dp</item>
-    </style>
-    <style name="KetchBannerLeftRightCenter">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">620dp</item>
-    </style>
-
-    <style name="KetchModalTopBottom">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">720dp</item>
-    </style>
-    <style name="KetchModalLeftRightCenter">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">720dp</item>
-    </style>
-
 </resources>

@@ -39,12 +39,18 @@ with the [application property](https://app.ketch.com/deployment/applications)  
        implementation project(':ketchsdk')
     ```
 2. Using .aar lib
-   2.1. clone and build sdk
-   2.2. Copy and paste "ketchsdk-release.aar" to libs folder in your project
-   2.3. Add dependency into your module:
+   2.1 Add it in your root build.gradle at the end of repositories: 
+   ```kotlin
+      repositories {
+        ...
+        maven { url 'https://jitpack.io' }
+    }
+   ```   
+   2.2. Add the dependency:
     ```kotlin
-       implementation fileTree(include: ['*.aar'], dir: 'libs')
+        implementation 'com.github.ketch-com:ketch-android:main-SNAPSHOT'
     ```
+   
    If you want you can use our [Sample](https://github.com/ketch-sdk/ketch-samples)
 
 3. Add constants to companion object of your activity

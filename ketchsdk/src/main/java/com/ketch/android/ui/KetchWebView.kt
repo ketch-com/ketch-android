@@ -19,6 +19,7 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonParseException
 import com.ketch.android.Ketch
+import com.ketch.android.R
 import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.Identity
@@ -27,7 +28,7 @@ import com.ketch.android.data.KetchConfig
 
 @SuppressLint("SetJavaScriptEnabled")
 class KetchWebView(context: Context) : WebView(context) {
-    private var envirementUrl: String? = null
+    private var environmentUrl: String? = null
     private lateinit var orgCode: String
     private lateinit var property: String
     private var identities: List<Identity> = emptyList()
@@ -53,7 +54,6 @@ class KetchWebView(context: Context) : WebView(context) {
 
     init {
         settings.javaScriptEnabled = true
-
         setBackgroundColor(context.getColor(android.R.color.transparent))
 
         setWebContentsDebuggingEnabled(true)
@@ -109,7 +109,7 @@ class KetchWebView(context: Context) : WebView(context) {
         this.orgCode = orgCode
         this.property = property
         this.identities = identities
-        this.envirementUrl = url
+        this.environmentUrl = url
         load()
     }
 
@@ -153,14 +153,16 @@ class KetchWebView(context: Context) : WebView(context) {
         var url =
             "https://appassets.androidplatform.net/assets/index.html?ketch_lang=$language&orgCode=$orgCode&propertyName=$property"
 
-        envirementUrl?.let {
+        environmentUrl?.let {
             url += "&ketch_mobilesdk_url=${it}"
         }
 
         forceShow?.let {
             url += "&ketch_show=${it.getUrlParameter()}"
             if (preferencesTabs.isNotEmpty()) {
-                url += "&ketch_preferences_tabs=${preferencesTabs.map { it.getUrlParameter() }.joinToString(",")}"
+                url += "&ketch_preferences_tabs=${
+                    preferencesTabs.map { it.getUrlParameter() }.joinToString(",")
+                }"
             }
             preferencesTab?.let {
                 url += "&ketch_preferences_tab=${it.getUrlParameter()}"
@@ -179,7 +181,7 @@ class KetchWebView(context: Context) : WebView(context) {
             url += "&ketch_region=$it"
         }
 
-        url += "&mobile_os=android"
+        url += "&mobile_device=${context.getString(R.string.mobile_device)}"
 
         Log.d(TAG, "load: $url")
 
@@ -267,12 +269,6 @@ class KetchWebView(context: Context) : WebView(context) {
         @JavascriptInterface
         fun showPreferenceExperience(showPreferenceExperience: String?) {
             Log.d(TAG, "showPreferenceExperience: $showPreferenceExperience")
-        }
-
-
-        @JavascriptInterface
-        fun hasShownExperience(experience: String?) {
-            Log.d(TAG, "hasShownExperience: $experience")
         }
 
         @JavascriptInterface

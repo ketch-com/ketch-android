@@ -33,27 +33,6 @@ enum class ContentDisplay {
 
     @SerializedName("modal")
     Modal;
-
-    fun getStyle(position: Ketch.WindowPosition): Int =
-        when (this) {
-            Modal -> when (position) {
-                Ketch.WindowPosition.TOP -> R.style.KetchModalTopBottom
-                Ketch.WindowPosition.BOTTOM -> R.style.KetchModalTopBottom
-                Ketch.WindowPosition.BOTTOM_LEFT -> R.style.KetchModalLeftRightCenter
-                Ketch.WindowPosition.BOTTOM_RIGHT -> R.style.KetchModalLeftRightCenter
-                Ketch.WindowPosition.BOTTOM_MIDDLE -> R.style.KetchModalLeftRightCenter
-                Ketch.WindowPosition.CENTER -> R.style.KetchModalLeftRightCenter
-            }
-
-            Banner -> when (position) {
-                Ketch.WindowPosition.TOP -> R.style.KetchBannerTopBottom
-                Ketch.WindowPosition.BOTTOM -> R.style.KetchBannerTopBottom
-                Ketch.WindowPosition.BOTTOM_LEFT -> R.style.KetchBannerLeftRightCenter
-                Ketch.WindowPosition.BOTTOM_RIGHT -> R.style.KetchBannerLeftRightCenter
-                Ketch.WindowPosition.BOTTOM_MIDDLE -> R.style.KetchBannerLeftRightCenter
-                Ketch.WindowPosition.CENTER -> R.style.KetchBannerLeftRightCenter
-            }
-        }
 }
 
 data class KetchTheme(
