@@ -117,34 +117,6 @@ class Ketch private constructor(
                 }
 
                 override fun changeDialog(display: ContentDisplay) {
-                    if (config == null) return
-
-                    findDialogFragment()?.let {
-                        var modalPosition = modalWindowPosition
-                        var bannerPosition = bannerWindowPosition
-
-                        config?.let {
-                            it.theme?.banner?.container?.position?.let { position ->
-                                if (bannerPosition == null) {
-                                    bannerPosition = position.mapToDialogPosition()
-                                }
-                            }
-
-                            it.theme?.modal?.container?.position?.let { position ->
-                                if (modalPosition == null) {
-                                    modalPosition = position.mapToDialogPosition()
-                                }
-                            }
-                        }
-
-                        val windowPosition = if (display == ContentDisplay.Modal) {
-                            modalPosition ?: DEFAULT_MODAL_POSITION
-                        } else {
-                            bannerPosition ?: DEFAULT_BANNER_POSITION
-                        }
-
-                        (it as? KetchDialogFragment)?.changeDialog(windowPosition)
-                    }
                 }
 
                 override fun onClose() {
