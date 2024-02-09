@@ -7,11 +7,6 @@
             window.semaphore.push(arguments)
         }
 
-        // Triggering the full config to load on startup
-        ketch('getFullConfig', function(config) {
-            emitEvent("onConfigLoaded", [config])
-        });
-
         // Simulating events similar to ones coming from lanyard.js
         // TODO: remove this once JS SDK covers all required events
         function emitEvent(event, args) {
@@ -44,37 +39,47 @@
             }
         }
 
+        // This is required to detect the moment when Ketch Tag is loaded sucessfully and ready
+        // TODO: Remove this once lanyard.js will emit "onConfigLoaded" event, to avoid redundant "config.json" requests to server
+        ketch('getFullConfig', function(config) {
+            emitEvent("onConfigLoaded", [config])
+        });
+
         // Simulating "error" event
         // Capturing all the unhandled crashes of Ketch Tag
         window.addEventListener("error", (event) => {
             const errorMessage = `${event.message}`;
             emitEvent("error", [errorMessage]);
         });
-        // Capturing all the unhandled rejections of Ketch Tag
+
+        // Capturing all the unhandled promise rejections of Ketch Tag
         window.addEventListener('unhandledrejection', (event) => {
             const errorMessage = `${event.reason.message}`;
             emitEvent("error", [errorMessage]);
         });
+
         // Capturing all the internal loggin for errors handled by Ketch Tag
         // TODO: Remove this once lanyard.js will emit error events
         ((logger) => {
-            var oldLog = logger.log;
-            var oldWarn = logger.warn;
             var oldErr = logger.error;
-            logger.log = (...args) => {
-                emitEvent("log", [args.join(' ')]);
-                oldLog(...args);
+            logger.error = (...args) => {
+                emitEvent("error", [args.join(' ')]);
+                oldErr(...args);
             };
-            logger.warn = (...args) => {
-                emitEvent("warning", [args.join(' ')]);
-                oldWarn(...args);
-            };
-            // TODO: we don't listed for these for now to avoid collisions with
-            // logger.error = (...args) => {
-            //    emitEvent("error", [args.join(' ')]);
-            //    oldErr(...args);
-            // };
         })(window.console);
+
+        // A temporary workaround to get banner/modal dimensions on tablets
+        // TODO: remove this once there will be a way to get dialogs position from JS SDK
+        function getDialogSize() {
+            var domElem = document.querySelector('#lanyard_root div[role="dialog"]');
+            if (!domElem) {
+                return;
+            }
+            var domRect = domElem.getBoundingClientRect();
+            if (domRect) {
+                return domRect;
+            }
+        }
 
         // Get query parameters
         let params = (new URL(document.location)).searchParams;
