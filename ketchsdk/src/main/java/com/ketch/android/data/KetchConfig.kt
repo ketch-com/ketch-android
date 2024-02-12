@@ -1,8 +1,6 @@
 package com.ketch.android.data
 
 import com.google.gson.annotations.SerializedName
-import com.ketch.android.Ketch
-import com.ketch.android.R
 
 /*
 "experiences":{
@@ -68,15 +66,6 @@ sealed class Banner {
 
         @SerializedName("center")
         Center;
-
-        fun mapToDialogPosition(): Ketch.WindowPosition = when (this) {
-            Bottom -> Ketch.WindowPosition.BOTTOM
-            Top -> Ketch.WindowPosition.TOP
-            LeftCorner -> Ketch.WindowPosition.BOTTOM_LEFT
-            RightCorner -> Ketch.WindowPosition.BOTTOM_RIGHT
-            BottomMiddle -> Ketch.WindowPosition.BOTTOM_MIDDLE
-            Center -> Ketch.WindowPosition.CENTER
-        }
     }
 
     enum class Size {
@@ -106,12 +95,6 @@ sealed class Modal {
 
         @SerializedName("right")
         Right;
-
-        fun mapToDialogPosition(): Ketch.WindowPosition = when (this) {
-            Center -> Ketch.WindowPosition.BOTTOM_MIDDLE
-            Left -> Ketch.WindowPosition.BOTTOM_LEFT
-            Right -> Ketch.WindowPosition.BOTTOM_RIGHT
-        }
     }
 }
 

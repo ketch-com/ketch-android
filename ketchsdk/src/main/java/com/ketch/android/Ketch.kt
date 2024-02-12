@@ -1,19 +1,12 @@
 package com.ketch.android
 
 import android.content.Context
-import android.os.Parcelable
-import android.view.Gravity
-import androidx.annotation.FloatRange
-import androidx.annotation.GravityInt
-import androidx.annotation.StyleRes
 import androidx.fragment.app.FragmentManager
 import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
-import com.ketch.android.data.Identity
 import com.ketch.android.data.KetchConfig
 import com.ketch.android.ui.KetchDialogFragment
 import com.ketch.android.ui.KetchWebView
-import kotlinx.parcelize.Parcelize
 
 /**
  * Main Ketch SDK class
@@ -26,20 +19,107 @@ class Ketch private constructor(
     private val listener: Listener,
     private val url: String? = null
 ) {
+
     private val preferences: KetchSharedPreferences = KetchSharedPreferences(context)
 
     private var identities: Map<String, String> = mapOf()
 
-    private var bannerWindowPosition: WindowPosition? = null
-    private var modalWindowPosition: WindowPosition? = null
+    /**
+     * Loads a web page and shows a popup if necessary
+     */
+    fun load() {
+        webView.load(orgCode, property, identities, url)
+    }
 
+    /**
+     * Retrieve a String value from the preferences.
+     *
+     * @param key The name of the preference to retrieve.
+     *
+     * @return Returns the preference value if it exists
+     */
     fun getSavedString(key: String) = preferences.getSavedValue(key)
 
-    fun getTCFTCString() = preferences.getSavedValue(IAB_TCF_TC_STRING)
+    /**
+     * Retrieve IABTCF_TCString value from the preferences.
+     *
+     * @return Returns the preference value if it exists
+     */
+    fun getTCFTCString() = preferences.getSavedValue(KetchSharedPreferences.IAB_TCF_TC_STRING)
 
-    fun getUSPrivacyString() = preferences.getSavedValue(IAB_US_PRIVACY_STRING)
+    /**
+     * Retrieve IABUSPrivacy_String value from the preferences.
+     *
+     * @return Returns the preference value if it exists
+     */
+    fun getUSPrivacyString() = preferences.getSavedValue(KetchSharedPreferences.IAB_US_PRIVACY_STRING)
 
-    fun getGPPHDRGppString() = preferences.getSavedValue(IAB_GPP_HDR_GPP_STRING)
+    /**
+     * Retrieve IABGPP_HDR_GppString value from the preferences.
+     *
+     * @return Returns the preference value if it exists
+     */
+    fun getGPPHDRGppString() = preferences.getSavedValue(KetchSharedPreferences.IAB_GPP_HDR_GPP_STRING)
+
+    /**
+     * Display the consent, adding the fragment dialog to the given FragmentManager.
+     */
+    fun forceShowConsent() {
+        webView.forceShow(KetchWebView.ExperienceType.CONSENT)
+    }
+
+    /**
+     * Display the preferences, adding the fragment dialog to the given FragmentManager.
+     */
+    fun showPreferences() {
+        webView.forceShow(KetchWebView.ExperienceType.PREFERENCES)
+    }
+
+    /**
+     * Display the preferences tab, adding the fragment dialog to the given FragmentManager.
+     *
+     * @param tabs: list of preferences tab
+     * @param tab: the current tab
+     */
+    fun showPreferencesTab(tabs: List<PreferencesTab>, tab: PreferencesTab) {
+        webView.showPreferencesTab(tabs, tab)
+    }
+
+    /**
+     * Set identifies
+     *
+     * @param identities: Map<String, String>
+     */
+    fun setIdentities(identities: Map<String, String>) {
+        this.identities = identities
+    }
+
+    /**
+     * Set the language
+     *
+     * @param language: a language name (EN, FR, etc.)
+     */
+    fun setLanguage(language: String) {
+        webView.setLanguage(language)
+    }
+
+    /**
+     * Set the jurisdiction
+     *
+     * @param jurisdiction: the jurisdiction value
+     */
+    fun setJurisdiction(jurisdiction: String?) {
+        webView.setJurisdiction(jurisdiction)
+    }
+
+    /**
+     * Set Region
+     *
+     * @param region: the region name
+     */
+    fun setRegion(region: String?) {
+        webView.setRegion(region)
+    }
 
     private lateinit var webView: KetchWebView
 
@@ -51,14 +131,11 @@ class Ketch private constructor(
         webView = KetchWebView(context).apply {
             listener = object : KetchWebView.KetchListener {
 
-                private var config: KetchConfig? = null
-                private var showConsent: Boolean = false
-
                 override fun onLoad() {
+                    this@Ketch.listener.onLoad()
                 }
 
                 override fun showConsent() {
-                    showConsent = true
                     showConsentPopup()
                 }
 
@@ -88,8 +165,6 @@ class Ketch private constructor(
                 }
 
                 override fun onConfigUpdated(config: KetchConfig?) {
-                    this.config = config
-                    showConsentPopup()
                 }
 
                 override fun onEnvironmentUpdated(environment: String?) {
@@ -125,112 +200,21 @@ class Ketch private constructor(
                     }
                 }
 
-                private fun showConsentPopup(forceContentDisplay: ContentDisplay? = null) {
+                private fun showConsentPopup() {
                     if (findDialogFragment() != null) {
                         return
                     }
 
-                    if (config == null) return
-                    if (!showConsent) return
-
-                    var consentWindowType = ContentDisplay.Banner
-                    var modalPosition = modalWindowPosition
-                    var bannerPosition = bannerWindowPosition
-
-                    config?.let {
-                        it.experiences?.consent?.let {
-                            consentWindowType = it.display
-                        }
-
-                        it.theme?.banner?.container?.position?.let { position ->
-                            if (bannerPosition == null) {
-                                bannerPosition = position.mapToDialogPosition()
-                            }
-                        }
-
-                        it.theme?.modal?.container?.position?.let { position ->
-                            if (modalPosition == null) {
-                                modalPosition = position.mapToDialogPosition()
-                            }
-                        }
-                    }
-
-                    forceContentDisplay?.let {
-                        consentWindowType = it
-                    }
-
-                    val windowPosition = if (consentWindowType == ContentDisplay.Modal) {
-                        modalPosition ?: DEFAULT_MODAL_POSITION
-                    } else {
-                        bannerPosition ?: DEFAULT_BANNER_POSITION
-                    }
-
-                    val dialog = KetchDialogFragment.newInstance(windowPosition)
+                    val dialog = KetchDialogFragment.newInstance()
                     fragmentManager.let {
                         dialog.show(it, webView)
                     }
-                    showConsent = false
                 }
             }
         }
     }
 
     private fun findDialogFragment() = fragmentManager.findFragmentByTag(KetchDialogFragment.TAG)
-
-    fun load() {
-        webView.let {
-            it.listener?.onConfigUpdated(null)
-            it.load(orgCode, property, identities.map {
-                Identity(it.key, it.value)
-            }, url)
-        }
-    }
-
-    fun forceShowConsent() {
-        webView.forceShow(ExperienceType.CONSENT)
-    }
-
-    fun showPreferences() {
-        webView.forceShow(ExperienceType.PREFERENCES)
-    }
-
-    fun showPreferencesTab(tabs: List<PreferencesTab>, tab: PreferencesTab) {
-        webView.showPreferencesTab(tabs, tab)
-    }
-
-    fun setIdentities(identities: Map<String, String>) {
-        this.identities = identities
-    }
-
-    fun setLanguage(language: String) {
-        webView.setLanguage(language)
-    }
-
-    fun setJurisdiction(jurisdiction: String?) {
-        webView.setJurisdiction(jurisdiction)
-    }
-
-    fun setRegion(region: String?) {
-        webView.setRegion(region)
-    }
-
-    fun setBannerWindowPosition(position: WindowPosition?) {
-        this.bannerWindowPosition = position
-    }
-
-    fun setModalWindowPosition(position: WindowPosition?) {
-        this.modalWindowPosition = position
-    }
-
-    enum class ExperienceType {
-        CONSENT,
-        PREFERENCES;
-
-        fun getUrlParameter(): String = when (this) {
-            CONSENT -> "cd"
-            PREFERENCES -> "preferences"
-        }
-    }
 
     enum class PreferencesTab {
         OVERVIEW,
@@ -247,6 +231,7 @@ class Ketch private constructor(
     }
 
     interface Listener {
+        fun onLoad()
         fun onEnvironmentUpdated(environment: String?)
         fun onRegionInfoUpdated(regionInfo: String?)
         fun onJurisdictionUpdated(jurisdiction: String?)
@@ -287,32 +272,5 @@ class Ketch private constructor(
                 url: String?
             ) = Builder(context, fragmentManager, orgCode, property, listener, url)
         }
-    }
-
-    enum class WindowPosition(@StyleRes val animId: Int, @GravityInt val gravity: Int) {
-        TOP(R.style.SlideFromTopAnimation, Gravity.CENTER_HORIZONTAL.or(Gravity.TOP)),
-        BOTTOM(R.style.SlideFromBottomAnimation, Gravity.CENTER_HORIZONTAL.or(Gravity.BOTTOM)),
-        BOTTOM_LEFT(R.style.SlideFromLeftAnimation, Gravity.LEFT.or(Gravity.BOTTOM)),
-        BOTTOM_RIGHT(R.style.SlideFromRightAnimation, Gravity.RIGHT.or(Gravity.BOTTOM)),
-        BOTTOM_MIDDLE(
-            R.style.SlideFromBottomAnimation,
-            Gravity.CENTER_HORIZONTAL.or(Gravity.BOTTOM)
-        ),
-        CENTER(R.style.FadeInCenterAnimation, Gravity.CENTER)
-    }
-
-    @Parcelize
-    data class WindowSize(
-        @FloatRange(from = 0.1, to = 1.0) val width: Float,
-        @FloatRange(from = 0.1, to = 1.0) val height: Float
-    ) : Parcelable
-
-    companion object {
-        const val IAB_TCF_TC_STRING = "IABTCF_TCString"
-        const val IAB_US_PRIVACY_STRING = "IABUSPrivacy_String"
-        const val IAB_GPP_HDR_GPP_STRING = "IABGPP_HDR_GppString"
-
-        private val DEFAULT_BANNER_POSITION = WindowPosition.BOTTOM_MIDDLE
-        private val DEFAULT_MODAL_POSITION = WindowPosition.BOTTOM_MIDDLE
     }
 }
