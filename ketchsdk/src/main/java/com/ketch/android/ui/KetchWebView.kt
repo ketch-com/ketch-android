@@ -180,8 +180,6 @@ class KetchWebView(context: Context) : WebView(context) {
             url += "&ketch_region=$it"
         }
 
-        url += "&mobile_device=${context.getString(R.string.mobile_device)}"
-
         Log.d(TAG, "load: $url")
 
         clearCache(true)
