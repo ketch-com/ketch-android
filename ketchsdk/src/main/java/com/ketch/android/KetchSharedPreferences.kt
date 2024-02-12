@@ -4,10 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import androidx.core.content.edit
-import com.ketch.android.Ketch.Companion.IAB_GPP_HDR_GPP_STRING
-import com.ketch.android.Ketch.Companion.IAB_TCF_TC_STRING
-import com.ketch.android.Ketch.Companion.IAB_US_PRIVACY_STRING
-
 
 internal class KetchSharedPreferences(context: Context) {
     private val sharedPreferences: SharedPreferences
@@ -56,5 +52,8 @@ internal class KetchSharedPreferences(context: Context) {
 
     companion object {
         private val TAG = KetchSharedPreferences::class.java.simpleName
+        internal const val IAB_TCF_TC_STRING = "IABTCF_TCString"
+        internal const val IAB_US_PRIVACY_STRING = "IABUSPrivacy_String"
+        internal const val IAB_GPP_HDR_GPP_STRING = "IABGPP_HDR_GppString"
     }
 }

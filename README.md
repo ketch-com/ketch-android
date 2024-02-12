@@ -31,35 +31,36 @@ with the [application property](https://app.ketch.com/deployment/applications)  
 
 ## Quick Start
 
-1. Using sources
-   1.1. Copy and paste ketchsdk module to your project
-   1.2. Add "include ':ketchsdk'" to settings.graddle
-   1.3. Add dependency into your main module:
-    ```kotlin
+### 1. Using sources
+1. Copy and paste ketchsdk module to your project
+2. Add "include ':ketchsdk'" to settings.graddle
+3. Add dependency into your main module:
+```gradle
        implementation project(':ketchsdk')
-    ```
-2. Using .aar lib
-   2.1 Add it in your root build.gradle at the end of repositories: 
-   ```kotlin
-      repositories {
-        ...
-        maven { url 'https://jitpack.io' }
-    }
-   ```   
-   2.2. Add the dependency:
-    ```kotlin
+```
+### 2. Using .aar lib
+1. Add it in your root build.gradle at the end of repositories: 
+```gradle
+        repositories {
+           ...
+           maven { url 'https://jitpack.io' }
+       }
+```   
+   
+2. Add the dependency:
+```gradle
         implementation 'com.github.ketch-com:ketch-android:main-SNAPSHOT'
-    ```
+```
    
    If you want you can use our [Sample](https://github.com/ketch-sdk/ketch-samples)
 
-3. Add constants to companion object of your activity
+### 3. Add constants to companion object of your activity
 ```kotlin
         private const val ORG_CODE = "<your organization code>"
         private const val PROPERTY = "<property>"
         private const val ADVERTISING_ID_CODE = "aaid"
 ```
-4. Add listener and Ketch to your activity:
+### 4. Add listener and Ketch to your activity:
 ```kotlin
    private val listener = object : Ketch.Listener {
 
@@ -111,7 +112,8 @@ with the [application property](https://app.ketch.com/deployment/applications)  
         ).build()
    }
 ```
-5. Add advertising loading code and set it in Ketch object and call load() method
+
+### 5. Add advertising loading code and set it in Ketch object and call load() method
 ```kotlin
     with(ketch) {
         setIdentities(mapOf(ADVERTISING_ID_CODE to advertisingIdCode))
@@ -130,62 +132,12 @@ KetchSharedPreferences - SharedPreferences class is used for saving the TCF/USPr
 
 ## Ketch methods:
 1. load() - loads web content and displays a dialog if necessary
-1. getSavedString(key: String) - returns a saved TCF/USPrivacy/Gpp strings and other protocol parameters by key
-2. getTCFTCString() - returns a saved TCF string
-3. getUSPrivacyString() - returns a saved USPrivacy string
-4. getGPPHDRGppString() - returns a saved GPP string
-5. forceShowConsent() - loads web content and forces Consent Dialog (Banner or Modal) 
-6. showPreferences() - loads web content and displays Preferences Dialog
-
-## Dialog Position and animation
-Ketch automatically uses the dialog position and animation from your configuration.
-If you want to use a different position, you can set it using these methods:
-```kotlin
-   setBannerWindowPosition(position: WindowPosition?)
-   setModalWindowPosition(position: WindowPosition?)
-```
-
-## Dialog Sizes resources:
-```xml
-<resources>
-   ...
-    <style name="KetchBannerTopBottom">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">620dp</item>
-    </style>
-    <style name="KetchBannerLeftRightCenter">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">620dp</item>
-    </style>
-
-    <style name="KetchModalTopBottom">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">720dp</item>
-    </style>
-    <style name="KetchModalLeftRightCenter">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">720dp</item>
-    </style>
-
-</resources>
-```
-## Dialog Animations resources:
-fade_in_center.xml
-slide_from_bottom.xml
-slide_from_left.xml
-slide_from_right.xml
-slide_from_top.xml
-
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<set xmlns:android="http://schemas.android.com/apk/res/android">
-    <alpha
-        android:duration="600"
-        android:fromAlpha="0.0"
-        android:startOffset="500"
-        android:toAlpha="1.0" />
-</set>
-```
+2. getSavedString(key: String) - returns a saved TCF/USPrivacy/Gpp strings and other protocol parameters by key
+3. getTCFTCString() - returns a saved TCF string
+4. getUSPrivacyString() - returns a saved USPrivacy string
+5. getGPPHDRGppString() - returns a saved GPP string
+6. forceShowConsent() - loads web content and forces Consent Dialog (Banner or Modal) 
+7. showPreferences() - loads web content and displays Preferences Dialog
 
 ## [the Sample app](https://github.com/ketch-sdk/ketch-samples)
 

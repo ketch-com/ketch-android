@@ -22,7 +22,6 @@ import com.ketch.android.Ketch
 import com.ketch.android.R
 import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
-import com.ketch.android.data.Identity
 import com.ketch.android.data.KetchConfig
 
 
@@ -31,8 +30,8 @@ class KetchWebView(context: Context) : WebView(context) {
     private var environmentUrl: String? = null
     private lateinit var orgCode: String
     private lateinit var property: String
-    private var identities: List<Identity> = emptyList()
-    private var forceShow: Ketch.ExperienceType? = null
+    private var identities: Map<String, String> = emptyMap()
+    private var forceShow: ExperienceType? = null
     private var preferencesTabs: List<Ketch.PreferencesTab> = emptyList()
     private var preferencesTab: Ketch.PreferencesTab? = null
     private var language: String = ENGLISH
@@ -103,7 +102,7 @@ class KetchWebView(context: Context) : WebView(context) {
     fun load(
         orgCode: String,
         property: String,
-        identities: List<Identity> = emptyList(),
+        identities: Map<String, String> = emptyMap(),
         url: String?
     ) {
         this.orgCode = orgCode
@@ -113,15 +112,15 @@ class KetchWebView(context: Context) : WebView(context) {
         load()
     }
 
-    fun forceShow(forceShow: Ketch.ExperienceType?) {
+    internal fun forceShow(forceShow: ExperienceType?) {
         this.forceShow = forceShow
         this.preferencesTabs = emptyList()
         this.preferencesTab = null
         load()
     }
 
-    fun showPreferencesTab(tabs: List<Ketch.PreferencesTab>, tab: Ketch.PreferencesTab) {
-        this.forceShow = Ketch.ExperienceType.PREFERENCES
+    internal fun showPreferencesTab(tabs: List<Ketch.PreferencesTab>, tab: Ketch.PreferencesTab) {
+        this.forceShow = ExperienceType.PREFERENCES
         this.preferencesTabs = tabs
         this.preferencesTab = tab
         load()
@@ -148,7 +147,7 @@ class KetchWebView(context: Context) : WebView(context) {
         this.region = region
     }
 
-    fun load() {
+    private fun load() {
         //pass in the property code and  to be used with the Ketch Smart Tag
         var url =
             "https://appassets.androidplatform.net/assets/index.html?ketch_lang=$language&orgCode=$orgCode&propertyName=$property"
@@ -174,7 +173,7 @@ class KetchWebView(context: Context) : WebView(context) {
         }
 
         identities.forEach { identity ->
-            url += "&${identity.name}=${identity.value}"
+            url += "&${identity.key}=${identity.value}"
         }
 
         region?.let {
@@ -401,6 +400,16 @@ class KetchWebView(context: Context) : WebView(context) {
         fun onError(errMsg: String?)
         fun changeDialog(display: ContentDisplay)
         fun onClose()
+    }
+
+    internal enum class ExperienceType {
+        CONSENT,
+        PREFERENCES;
+
+        fun getUrlParameter(): String = when (this) {
+            CONSENT -> "cd"
+            PREFERENCES -> "preferences"
+        }
     }
 
     companion object {

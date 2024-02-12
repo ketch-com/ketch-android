@@ -7,9 +7,11 @@ import androidx.fragment.app.FragmentManager
  * Factory to create the Ketch singleton.
  *
  *         val ketch = KetchSdk.create(
+ *             activity,
+ *             fragmentManager,
  *             organization = ORGANIZATION,
  *             property = PROPERTY,
- *             identities = mapOf(ADVERTISING_ID_CODE to advertisingId)
+ *             listener
  *         )
  **/
 object KetchSdk {
