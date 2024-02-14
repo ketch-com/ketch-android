@@ -45,7 +45,8 @@ sealed class Banner {
 
     data class ContainerConfig(
         @SerializedName("position") val position: ContainerPosition = ContainerPosition.BottomMiddle,
-        @SerializedName("size") val size: Size = Size.Standard
+        @SerializedName("size") val size: Size = Size.Standard,
+        @SerializedName("backdrop") val backdrop: Backdrop
     )
 
     enum class ContainerPosition {
@@ -75,6 +76,10 @@ sealed class Banner {
         @SerializedName("compact")
         Compact
     }
+
+    data class Backdrop(
+        @SerializedName("disableContentInteractions") val disableContentInteractions: Boolean
+    )
 }
 
 sealed class Modal {
@@ -83,7 +88,8 @@ sealed class Modal {
     )
 
     data class ContainerConfig(
-        @SerializedName("position") val position: ContainerPosition = ContainerPosition.Center
+        @SerializedName("position") val position: ContainerPosition = ContainerPosition.Center,
+        @SerializedName("backdrop") val backdrop: Banner.Backdrop
     )
 
     enum class ContainerPosition {

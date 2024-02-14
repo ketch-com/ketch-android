@@ -63,7 +63,11 @@ with the [application property](https://app.ketch.com/deployment/applications)  
 ### 4. Add listener and Ketch to your activity:
 ```kotlin
    private val listener = object : Ketch.Listener {
-
+        
+        override fun onLoad() {
+            Log.d(TAG, "onLoad")
+        }
+    
         override fun onEnvironmentUpdated(environment: String?) {
             Log.d(TAG, "onEnvironmentUpdated: environment = $environment")
         }
@@ -108,7 +112,8 @@ with the [application property](https://app.ketch.com/deployment/applications)  
             supportFragmentManager,
             ORG_CODE,
             PROPERTY,
-            listener
+            listener,
+            url
         ).build()
    }
 ```
@@ -138,6 +143,13 @@ KetchSharedPreferences - SharedPreferences class is used for saving the TCF/USPr
 5. getGPPHDRGppString() - returns a saved GPP string
 6. forceShowConsent() - loads web content and forces Consent Dialog (Banner or Modal) 
 7. showPreferences() - loads web content and displays Preferences Dialog
+8. showPreferencesTab(tabs: List<PreferencesTab>, tab: PreferencesTab) - displays the preferences tab, adding the fragment dialog to the given FragmentManager
+9. dismissDialog() - dismiss the dialog
+10. setIdentities(identities: Map<String, String>) - set identifies
+11. setLanguage(language: String) - set the language
+12. setJurisdiction(jurisdiction: String?) - set the jurisdiction
+13. setRegion(region: String?) - set Region
+
 
 ## [the Sample app](https://github.com/ketch-sdk/ketch-samples)
 
