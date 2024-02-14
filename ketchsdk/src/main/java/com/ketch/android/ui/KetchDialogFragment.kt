@@ -22,10 +22,6 @@ internal class KetchDialogFragment() : DialogFragment() {
 
     private var webView: KetchWebView? = null
 
-    init {
-        isCancelable = true
-    }
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,

@@ -52,14 +52,16 @@ class Ketch private constructor(
      *
      * @return Returns the preference value if it exists
      */
-    fun getUSPrivacyString() = preferences.getSavedValue(KetchSharedPreferences.IAB_US_PRIVACY_STRING)
+    fun getUSPrivacyString() =
+        preferences.getSavedValue(KetchSharedPreferences.IAB_US_PRIVACY_STRING)
 
     /**
      * Retrieve IABGPP_HDR_GppString value from the preferences.
      *
      * @return Returns the preference value if it exists
      */
-    fun getGPPHDRGppString() = preferences.getSavedValue(KetchSharedPreferences.IAB_GPP_HDR_GPP_STRING)
+    fun getGPPHDRGppString() =
+        preferences.getSavedValue(KetchSharedPreferences.IAB_GPP_HDR_GPP_STRING)
 
     /**
      * Display the consent, adding the fragment dialog to the given FragmentManager.
@@ -73,6 +75,15 @@ class Ketch private constructor(
      */
     fun showPreferences() {
         webView.forceShow(KetchWebView.ExperienceType.PREFERENCES)
+    }
+
+    /**
+     * Dismiss the dialog
+     */
+    fun dismissDialog() {
+        findDialogFragment()?.let {
+            (it as? KetchDialogFragment)?.dismiss()
+        }
     }
 
     /**
@@ -131,11 +142,18 @@ class Ketch private constructor(
         webView = KetchWebView(context).apply {
             listener = object : KetchWebView.KetchListener {
 
+                private var config: KetchConfig? = null
+                private var showConsent: Boolean = false
+
                 override fun onLoad() {
                     this@Ketch.listener.onLoad()
                 }
 
                 override fun showConsent() {
+                    if (config == null) {
+                        showConsent = true
+                        return
+                    }
                     showConsentPopup()
                 }
 
@@ -165,6 +183,7 @@ class Ketch private constructor(
                 }
 
                 override fun onConfigUpdated(config: KetchConfig?) {
+                    this.config = config
                 }
 
                 override fun onEnvironmentUpdated(environment: String?) {
@@ -192,6 +211,11 @@ class Ketch private constructor(
                 }
 
                 override fun changeDialog(display: ContentDisplay) {
+                    findDialogFragment()?.let {
+                        (it as? KetchDialogFragment)?.apply {
+                            isCancelable = getDisposableContentInteractions(display)
+                        }
+                    }
                 }
 
                 override fun onClose() {
@@ -205,16 +229,30 @@ class Ketch private constructor(
                         return
                     }
 
-                    val dialog = KetchDialogFragment.newInstance()
+                    val dialog = KetchDialogFragment.newInstance().apply {
+                        val disableContentInteractions = getDisposableContentInteractions(config?.experiences?.consent?.display ?: ContentDisplay.Banner)
+                        isCancelable = !disableContentInteractions
+                    }
                     fragmentManager.let {
                         dialog.show(it, webView)
                     }
+                    showConsent = false
                 }
+
+                private fun getDisposableContentInteractions(display: ContentDisplay): Boolean =
+                    config?.let {
+                        if (display == ContentDisplay.Modal) {
+                            it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
+                        } else if (display == ContentDisplay.Banner) {
+                            it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
+                        } else false
+                    } ?: false
             }
         }
     }
 
-    private fun findDialogFragment() = fragmentManager.findFragmentByTag(KetchDialogFragment.TAG)
+    private fun findDialogFragment() =
+        fragmentManager.findFragmentByTag(KetchDialogFragment.TAG)
 
     enum class PreferencesTab {
         OVERVIEW,

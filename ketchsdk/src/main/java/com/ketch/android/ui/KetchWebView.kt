@@ -313,6 +313,11 @@ class KetchWebView(context: Context) : WebView(context) {
         }
 
         @JavascriptInterface
+        fun tapOutside(dialogSize: String?) {
+            Log.d(TAG, "tapOutside: $dialogSize")
+        }
+
+        @JavascriptInterface
         fun geoip(ip: String?) {
         }
 
