@@ -4,15 +4,18 @@ import android.content.Context
 import androidx.fragment.app.FragmentManager
 
 /**
- * Factory to create the Ketch singleton.
+ * Factory to create the Ketch object.
  *
- *         val ketch = KetchSdk.create(
- *             activity,
- *             fragmentManager,
- *             organization = ORGANIZATION,
- *             property = PROPERTY,
- *             listener
- *         )
+ *         KetchSdk.create(
+ *               this,
+ *               supportFragmentManager,
+ *               ORG_CODE,
+ *               PROPERTY,
+ *               ENVIRONMENT,
+ *               listener,
+ *               TEST_URL,
+ *               Ketch.LogLevel.DEBUG
+ *           )
  **/
 object KetchSdk {
     /**
@@ -22,24 +25,30 @@ object KetchSdk {
      * @param fragmentManager - The FragmentManager this KetchDialogFragment will be added to.
      * @param organization - your organization code
      * @param property - the property name
+     * @param environment - the environment name.
      * @param listener - Ketch.Listener
-     * @param override url
+     * @param ketchUrl - Overrides the ketch url
+     * @param logLevel - the log level, can be TRACE, DEBUG, INFO, WARN, ERROR
      */
     fun create(
         context: Context,
         fragmentManager: FragmentManager,
         organization: String,
         property: String,
+        environment: String? = null,
         listener: Ketch.Listener,
-        url: String? = null
-    ): Ketch.Builder {
-        return Ketch.Builder.create(
+        ketchUrl: String? = null,
+        logLevel: Ketch.LogLevel = Ketch.LogLevel.ERROR
+    ): Ketch {
+        return Ketch.create(
             context = context,
             fragmentManager = fragmentManager,
             orgCode = organization,
             property = property,
+            environment = environment,
             listener = listener,
-            url = url
+            ketchUrl = ketchUrl,
+            logLevel = logLevel
         )
     }
 }

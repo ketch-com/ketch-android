@@ -16,8 +16,10 @@ class Ketch private constructor(
     private val fragmentManager: FragmentManager,
     private val orgCode: String,
     private val property: String,
+    private val environment: String?,
     private val listener: Listener,
-    private val url: String? = null
+    private val ketchUrl: String?,
+    private val logLevel: LogLevel
 ) {
 
     private val preferences: KetchSharedPreferences = KetchSharedPreferences(context)
@@ -28,7 +30,7 @@ class Ketch private constructor(
      * Loads a web page and shows a popup if necessary
      */
     fun load() {
-        webView.load(orgCode, property, identities, url)
+        webView.load(orgCode, property, environment, identities, ketchUrl, logLevel)
     }
 
     /**
@@ -66,7 +68,7 @@ class Ketch private constructor(
     /**
      * Display the consent, adding the fragment dialog to the given FragmentManager.
      */
-    fun forceShowConsent() {
+    fun showConsent() {
         webView.forceShow(KetchWebView.ExperienceType.CONSENT)
     }
 
@@ -78,15 +80,6 @@ class Ketch private constructor(
     }
 
     /**
-     * Dismiss the dialog
-     */
-    fun dismissDialog() {
-        findDialogFragment()?.let {
-            (it as? KetchDialogFragment)?.dismiss()
-        }
-    }
-
-    /**
      * Display the preferences tab, adding the fragment dialog to the given FragmentManager.
      *
      * @param tabs: list of preferences tab
@@ -94,6 +87,16 @@ class Ketch private constructor(
      */
     fun showPreferencesTab(tabs: List<PreferencesTab>, tab: PreferencesTab) {
         webView.showPreferencesTab(tabs, tab)
+    }
+
+    /**
+     * Dismiss the dialog
+     */
+    fun dismissDialog() {
+        findDialogFragment()?.let {
+            (it as? KetchDialogFragment)?.dismiss()
+            this@Ketch.listener.onDismiss()
+        }
     }
 
     /**
@@ -137,10 +140,11 @@ class Ketch private constructor(
     init {
         findDialogFragment()?.let { dialog ->
             (dialog as KetchDialogFragment).dismiss()
+            this@Ketch.listener.onDismiss()
         }
 
         webView = KetchWebView(context).apply {
-            listener = object : KetchWebView.KetchListener {
+            listener = object : KetchWebView.WebViewListener {
 
                 private var config: KetchConfig? = null
                 private var showConsent: Boolean = false
@@ -160,10 +164,12 @@ class Ketch private constructor(
                 override fun showPreferences() {
                     findDialogFragment()?.let {
                         (it as KetchDialogFragment).dismiss()
+                        this@Ketch.listener.onDismiss()
                     }
                     val dialog = KetchDialogFragment.newInstance()
                     fragmentManager.let {
                         dialog.show(it, webView)
+                        this@Ketch.listener.onShow()
                     }
                 }
 
@@ -221,6 +227,18 @@ class Ketch private constructor(
                 override fun onClose() {
                     findDialogFragment()?.let {
                         (it as? KetchDialogFragment)?.dismiss()
+                        this@Ketch.listener.onDismiss()
+                    }
+                }
+
+                override fun onTapOutside() {
+                    findDialogFragment()?.let {
+                        (it as? KetchDialogFragment)?.let {
+                            if (it.isCancelable) {
+                                it.dismiss()
+                                this@Ketch.listener.onDismiss()
+                            }
+                        }
                     }
                 }
 
@@ -230,11 +248,14 @@ class Ketch private constructor(
                     }
 
                     val dialog = KetchDialogFragment.newInstance().apply {
-                        val disableContentInteractions = getDisposableContentInteractions(config?.experiences?.consent?.display ?: ContentDisplay.Banner)
+                        val disableContentInteractions = getDisposableContentInteractions(
+                            config?.experiences?.consent?.display ?: ContentDisplay.Banner
+                        )
                         isCancelable = !disableContentInteractions
                     }
                     fragmentManager.let {
                         dialog.show(it, webView)
+                        this@Ketch.listener.onShow()
                     }
                     showConsent = false
                 }
@@ -268,47 +289,82 @@ class Ketch private constructor(
         }
     }
 
+    enum class LogLevel {
+        TRACE, DEBUG, INFO, WARN, ERROR
+    }
+
     interface Listener {
+        /**
+         * Called when the page is loaded by the sdk
+         */
         fun onLoad()
+
+        /**
+         * Called when a dialog is displayed
+         */
+        fun onShow()
+
+        /**
+         * Called when a dialog is dismissed
+         */
+        fun onDismiss()
+
+        /**
+         * Called when the environment is updated.
+         */
         fun onEnvironmentUpdated(environment: String?)
+
+        /**
+         * Called when the region is updated.
+         */
         fun onRegionInfoUpdated(regionInfo: String?)
+
+        /**
+         * Called when the jurisdiction is updated.
+         */
         fun onJurisdictionUpdated(jurisdiction: String?)
+
+        /**
+         * Called when the identities is updated.
+         */
         fun onIdentitiesUpdated(identities: String?)
+
+        /**
+         * Called when the consent is updated.
+         */
         fun onConsentUpdated(consent: Consent)
+
+        /**
+         * Called on error.
+         */
         fun onError(errMsg: String?)
+
+        /**
+         * Called when USPrivacy is updated.
+         */
         fun onUSPrivacyUpdated(values: Map<String, Any?>)
+
+        /**
+         * Called when TCF is updated.
+         */
         fun onTCFUpdated(values: Map<String, Any?>)
+
+        /**
+         * Called when GPP is updated.
+         */
         fun onGPPUpdated(values: Map<String, Any?>)
     }
 
-    class Builder private constructor(
-        private val context: Context,
-        private val fragmentManager: FragmentManager,
-        private val orgCode: String,
-        private val property: String,
-        private val listener: Listener,
-        private val url: String?
-    ) {
-
-        fun build(): Ketch =
-            Ketch(
-                context,
-                fragmentManager,
-                orgCode,
-                property,
-                listener,
-                url
-            )
-
-        companion object {
-            fun create(
-                context: Context,
-                fragmentManager: FragmentManager,
-                orgCode: String,
-                property: String,
-                listener: Listener,
-                url: String?
-            ) = Builder(context, fragmentManager, orgCode, property, listener, url)
-        }
+    companion object {
+        fun create(
+            context: Context,
+            fragmentManager: FragmentManager,
+            orgCode: String,
+            property: String,
+            environment: String?,
+            listener: Listener,
+            ketchUrl: String?,
+            logLevel: LogLevel
+        ) = Ketch(context, fragmentManager, orgCode, property, environment, listener, ketchUrl, logLevel)
     }
 }
