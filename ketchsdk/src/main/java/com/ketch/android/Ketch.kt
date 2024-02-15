@@ -248,7 +248,9 @@ class Ketch private constructor(
                     }
 
                     val dialog = KetchDialogFragment.newInstance().apply {
-                        val disableContentInteractions = getDisposableContentInteractions(config?.experiences?.consent?.display ?: ContentDisplay.Banner)
+                        val disableContentInteractions = getDisposableContentInteractions(
+                            config?.experiences?.consent?.display ?: ContentDisplay.Banner
+                        )
                         isCancelable = !disableContentInteractions
                     }
                     fragmentManager.let {
@@ -353,40 +355,16 @@ class Ketch private constructor(
         fun onGPPUpdated(values: Map<String, Any?>)
     }
 
-    class Builder private constructor(
-        private val context: Context,
-        private val fragmentManager: FragmentManager,
-        private val orgCode: String,
-        private val property: String,
-        private val environment: String?,
-        private val listener: Listener,
-        private val ketchUrl: String?,
-        private val logLevel: LogLevel
-    ) {
-
-        fun build(): Ketch =
-            Ketch(
-                context,
-                fragmentManager,
-                orgCode,
-                property,
-                environment,
-                listener,
-                ketchUrl,
-                logLevel
-            )
-
-        companion object {
-            fun create(
-                context: Context,
-                fragmentManager: FragmentManager,
-                orgCode: String,
-                property: String,
-                environment: String?,
-                listener: Listener,
-                ketchUrl: String?,
-                logLevel: LogLevel
-            ) = Builder(context, fragmentManager, orgCode, property, environment, listener, ketchUrl, logLevel)
-        }
+    companion object {
+        fun create(
+            context: Context,
+            fragmentManager: FragmentManager,
+            orgCode: String,
+            property: String,
+            environment: String?,
+            listener: Listener,
+            ketchUrl: String?,
+            logLevel: LogLevel
+        ) = Ketch(context, fragmentManager, orgCode, property, environment, listener, ketchUrl, logLevel)
     }
 }

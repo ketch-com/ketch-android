@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.fragment.app.FragmentManager
 
 /**
- * Factory to create the Ketch singleton.
+ * Factory to create the Ketch object.
  *
  *         KetchSdk.create(
  *               this,
@@ -15,7 +15,7 @@ import androidx.fragment.app.FragmentManager
  *               listener,
  *               TEST_URL,
  *               Ketch.LogLevel.DEBUG
- *           ).build()
+ *           )
  **/
 object KetchSdk {
     /**
@@ -39,8 +39,8 @@ object KetchSdk {
         listener: Ketch.Listener,
         ketchUrl: String? = null,
         logLevel: Ketch.LogLevel = Ketch.LogLevel.ERROR
-    ): Ketch.Builder {
-        return Ketch.Builder.create(
+    ): Ketch {
+        return Ketch.create(
             context = context,
             fragmentManager = fragmentManager,
             orgCode = organization,

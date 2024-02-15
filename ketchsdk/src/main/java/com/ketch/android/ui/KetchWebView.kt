@@ -278,31 +278,6 @@ class KetchWebView(context: Context) : WebView(context) {
         }
 
         @JavascriptInterface
-        fun hasChangedExperience(experience: String?) {
-            // experiencedisplays.modal
-            // experiencedisplays.banner
-            // experiencedisplays.preference
-            Log.d(TAG, "hasChangedExperience: $experience")
-            if (experience == "experiencedisplays.preference") {
-                runOnMainThread {
-                    ketchWebView.listener?.showPreferences()
-                }
-            } else {
-                val dialogType = when (experience) {
-                    "experiencedisplays.modal" -> ContentDisplay.Modal
-                    "experiencedisplays.banner" -> ContentDisplay.Banner
-                    else -> null
-                }
-
-                dialogType?.let { display ->
-                    runOnMainThread {
-                        ketchWebView.listener?.changeDialog(display)
-                    }
-                }
-            }
-        }
-
-        @JavascriptInterface
         fun onConfigLoaded(configJson: String?) {
             Log.d(TAG, "onConfigLoaded: $configJson")
 
