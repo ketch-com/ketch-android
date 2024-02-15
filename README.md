@@ -93,7 +93,7 @@ with the [application property](https://app.ketch.com/deployment/applications)  
             listener,
             ketchUrl,
             Ketch.LogLevel.DEBUG
-        ).build()
+        )
     }
 ```
 
@@ -107,7 +107,7 @@ with the [application property](https://app.ketch.com/deployment/applications)  
 
 ## Developer's Documentations
 ### com.ketch.android.Ketch
-**Ketch** - Main class where the SDK functionality resides.
+**class Ketch** - Main class where the SDK functionality resides.
 #### Methods:
    _load()_
         - loads web content and displays a dialog if necessary
@@ -133,7 +133,7 @@ with the [application property](https://app.ketch.com/deployment/applications)  
    _showPreferencesTab(tabs: List<PreferencesTab>, tab: PreferencesTab)_
         - displays the preferences tab, adding the fragment dialog to the given FragmentManager
 
-   _dismissDialog() 
+   _dismissDialog()_ 
         - dismiss the dialog
 
    _setIdentities(identities: Map<String, String>)_ 
@@ -148,20 +148,24 @@ with the [application property](https://app.ketch.com/deployment/applications)  
    _setRegion(region: String?)_ 
         - set the region
 
+        
+
 ### com.ketch.android.KetchSdk
-**KetchSdk** - Class used to initialize the Ketch SDK 
-#### Methods: 
-_create(
-    context: Context,
-    fragmentManager: FragmentManager,
-    organization: String,
-    property: String,
-    environment: String? = null,
-    listener: Ketch.Listener,
-    ketchUrl: String? = null,
-    logLevel: Ketch.LogLevel
-)_ 
-      - Creates the Ketch Builder. 
+**class KetchSdk** - Class used to initialize the Ketch SDK 
+#### Methods:
+```kotlin
+create(
+       context: Context,
+       fragmentManager: FragmentManager,
+       organization: String,
+       property: String,
+       environment: String? = null,
+       listener: Ketch.Listener,
+       ketchUrl: String? = null,
+       logLevel: Ketch.LogLevel
+): Ketch
+```
+       - Creates the Ketch Object. 
          Parameters:
             context - an Activity Context to access application assets
             fragmentManager - The FragmentManager this KetchDialogFragment will be added to.
@@ -172,8 +176,10 @@ _create(
             ketchUrl - Overrides url
             logLevel - the log level, can be TRACE, DEBUG, INFO, WARN, ERROR
 
+            
+
 ### com.ketch.android.Ketch.Listener
-**Ketch.Listener** - Interface used to list events from the sdk.
+**interface Ketch.Listener** - Interface used to list events from the sdk.
 #### Methods:
   _onLoad()_ 
         - Called when the page is loaded by the sdk
@@ -210,6 +216,8 @@ _create(
 
   _onGPPUpdated(values: Map<String, Any?>)_
         - Called when GPP is updated.
+
+        
 
 ## [the Sample app](https://github.com/ketch-sdk/ketch-samples)
 
