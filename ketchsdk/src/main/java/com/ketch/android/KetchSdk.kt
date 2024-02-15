@@ -22,24 +22,30 @@ object KetchSdk {
      * @param fragmentManager - The FragmentManager this KetchDialogFragment will be added to.
      * @param organization - your organization code
      * @param property - the property name
+     * @param environment - the environment name.
      * @param listener - Ketch.Listener
      * @param override url
+     * @param logLevel - the log level, can be TRACE, DEBUG, INFO, WARN, ERROR
      */
     fun create(
         context: Context,
         fragmentManager: FragmentManager,
         organization: String,
         property: String,
+        environment: String? = null,
         listener: Ketch.Listener,
-        url: String? = null
+        url: String? = null,
+        logLevel: Ketch.LogLevel = Ketch.LogLevel.ERROR
     ): Ketch.Builder {
         return Ketch.Builder.create(
             context = context,
             fragmentManager = fragmentManager,
             orgCode = organization,
             property = property,
+            environment = environment,
             listener = listener,
-            url = url
+            url = url,
+            logLevel = logLevel
         )
     }
 }

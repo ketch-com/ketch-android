@@ -19,7 +19,6 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonParseException
 import com.ketch.android.Ketch
-import com.ketch.android.R
 import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.KetchConfig
@@ -27,9 +26,11 @@ import com.ketch.android.data.KetchConfig
 
 @SuppressLint("SetJavaScriptEnabled")
 class KetchWebView(context: Context) : WebView(context) {
-    private var environmentUrl: String? = null
     private lateinit var orgCode: String
     private lateinit var property: String
+    private var environment: String? = null
+    private var ketchUrl: String? = null
+    private lateinit var logLevel: Ketch.LogLevel
     private var identities: Map<String, String> = emptyMap()
     private var forceShow: ExperienceType? = null
     private var preferencesTabs: List<Ketch.PreferencesTab> = emptyList()
@@ -102,13 +103,17 @@ class KetchWebView(context: Context) : WebView(context) {
     fun load(
         orgCode: String,
         property: String,
+        environment: String?,
         identities: Map<String, String> = emptyMap(),
-        url: String?
+        ketchUrl: String?,
+        logLevel: Ketch.LogLevel
     ) {
         this.orgCode = orgCode
         this.property = property
+        this.environment = environment
         this.identities = identities
-        this.environmentUrl = url
+        this.ketchUrl = ketchUrl
+        this.logLevel = logLevel
         load()
     }
 
@@ -150,22 +155,10 @@ class KetchWebView(context: Context) : WebView(context) {
     private fun load() {
         //pass in the property code and  to be used with the Ketch Smart Tag
         var url =
-            "https://appassets.androidplatform.net/assets/index.html?ketch_lang=$language&orgCode=$orgCode&propertyName=$property"
+            "https://appassets.androidplatform.net/assets/index.html?ketch_lang=$language&orgCode=$orgCode&propertyName=$property&ketch_log=${logLevel.name}"
 
-        environmentUrl?.let {
+        ketchUrl?.let {
             url += "&ketch_mobilesdk_url=${it}"
-        }
-
-        forceShow?.let {
-            url += "&ketch_show=${it.getUrlParameter()}"
-            if (preferencesTabs.isNotEmpty()) {
-                url += "&ketch_preferences_tabs=${
-                    preferencesTabs.map { it.getUrlParameter() }.joinToString(",")
-                }"
-            }
-            preferencesTab?.let {
-                url += "&ketch_preferences_tab=${it.getUrlParameter()}"
-            }
         }
 
         jurisdiction?.let {
@@ -178,6 +171,22 @@ class KetchWebView(context: Context) : WebView(context) {
 
         region?.let {
             url += "&ketch_region=$it"
+        }
+
+        environment?.let {
+            url += "&ketch_env=$environment"
+        }
+
+        forceShow?.let {
+            url += "&ketch_show=${it.getUrlParameter()}"
+            if (preferencesTabs.isNotEmpty()) {
+                url += "&ketch_preferences_tabs=${
+                    preferencesTabs.map { it.getUrlParameter() }.joinToString(",")
+                }"
+            }
+            preferencesTab?.let {
+                url += "&ketch_preferences_tab=${it.getUrlParameter()}"
+            }
         }
 
         Log.d(TAG, "load: $url")
@@ -315,6 +324,9 @@ class KetchWebView(context: Context) : WebView(context) {
         @JavascriptInterface
         fun tapOutside(dialogSize: String?) {
             Log.d(TAG, "tapOutside: $dialogSize")
+            runOnMainThread {
+                ketchWebView.listener?.onTapOutside()
+            }
         }
 
         @JavascriptInterface
@@ -403,6 +415,7 @@ class KetchWebView(context: Context) : WebView(context) {
         fun onError(errMsg: String?)
         fun changeDialog(display: ContentDisplay)
         fun onClose()
+        fun onTapOutside()
     }
 
     internal enum class ExperienceType {

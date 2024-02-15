@@ -16,8 +16,10 @@ class Ketch private constructor(
     private val fragmentManager: FragmentManager,
     private val orgCode: String,
     private val property: String,
+    private val environment: String?,
     private val listener: Listener,
-    private val url: String? = null
+    private val ketchUrl: String?,
+    private val logLevel: LogLevel
 ) {
 
     private val preferences: KetchSharedPreferences = KetchSharedPreferences(context)
@@ -28,7 +30,7 @@ class Ketch private constructor(
      * Loads a web page and shows a popup if necessary
      */
     fun load() {
-        webView.load(orgCode, property, identities, url)
+        webView.load(orgCode, property, environment, identities, ketchUrl, logLevel)
     }
 
     /**
@@ -83,6 +85,7 @@ class Ketch private constructor(
     fun dismissDialog() {
         findDialogFragment()?.let {
             (it as? KetchDialogFragment)?.dismiss()
+            this@Ketch.listener.onDismiss()
         }
     }
 
@@ -137,6 +140,7 @@ class Ketch private constructor(
     init {
         findDialogFragment()?.let { dialog ->
             (dialog as KetchDialogFragment).dismiss()
+            this@Ketch.listener.onDismiss()
         }
 
         webView = KetchWebView(context).apply {
@@ -160,10 +164,12 @@ class Ketch private constructor(
                 override fun showPreferences() {
                     findDialogFragment()?.let {
                         (it as KetchDialogFragment).dismiss()
+                        this@Ketch.listener.onDismiss()
                     }
                     val dialog = KetchDialogFragment.newInstance()
                     fragmentManager.let {
                         dialog.show(it, webView)
+                        this@Ketch.listener.onShow()
                     }
                 }
 
@@ -221,6 +227,18 @@ class Ketch private constructor(
                 override fun onClose() {
                     findDialogFragment()?.let {
                         (it as? KetchDialogFragment)?.dismiss()
+                        this@Ketch.listener.onDismiss()
+                    }
+                }
+
+                override fun onTapOutside() {
+                    findDialogFragment()?.let {
+                        (it as? KetchDialogFragment)?.let {
+                            if (it.isCancelable) {
+                                it.dismiss()
+                                this@Ketch.listener.onDismiss()
+                            }
+                        }
                     }
                 }
 
@@ -235,6 +253,7 @@ class Ketch private constructor(
                     }
                     fragmentManager.let {
                         dialog.show(it, webView)
+                        this@Ketch.listener.onShow()
                     }
                     showConsent = false
                 }
@@ -268,8 +287,14 @@ class Ketch private constructor(
         }
     }
 
+    enum class LogLevel {
+        TRACE, DEBUG, INFO, WARN, ERROR
+    }
+
     interface Listener {
         fun onLoad()
+        fun onShow()
+        fun onDismiss()
         fun onEnvironmentUpdated(environment: String?)
         fun onRegionInfoUpdated(regionInfo: String?)
         fun onJurisdictionUpdated(jurisdiction: String?)
@@ -286,8 +311,10 @@ class Ketch private constructor(
         private val fragmentManager: FragmentManager,
         private val orgCode: String,
         private val property: String,
+        private val environment: String?,
         private val listener: Listener,
-        private val url: String?
+        private val url: String?,
+        private val logLevel: LogLevel
     ) {
 
         fun build(): Ketch =
@@ -296,8 +323,10 @@ class Ketch private constructor(
                 fragmentManager,
                 orgCode,
                 property,
+                environment,
                 listener,
-                url
+                url,
+                logLevel
             )
 
         companion object {
@@ -306,9 +335,11 @@ class Ketch private constructor(
                 fragmentManager: FragmentManager,
                 orgCode: String,
                 property: String,
+                environment: String?,
                 listener: Listener,
-                url: String?
-            ) = Builder(context, fragmentManager, orgCode, property, listener, url)
+                url: String?,
+                logLevel: LogLevel
+            ) = Builder(context, fragmentManager, orgCode, property, environment, listener, url, logLevel)
         }
     }
 }

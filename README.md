@@ -59,6 +59,7 @@ with the [application property](https://app.ketch.com/deployment/applications)  
         private const val ORG_CODE = "<your organization code>"
         private const val PROPERTY = "<property>"
         private const val ADVERTISING_ID_CODE = "aaid"
+        private const val ENVIRONMENT = "production"
 ```
 ### 4. Add listener and Ketch to your activity:
 ```kotlin
@@ -67,6 +68,14 @@ with the [application property](https://app.ketch.com/deployment/applications)  
         override fun onLoad() {
             Log.d(TAG, "onLoad")
         }
+
+        override fun onShow() {
+            Log.d(TAG, "onShow")
+        }
+
+        override fun onDismiss() {
+            Log.d(TAG, "onDismiss")
+        }    
     
         override fun onEnvironmentUpdated(environment: String?) {
             Log.d(TAG, "onEnvironmentUpdated: environment = $environment")
@@ -106,16 +115,30 @@ with the [application property](https://app.ketch.com/deployment/applications)  
         }
    }
 
-   private val ketch: Ketch by lazy {
+    /**
+     * Creates the Ketch
+     *
+     * @param context - an Activity Context to access application assets
+     * @param fragmentManager - The FragmentManager this KetchDialogFragment will be added to.
+     * @param organization - your organization code
+     * @param property - the property name
+     * @param environment - the environment name.
+     * @param listener - Ketch.Listener
+     * @param override url
+     * @param logLevel - the log level, can be TRACE, DEBUG, INFO, WARN, ERROR 
+     */
+    private val ketch: Ketch by lazy {
         KetchSdk.create(
-            this,
+            this,                   
             supportFragmentManager,
             ORG_CODE,
             PROPERTY,
+            ENVIRONMENT,
             listener,
-            url
+            TEST_URL,
+            Ketch.LogLevel.DEBUG
         ).build()
-   }
+    }
 ```
 
 ### 5. Add advertising loading code and set it in Ketch object and call load() method
