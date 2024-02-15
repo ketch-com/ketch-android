@@ -68,7 +68,7 @@ class Ketch private constructor(
     /**
      * Display the consent, adding the fragment dialog to the given FragmentManager.
      */
-    fun forceShowConsent() {
+    fun showConsent() {
         webView.forceShow(KetchWebView.ExperienceType.CONSENT)
     }
 
@@ -80,16 +80,6 @@ class Ketch private constructor(
     }
 
     /**
-     * Dismiss the dialog
-     */
-    fun dismissDialog() {
-        findDialogFragment()?.let {
-            (it as? KetchDialogFragment)?.dismiss()
-            this@Ketch.listener.onDismiss()
-        }
-    }
-
-    /**
      * Display the preferences tab, adding the fragment dialog to the given FragmentManager.
      *
      * @param tabs: list of preferences tab
@@ -97,6 +87,16 @@ class Ketch private constructor(
      */
     fun showPreferencesTab(tabs: List<PreferencesTab>, tab: PreferencesTab) {
         webView.showPreferencesTab(tabs, tab)
+    }
+
+    /**
+     * Dismiss the dialog
+     */
+    fun dismissDialog() {
+        findDialogFragment()?.let {
+            (it as? KetchDialogFragment)?.dismiss()
+            this@Ketch.listener.onDismiss()
+        }
     }
 
     /**
@@ -144,7 +144,7 @@ class Ketch private constructor(
         }
 
         webView = KetchWebView(context).apply {
-            listener = object : KetchWebView.KetchListener {
+            listener = object : KetchWebView.WebViewListener {
 
                 private var config: KetchConfig? = null
                 private var showConsent: Boolean = false
@@ -292,17 +292,64 @@ class Ketch private constructor(
     }
 
     interface Listener {
+        /**
+         * Called when the page is loaded by the sdk
+         */
         fun onLoad()
+
+        /**
+         * Called when a dialog is displayed
+         */
         fun onShow()
+
+        /**
+         * Called when a dialog is dismissed
+         */
         fun onDismiss()
+
+        /**
+         * Called when the environment is updated.
+         */
         fun onEnvironmentUpdated(environment: String?)
+
+        /**
+         * Called when the region is updated.
+         */
         fun onRegionInfoUpdated(regionInfo: String?)
+
+        /**
+         * Called when the jurisdiction is updated.
+         */
         fun onJurisdictionUpdated(jurisdiction: String?)
+
+        /**
+         * Called when the identities is updated.
+         */
         fun onIdentitiesUpdated(identities: String?)
+
+        /**
+         * Called when the consent is updated.
+         */
         fun onConsentUpdated(consent: Consent)
+
+        /**
+         * Called on error.
+         */
         fun onError(errMsg: String?)
+
+        /**
+         * Called when USPrivacy is updated.
+         */
         fun onUSPrivacyUpdated(values: Map<String, Any?>)
+
+        /**
+         * Called when TCF is updated.
+         */
         fun onTCFUpdated(values: Map<String, Any?>)
+
+        /**
+         * Called when GPP is updated.
+         */
         fun onGPPUpdated(values: Map<String, Any?>)
     }
 
@@ -313,7 +360,7 @@ class Ketch private constructor(
         private val property: String,
         private val environment: String?,
         private val listener: Listener,
-        private val url: String?,
+        private val ketchUrl: String?,
         private val logLevel: LogLevel
     ) {
 
@@ -325,7 +372,7 @@ class Ketch private constructor(
                 property,
                 environment,
                 listener,
-                url,
+                ketchUrl,
                 logLevel
             )
 
@@ -337,9 +384,9 @@ class Ketch private constructor(
                 property: String,
                 environment: String?,
                 listener: Listener,
-                url: String?,
+                ketchUrl: String?,
                 logLevel: LogLevel
-            ) = Builder(context, fragmentManager, orgCode, property, environment, listener, url, logLevel)
+            ) = Builder(context, fragmentManager, orgCode, property, environment, listener, ketchUrl, logLevel)
         }
     }
 }

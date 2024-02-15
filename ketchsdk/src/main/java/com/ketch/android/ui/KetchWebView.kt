@@ -39,7 +39,7 @@ class KetchWebView(context: Context) : WebView(context) {
     private var jurisdiction: String? = null
     private var region: String? = null
 
-    var listener: KetchListener? = null
+    var listener: WebViewListener? = null
         set(value) {
             field = value
             val assetLoader = WebViewAssetLoader.Builder()
@@ -79,7 +79,7 @@ class KetchWebView(context: Context) : WebView(context) {
 
     private class LocalContentWebViewClient(
         private val assetLoader: WebViewAssetLoader,
-        private val listener: KetchListener
+        private val listener: WebViewListener
     ) : WebViewClientCompat() {
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val intent = Intent(Intent.ACTION_VIEW, request.url)
@@ -399,7 +399,7 @@ class KetchWebView(context: Context) : WebView(context) {
         }
     }
 
-    interface KetchListener {
+    interface WebViewListener {
         fun onLoad()
         fun showConsent()
         fun showPreferences()

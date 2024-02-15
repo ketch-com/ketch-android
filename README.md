@@ -29,8 +29,7 @@ Minimum Android API version supported is 31
 The use of the Mobile SDK requires an [Ketch organization account](https://app.ketch.com/settings/organization)
 with the [application property](https://app.ketch.com/deployment/applications)  configured.
 
-## Quick Start
-
+## Adding KetchSDK in your project
 ### 1. Using sources
 1. Copy and paste ketchsdk module to your project
 2. Add "include ':ketchsdk'" to settings.graddle
@@ -65,56 +64,94 @@ with the [application property](https://app.ketch.com/deployment/applications)  
 ```kotlin
    private val listener = object : Ketch.Listener {
         
+        /**
+        * Called when the page is loaded by the sdk
+        */
         override fun onLoad() {
-            Log.d(TAG, "onLoad")
+            
         }
-
+        
+        /**
+        * Called when a dialog is displayed
+        */
         override fun onShow() {
-            Log.d(TAG, "onShow")
+            
         }
-
+        
+        /**
+        * Called when a dialog is dismissed
+        */
         override fun onDismiss() {
-            Log.d(TAG, "onDismiss")
-        }    
-    
+            
+        }
+        
+        /**
+        * Called when the environment is updated.
+        */
         override fun onEnvironmentUpdated(environment: String?) {
-            Log.d(TAG, "onEnvironmentUpdated: environment = $environment")
+            
         }
-
+        
+        /**
+        * Called when the region is updated.
+        */
         override fun onRegionInfoUpdated(regionInfo: String?) {
-            Log.d(TAG, "onRegionInfoUpdated: regionInfo = $regionInfo")
+            
         }
-
+        
+        /**
+        * Called when the jurisdiction is updated.
+        */
         override fun onJurisdictionUpdated(jurisdiction: String?) {
-            Log.d(TAG, "onJurisdictionUpdated: jurisdiction = $jurisdiction")
+            
         }
-
+        
+        /**
+        * Called when the identities is updated.
+        */
         override fun onIdentitiesUpdated(identities: String?) {
-            Log.d(TAG, "onIdentitiesUpdated: identities = $identities")
+            
         }
-
+        
+        /**
+        * Called when the consent is updated.
+        */
         override fun onConsentUpdated(consent: Consent) {
-            val consentJson = Gson().toJson(consent)
-            Log.d(TAG, "onConsentUpdated: consent = $consentJson")
+            
         }
-
+        
+        /**
+        * Called on error.
+        */
         override fun onError(errMsg: String?) {
-            Log.e(TAG, "onError: errMsg = $errMsg")
+            
         }
-
+        
+        /**
+        * Called when USPrivacy is updated.
+        */
         override fun onUSPrivacyUpdated(values: Map<String, Any?>) {
-            Log.d(TAG, "onUSPrivacyUpdated: $values")
+            
         }
-
+        
+        /**
+        * Called when TCF is updated.
+        */
         override fun onTCFUpdated(values: Map<String, Any?>) {
-            Log.d(TAG, "onTCFUpdated: $values")
+            
         }
-
+        
+        /**
+        * Called when GPP is updated.
+        */
         override fun onGPPUpdated(values: Map<String, Any?>) {
-            Log.d(TAG, "onGPPUpdated: $values")
+            
         }
    }
+```
 
+### 5. Create the Ketch Object:
+```kotlin
     /**
      * Creates the Ketch
      *
@@ -141,7 +178,7 @@ with the [application property](https://app.ketch.com/deployment/applications)  
     }
 ```
 
-### 5. Add advertising loading code and set it in Ketch object and call load() method
+### 6. Add advertising loading code and set it in Ketch object and call load() method
 ```kotlin
     with(ketch) {
         setIdentities(mapOf(ADVERTISING_ID_CODE to advertisingIdCode))
@@ -149,30 +186,111 @@ with the [application property](https://app.ketch.com/deployment/applications)  
     }
 ```
 
-# Developer's Documentations
+## Developer's Documentations
+### com.ketch.android.Ketch
+**Ketch** - Main class where the SDK functionality resides.
+#### Ketch Methods:
+   _load()_
+        - loads web content and displays a dialog if necessary
 
-SDK includes Ketch, KetchSdk, KetchSharedPreferences, KetchWebView, KetchDialogFragment classes 
-Ketch - Is the where the SDK functionality resides. 
-KetchSdk - Class used to initialize the Ketch SDK 
-KetchSharedPreferences - SharedPreferences class is used for saving the TCF/USPrivacy/GPP strings
+   _getSavedString(key: String)_ 
+        - returns a saved TCF/USPrivacy/Gpp strings and other protocol parameters by key
 
-## Adding KetchSDK in your project
+   _getTCFTCString()_ 
+        - returns a saved TCF string
+   
+   _getUSPrivacyString()_
+        - returns a saved USPrivacy string
 
-## Ketch methods:
-1. load() - loads web content and displays a dialog if necessary
-2. getSavedString(key: String) - returns a saved TCF/USPrivacy/Gpp strings and other protocol parameters by key
-3. getTCFTCString() - returns a saved TCF string
-4. getUSPrivacyString() - returns a saved USPrivacy string
-5. getGPPHDRGppString() - returns a saved GPP string
-6. forceShowConsent() - loads web content and forces Consent Dialog (Banner or Modal) 
-7. showPreferences() - loads web content and displays Preferences Dialog
-8. showPreferencesTab(tabs: List<PreferencesTab>, tab: PreferencesTab) - displays the preferences tab, adding the fragment dialog to the given FragmentManager
-9. dismissDialog() - dismiss the dialog
-10. setIdentities(identities: Map<String, String>) - set identifies
-11. setLanguage(language: String) - set the language
-12. setJurisdiction(jurisdiction: String?) - set the jurisdiction
-13. setRegion(region: String?) - set Region
+   _getGPPHDRGppString()_ 
+        - returns a saved GPP string
 
+   _showConsent()_ 
+        - loads web content and forces Consent Dialog (Banner or Modal)
+   
+   _showPreferences()_
+        - loads web content and displays Preferences Dialog
+
+   _showPreferencesTab(tabs: List<PreferencesTab>, tab: PreferencesTab)_
+        - displays the preferences tab, adding the fragment dialog to the given FragmentManager
+
+   _dismissDialog() 
+        - dismiss the dialog
+
+   _setIdentities(identities: Map<String, String>)_ 
+        - set identifies
+
+   _setLanguage(language: String)_
+        - set the language. Default value is EN
+   
+   _setJurisdiction(jurisdiction: String?)_ 
+        - set the jurisdiction
+   
+   _setRegion(region: String?)_ 
+        - set the region
+
+### com.ketch.android.KetchSdk
+**KetchSdk** - Class used to initialize the Ketch SDK 
+#### KetchSdk Methods: 
+_create(
+    context: Context,
+    fragmentManager: FragmentManager,
+    organization: String,
+    property: String,
+    environment: String? = null,
+    listener: Ketch.Listener,
+    ketchUrl: String? = null,
+    logLevel: Ketch.LogLevel
+)_ 
+      - Creates the Ketch Builder. 
+         Parameters:
+            context - an Activity Context to access application assets
+            fragmentManager - The FragmentManager this KetchDialogFragment will be added to.
+            organization - your organization code
+            property - the property name
+            environment - the environment name.
+            listener - Ketch.Listener
+            ketchUrl - Overrides url
+            logLevel - the log level, can be TRACE, DEBUG, INFO, WARN, ERROR
+
+### com.ketch.android.Ketch.Listener
+**Ketch.Listener** - Interface used to list events from the sdk.
+#### Listener Methods:
+  _onLoad()_ 
+        - Called when the page is loaded by the sdk
+
+  _onShow()_
+        - Called when a dialog is displayed
+
+  _onDismiss()_
+        - Called when a dialog is dismissed
+
+  _onEnvironmentUpdated(environment: String?)_
+        - Called when the environment is updated.
+
+  _onRegionInfoUpdated(regionInfo: String?)_
+        - Called when the region is updated.
+
+  _onJurisdictionUpdated(jurisdiction: String?)_
+        - Called when the jurisdiction is updated.
+
+  _onIdentitiesUpdated(identities: String?)_
+        - Called when the identities is updated.
+
+  _onConsentUpdated(consent: Consent)_
+        - Called when the consent is updated.
+
+  _onError(errMsg: String?)_
+        - Called on error.
+
+  _onUSPrivacyUpdated(values: Map<String, Any?>)_
+        - Called when USPrivacy is updated.
+
+  _onTCFUpdated(values: Map<String, Any?>)_
+        - Called when TCF is updated.
+
+  _onGPPUpdated(values: Map<String, Any?>)_
+        - Called when GPP is updated.
 
 ## [the Sample app](https://github.com/ketch-sdk/ketch-samples)
 

@@ -6,13 +6,16 @@ import androidx.fragment.app.FragmentManager
 /**
  * Factory to create the Ketch singleton.
  *
- *         val ketch = KetchSdk.create(
- *             activity,
- *             fragmentManager,
- *             organization = ORGANIZATION,
- *             property = PROPERTY,
- *             listener
- *         )
+ *         KetchSdk.create(
+ *               this,
+ *               supportFragmentManager,
+ *               ORG_CODE,
+ *               PROPERTY,
+ *               ENVIRONMENT,
+ *               listener,
+ *               TEST_URL,
+ *               Ketch.LogLevel.DEBUG
+ *           ).build()
  **/
 object KetchSdk {
     /**
@@ -24,7 +27,7 @@ object KetchSdk {
      * @param property - the property name
      * @param environment - the environment name.
      * @param listener - Ketch.Listener
-     * @param override url
+     * @param ketchUrl - Overrides the ketch url
      * @param logLevel - the log level, can be TRACE, DEBUG, INFO, WARN, ERROR
      */
     fun create(
@@ -34,7 +37,7 @@ object KetchSdk {
         property: String,
         environment: String? = null,
         listener: Ketch.Listener,
-        url: String? = null,
+        ketchUrl: String? = null,
         logLevel: Ketch.LogLevel = Ketch.LogLevel.ERROR
     ): Ketch.Builder {
         return Ketch.Builder.create(
@@ -44,7 +47,7 @@ object KetchSdk {
             property = property,
             environment = environment,
             listener = listener,
-            url = url,
+            ketchUrl = ketchUrl,
             logLevel = logLevel
         )
     }
