@@ -30,6 +30,7 @@ The use of the Mobile SDK requires an [Ketch organization account](https://app.k
 with the [application property](https://app.ketch.com/deployment/applications)  configured.
 
 ## Adding KetchSDK in your project
+
 ### 1. Using sources
 1. Copy and paste ketchsdk module to your project
 2. Add "include ':ketchsdk'" to settings.graddle
@@ -37,6 +38,7 @@ with the [application property](https://app.ketch.com/deployment/applications)  
 ```gradle
        implementation project(':ketchsdk')
 ```
+
 ### 2. Using .aar lib
 1. Add it in your root build.gradle at the end of repositories: 
 ```gradle
@@ -63,90 +65,7 @@ with the [application property](https://app.ketch.com/deployment/applications)  
 ### 4. Add listener and Ketch to your activity:
 ```kotlin
    private val listener = object : Ketch.Listener {
-        
-        /**
-        * Called when the page is loaded by the sdk
-        */
-        override fun onLoad() {
-            
-        }
-        
-        /**
-        * Called when a dialog is displayed
-        */
-        override fun onShow() {
-            
-        }
-        
-        /**
-        * Called when a dialog is dismissed
-        */
-        override fun onDismiss() {
-            
-        }
-        
-        /**
-        * Called when the environment is updated.
-        */
-        override fun onEnvironmentUpdated(environment: String?) {
-            
-        }
-        
-        /**
-        * Called when the region is updated.
-        */
-        override fun onRegionInfoUpdated(regionInfo: String?) {
-            
-        }
-        
-        /**
-        * Called when the jurisdiction is updated.
-        */
-        override fun onJurisdictionUpdated(jurisdiction: String?) {
-            
-        }
-        
-        /**
-        * Called when the identities is updated.
-        */
-        override fun onIdentitiesUpdated(identities: String?) {
-            
-        }
-        
-        /**
-        * Called when the consent is updated.
-        */
-        override fun onConsentUpdated(consent: Consent) {
-            
-        }
-        
-        /**
-        * Called on error.
-        */
-        override fun onError(errMsg: String?) {
-            
-        }
-        
-        /**
-        * Called when USPrivacy is updated.
-        */
-        override fun onUSPrivacyUpdated(values: Map<String, Any?>) {
-            
-        }
-        
-        /**
-        * Called when TCF is updated.
-        */
-        override fun onTCFUpdated(values: Map<String, Any?>) {
-            
-        }
-        
-        /**
-        * Called when GPP is updated.
-        */
-        override fun onGPPUpdated(values: Map<String, Any?>) {
-            
-        }
+        ...      
    }
 ```
 
@@ -161,7 +80,7 @@ with the [application property](https://app.ketch.com/deployment/applications)  
      * @param property - the property name
      * @param environment - the environment name.
      * @param listener - Ketch.Listener
-     * @param override url
+     * @param ketchUrl - Overrides the ketch url
      * @param logLevel - the log level, can be TRACE, DEBUG, INFO, WARN, ERROR 
      */
     private val ketch: Ketch by lazy {
@@ -172,9 +91,9 @@ with the [application property](https://app.ketch.com/deployment/applications)  
             PROPERTY,
             ENVIRONMENT,
             listener,
-            TEST_URL,
+            ketchUrl,
             Ketch.LogLevel.DEBUG
-        ).build()
+        )
     }
 ```
 
@@ -188,8 +107,8 @@ with the [application property](https://app.ketch.com/deployment/applications)  
 
 ## Developer's Documentations
 ### com.ketch.android.Ketch
-**Ketch** - Main class where the SDK functionality resides.
-#### Ketch Methods:
+**class Ketch** - Main class where the SDK functionality resides.
+#### Methods:
    _load()_
         - loads web content and displays a dialog if necessary
 
@@ -214,7 +133,7 @@ with the [application property](https://app.ketch.com/deployment/applications)  
    _showPreferencesTab(tabs: List<PreferencesTab>, tab: PreferencesTab)_
         - displays the preferences tab, adding the fragment dialog to the given FragmentManager
 
-   _dismissDialog() 
+   _dismissDialog()_ 
         - dismiss the dialog
 
    _setIdentities(identities: Map<String, String>)_ 
@@ -229,20 +148,24 @@ with the [application property](https://app.ketch.com/deployment/applications)  
    _setRegion(region: String?)_ 
         - set the region
 
+        
+
 ### com.ketch.android.KetchSdk
-**KetchSdk** - Class used to initialize the Ketch SDK 
-#### KetchSdk Methods: 
-_create(
-    context: Context,
-    fragmentManager: FragmentManager,
-    organization: String,
-    property: String,
-    environment: String? = null,
-    listener: Ketch.Listener,
-    ketchUrl: String? = null,
-    logLevel: Ketch.LogLevel
-)_ 
-      - Creates the Ketch Builder. 
+**class KetchSdk** - Class used to initialize the Ketch SDK 
+#### Methods:
+```kotlin
+create(
+       context: Context,
+       fragmentManager: FragmentManager,
+       organization: String,
+       property: String,
+       environment: String? = null,
+       listener: Ketch.Listener,
+       ketchUrl: String? = null,
+       logLevel: Ketch.LogLevel
+): Ketch
+```
+       - Creates the Ketch Object. 
          Parameters:
             context - an Activity Context to access application assets
             fragmentManager - The FragmentManager this KetchDialogFragment will be added to.
@@ -253,9 +176,11 @@ _create(
             ketchUrl - Overrides url
             logLevel - the log level, can be TRACE, DEBUG, INFO, WARN, ERROR
 
+            
+
 ### com.ketch.android.Ketch.Listener
-**Ketch.Listener** - Interface used to list events from the sdk.
-#### Listener Methods:
+**interface Ketch.Listener** - Interface used to list events from the sdk.
+#### Methods:
   _onLoad()_ 
         - Called when the page is loaded by the sdk
 
@@ -291,6 +216,8 @@ _create(
 
   _onGPPUpdated(values: Map<String, Any?>)_
         - Called when GPP is updated.
+
+        
 
 ## [the Sample app](https://github.com/ketch-sdk/ketch-samples)
 
