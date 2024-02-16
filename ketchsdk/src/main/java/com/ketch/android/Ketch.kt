@@ -17,7 +17,7 @@ class Ketch private constructor(
     private val orgCode: String,
     private val property: String,
     private val environment: String?,
-    private val listener: Listener,
+    private val listener: Listener?,
     private val ketchUrl: String?,
     private val logLevel: LogLevel
 ) {
@@ -95,7 +95,7 @@ class Ketch private constructor(
     fun dismissDialog() {
         findDialogFragment()?.let {
             (it as? KetchDialogFragment)?.dismiss()
-            this@Ketch.listener.onDismiss()
+            this@Ketch.listener?.onDismiss()
         }
     }
 
@@ -140,7 +140,7 @@ class Ketch private constructor(
     init {
         findDialogFragment()?.let { dialog ->
             (dialog as KetchDialogFragment).dismiss()
-            this@Ketch.listener.onDismiss()
+            this@Ketch.listener?.onDismiss()
         }
 
         webView = KetchWebView(context).apply {
@@ -150,7 +150,7 @@ class Ketch private constructor(
                 private var showConsent: Boolean = false
 
                 override fun onLoad() {
-                    this@Ketch.listener.onLoad()
+                    this@Ketch.listener?.onLoad()
                 }
 
                 override fun showConsent() {
@@ -164,28 +164,28 @@ class Ketch private constructor(
                 override fun showPreferences() {
                     findDialogFragment()?.let {
                         (it as KetchDialogFragment).dismiss()
-                        this@Ketch.listener.onDismiss()
+                        this@Ketch.listener?.onDismiss()
                     }
                     val dialog = KetchDialogFragment.newInstance()
                     fragmentManager.let {
                         dialog.show(it, webView)
-                        this@Ketch.listener.onShow()
+                        this@Ketch.listener?.onShow()
                     }
                 }
 
                 override fun onUSPrivacyUpdated(values: Map<String, Any?>) {
                     preferences.saveUSPrivacy(values)
-                    this@Ketch.listener.onUSPrivacyUpdated(values)
+                    this@Ketch.listener?.onUSPrivacyUpdated(values)
                 }
 
                 override fun onTCFUpdated(values: Map<String, Any?>) {
                     preferences.saveTCFTC(values)
-                    this@Ketch.listener.onTCFUpdated(values)
+                    this@Ketch.listener?.onTCFUpdated(values)
                 }
 
                 override fun onGPPUpdated(values: Map<String, Any?>) {
                     preferences.saveGPP(values)
-                    this@Ketch.listener.onGPPUpdated(values)
+                    this@Ketch.listener?.onGPPUpdated(values)
                 }
 
                 override fun onConfigUpdated(config: KetchConfig?) {
@@ -193,27 +193,27 @@ class Ketch private constructor(
                 }
 
                 override fun onEnvironmentUpdated(environment: String?) {
-                    this@Ketch.listener.onEnvironmentUpdated(environment)
+                    this@Ketch.listener?.onEnvironmentUpdated(environment)
                 }
 
                 override fun onRegionInfoUpdated(regionInfo: String?) {
-                    this@Ketch.listener.onRegionInfoUpdated(regionInfo)
+                    this@Ketch.listener?.onRegionInfoUpdated(regionInfo)
                 }
 
                 override fun onJurisdictionUpdated(jurisdiction: String?) {
-                    this@Ketch.listener.onJurisdictionUpdated(jurisdiction)
+                    this@Ketch.listener?.onJurisdictionUpdated(jurisdiction)
                 }
 
                 override fun onIdentitiesUpdated(identities: String?) {
-                    this@Ketch.listener.onIdentitiesUpdated(identities)
+                    this@Ketch.listener?.onIdentitiesUpdated(identities)
                 }
 
                 override fun onConsentUpdated(consent: Consent) {
-                    this@Ketch.listener.onConsentUpdated(consent)
+                    this@Ketch.listener?.onConsentUpdated(consent)
                 }
 
                 override fun onError(errMsg: String?) {
-                    this@Ketch.listener.onError(errMsg)
+                    this@Ketch.listener?.onError(errMsg)
                 }
 
                 override fun changeDialog(display: ContentDisplay) {
@@ -227,7 +227,7 @@ class Ketch private constructor(
                 override fun onClose() {
                     findDialogFragment()?.let {
                         (it as? KetchDialogFragment)?.dismiss()
-                        this@Ketch.listener.onDismiss()
+                        this@Ketch.listener?.onDismiss()
                     }
                 }
 
@@ -236,7 +236,7 @@ class Ketch private constructor(
                         (it as? KetchDialogFragment)?.let {
                             if (it.isCancelable) {
                                 it.dismiss()
-                                this@Ketch.listener.onDismiss()
+                                this@Ketch.listener?.onDismiss()
                             }
                         }
                     }
@@ -255,7 +255,7 @@ class Ketch private constructor(
                     }
                     fragmentManager.let {
                         dialog.show(it, webView)
-                        this@Ketch.listener.onShow()
+                        this@Ketch.listener?.onShow()
                     }
                     showConsent = false
                 }
@@ -362,7 +362,7 @@ class Ketch private constructor(
             orgCode: String,
             property: String,
             environment: String?,
-            listener: Listener,
+            listener: Listener?,
             ketchUrl: String?,
             logLevel: LogLevel
         ) = Ketch(context, fragmentManager, orgCode, property, environment, listener, ketchUrl, logLevel)
