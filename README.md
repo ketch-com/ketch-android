@@ -55,21 +55,27 @@ with the [application property](https://app.ketch.com/deployment/applications)  
    
    If you want you can use our [Sample](https://github.com/ketch-sdk/ketch-samples)
 
-### 3. Add constants to companion object of your activity
+### 3. Add user-permissions to AndroidManifest.xml
+```xml
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+```
+
+### 4. Add constants to companion object of your activity
 ```kotlin
         private const val ORG_CODE = "<your organization code>"
         private const val PROPERTY = "<property>"
         private const val ADVERTISING_ID_CODE = "aaid"
         private const val ENVIRONMENT = "production"
 ```
-### 4. Add listener and Ketch to your activity :
+### 5. Add listener and Ketch to your activity :
 ```kotlin
    private val listener = object : Ketch.Listener {
         ...      
    }
 ```
 
-### 5. Create the Ketch Object:
+### 6. Create the Ketch Object:
 ```kotlin
     /**
      * Creates the Ketch
@@ -97,7 +103,7 @@ with the [application property](https://app.ketch.com/deployment/applications)  
     }
 ```
 
-### 6. Add advertising loading code and set it in Ketch object and call load() method
+### 7. Add advertising loading code and set it in Ketch object and call load() method
 ```kotlin
     with(ketch) {
         setIdentities(mapOf(ADVERTISING_ID_CODE to advertisingIdCode))
