@@ -100,9 +100,11 @@
         document.getElementsByTagName("head")[0].appendChild(e);
 
         // trigger backdrop clicks
-        document.body.onclick = function (e) {
-            if (e.target === document.body) {
-                emitEvent("tapOutside", [getDialogSize()]);
+        if (document.body) {
+            document.body.onclick = function (e) {
+                if (e.target === document.body) {
+                    emitEvent("tapOutside", [getDialogSize()]);
+                }
             }
         }
 
