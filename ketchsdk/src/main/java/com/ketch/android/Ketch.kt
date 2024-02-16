@@ -234,10 +234,8 @@ class Ketch private constructor(
                 override fun onTapOutside() {
                     findDialogFragment()?.let {
                         (it as? KetchDialogFragment)?.let {
-                            if (it.isCancelable) {
-                                it.dismiss()
-                                this@Ketch.listener?.onDismiss()
-                            }
+                            it.dismiss()
+                            this@Ketch.listener?.onDismiss()
                         }
                     }
                 }

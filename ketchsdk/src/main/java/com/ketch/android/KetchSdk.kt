@@ -19,16 +19,16 @@ import androidx.fragment.app.FragmentManager
  **/
 object KetchSdk {
     /**
-     * Creates the Ketch Builder
+     * Creates the Ketch
      *
      * @param context - an Activity Context to access application assets
      * @param fragmentManager - The FragmentManager this KetchDialogFragment will be added to.
      * @param organization - your organization code
      * @param property - the property name
      * @param environment - the environment name.
-     * @param listener - Ketch.Listener
-     * @param ketchUrl - Overrides the ketch url
-     * @param logLevel - the log level, can be TRACE, DEBUG, INFO, WARN, ERROR
+     * @param listener - Ketch.Listener. Optional
+     * @param ketchUrl - Overrides the ketch url. Optional
+     * @param logLevel - the log level, can be TRACE, DEBUG, INFO, WARN, ERROR. Default is ERROR
      */
     fun create(
         context: Context,
