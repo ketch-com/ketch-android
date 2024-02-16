@@ -36,7 +36,7 @@ object KetchSdk {
         organization: String,
         property: String,
         environment: String? = null,
-        listener: Ketch.Listener,
+        listener: Ketch.Listener? = null,
         ketchUrl: String? = null,
         logLevel: Ketch.LogLevel = Ketch.LogLevel.ERROR
     ): Ketch {
