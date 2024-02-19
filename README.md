@@ -24,7 +24,7 @@ Thank you for your collaboration and understanding.
 
 ## Requirements
 
-Minimum Android API version supported is 26
+Minimum Android API version supported is 28
 
 The use of the Mobile SDK requires an [Ketch organization account](https://app.ketch.com/settings/organization)
 with the [application property](https://app.ketch.com/deployment/applications)  configured.
