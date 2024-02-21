@@ -65,7 +65,6 @@ with the [application property](https://app.ketch.com/deployment/applications)  
 ```kotlin
         private const val ORG_CODE = "<your organization code>"
         private const val PROPERTY = "<property>"
-        private const val ADVERTISING_ID_CODE = "aaid"
         private const val ENVIRONMENT = "production"
 ```
 ### 5. Add listener and Ketch to your activity :
@@ -103,10 +102,16 @@ with the [application property](https://app.ketch.com/deployment/applications)  
     }
 ```
 
-### 7. Add advertising loading code and set it in Ketch object and call load() method
+### 7. Add your user identities and call load() method
 ```kotlin
     with(ketch) {
-        setIdentities(mapOf(ADVERTISING_ID_CODE to advertisingIdCode))
+        setIdentities(
+            mapOf(
+                "aaid" to advertisingIdCode,
+                "email" to "user@mywebsite.com",
+                "account_id" to "1234"
+            )
+        )
         load()
     }
 ```
@@ -175,7 +180,7 @@ with the [application property](https://app.ketch.com/deployment/applications)  
     fun dismissDialog()
 
     /**
-     * Set identifies
+     * Set identities
      *
      * @param identities: Map<String, String>
      */

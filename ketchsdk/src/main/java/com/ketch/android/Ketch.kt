@@ -100,7 +100,7 @@ class Ketch private constructor(
     }
 
     /**
-     * Set identifies
+     * Set identities
      *
      * @param identities: Map<String, String>
      */
