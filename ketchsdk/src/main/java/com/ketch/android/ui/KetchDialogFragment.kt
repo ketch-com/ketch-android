@@ -1,6 +1,7 @@
 package com.ketch.android.ui
 
 import android.app.Dialog
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
@@ -57,6 +58,24 @@ internal class KetchDialogFragment() : DialogFragment() {
         dialog?.window?.also { window ->
             window.clearFlags(FLAG_DIM_BEHIND)
             window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            val displayMetrics = requireActivity().resources.displayMetrics
+
+            val width = displayMetrics.widthPixels
+            val height = displayMetrics.heightPixels
+
+            val params = window.attributes.apply {
+                this.width = width
+                this.height = height
+                gravity = Gravity.CENTER
+            }
+
+            window.attributes = params
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        dialog?.window?.also { window ->
             val displayMetrics = requireActivity().resources.displayMetrics
 
             val width = displayMetrics.widthPixels
