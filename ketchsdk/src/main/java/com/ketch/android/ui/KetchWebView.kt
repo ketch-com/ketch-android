@@ -19,6 +19,7 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonParseException
 import com.ketch.android.Ketch
+import com.ketch.android.R
 import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.KetchConfig
@@ -188,6 +189,8 @@ class KetchWebView(context: Context) : WebView(context) {
                 url += "&ketch_preferences_tab=${it.getUrlParameter()}"
             }
         }
+
+        url += "&mobile_device=${context.getString(R.string.mobile_device)}"
 
         Log.d(TAG, "load: $url")
 
