@@ -136,7 +136,7 @@ class KetchWebView(context: Context) : WebView(context) {
         this.forceShow = null
         this.preferencesTab = null
         this.preferencesTabs = emptyList()
-        this.language = language
+        this.language = language.lowercase()
     }
 
     fun setJurisdiction(jurisdiction: String?) {
