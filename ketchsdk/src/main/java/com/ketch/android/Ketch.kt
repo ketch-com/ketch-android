@@ -113,7 +113,7 @@ class Ketch private constructor(
      *
      * @param language: a language name (EN, FR, etc.)
      */
-    fun setLanguage(language: String) {
+    fun setLanguage(language: String?) {
         webView.setLanguage(language)
     }
 
