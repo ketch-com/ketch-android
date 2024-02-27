@@ -36,7 +36,7 @@ class KetchWebView(context: Context) : WebView(context) {
     private var forceShow: ExperienceType? = null
     private var preferencesTabs: List<Ketch.PreferencesTab> = emptyList()
     private var preferencesTab: Ketch.PreferencesTab? = null
-    private var language: String = ENGLISH
+    private var language: String? = null
     private var jurisdiction: String? = null
     private var region: String? = null
 
@@ -132,11 +132,11 @@ class KetchWebView(context: Context) : WebView(context) {
         load()
     }
 
-    fun setLanguage(language: String) {
+    fun setLanguage(language: String?) {
         this.forceShow = null
         this.preferencesTab = null
         this.preferencesTabs = emptyList()
-        this.language = language.lowercase()
+        this.language = language?.lowercase()
     }
 
     fun setJurisdiction(jurisdiction: String?) {
@@ -156,10 +156,14 @@ class KetchWebView(context: Context) : WebView(context) {
     private fun load() {
         //pass in the property code and  to be used with the Ketch Smart Tag
         var url =
-            "https://appassets.androidplatform.net/assets/index.html?ketch_lang=$language&orgCode=$orgCode&propertyName=$property&ketch_log=${logLevel.name}"
+            "https://appassets.androidplatform.net/assets/index.html?orgCode=$orgCode&propertyName=$property&ketch_log=${logLevel.name}"
 
         ketchUrl?.let {
-            url += "&ketch_mobilesdk_url=${it}"
+            url += "&ketch_mobilesdk_url=$it"
+        }
+
+        language?.let {
+            url += "&ketch_lang=$it"
         }
 
         jurisdiction?.let {
