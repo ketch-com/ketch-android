@@ -194,8 +194,6 @@ class KetchWebView(context: Context) : WebView(context) {
             }
         }
 
-        url += "&mobile_device=${context.getString(R.string.mobile_device)}"
-
         Log.d(TAG, "load: $url")
 
         clearCache(true)
