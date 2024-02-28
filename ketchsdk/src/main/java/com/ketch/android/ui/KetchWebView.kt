@@ -194,6 +194,8 @@ class KetchWebView(context: Context) : WebView(context) {
             }
         }
 
+        url += "&isMobileSdk=true"
+
         Log.d(TAG, "load: $url")
 
         clearCache(true)
