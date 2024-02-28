@@ -322,7 +322,7 @@ class KetchWebView(context: Context) : WebView(context) {
         }
 
         @JavascriptInterface
-        fun usprivacy_updated(usPrivacyString: String?) {
+        fun usprivacy_updated_data(usPrivacyString: String?) {
             Log.d(TAG, "onUSPrivacyUpdate: $usPrivacyString")
             usPrivacyString?.let {
                 parseIabTcfGpp(it)?.let { values ->
@@ -334,7 +334,7 @@ class KetchWebView(context: Context) : WebView(context) {
         }
 
         @JavascriptInterface
-        fun tcf_updated(tcfString: String?) {
+        fun tcf_updated_data(tcfString: String?) {
             Log.d(TAG, "onTCFUpdate: tcfString: $tcfString")
             tcfString?.let {
                 parseIabTcfGpp(it)?.let { values ->
@@ -346,7 +346,7 @@ class KetchWebView(context: Context) : WebView(context) {
         }
 
         @JavascriptInterface
-        fun gpp_updated(gppString: String?) {
+        fun gpp_updated_data(gppString: String?) {
             Log.d(TAG, "onGPPUpdate: gppString: $gppString")
             gppString?.let {
                 parseIabTcfGpp(it)?.let { values ->
