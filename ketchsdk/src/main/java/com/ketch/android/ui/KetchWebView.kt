@@ -15,12 +15,9 @@ import android.webkit.WebView
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
 import com.google.gson.FieldNamingPolicy
-import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonParseException
 import com.ketch.android.Ketch
-import com.ketch.android.R
-import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.KetchConfig
 
@@ -97,7 +94,7 @@ class KetchWebView(context: Context) : WebView(context) {
 
         override fun onPageFinished(view: WebView?, url: String?) {
             super.onPageFinished(view, url)
-            listener.onLoad()
+            Log.d(TAG, "onPageFinished: $url")
         }
     }
 
@@ -250,15 +247,10 @@ class KetchWebView(context: Context) : WebView(context) {
 
         @JavascriptInterface
         fun consent(consentJson: String?) {
+            Log.d(TAG, "consent: $consentJson")
             // {"purposes":{"essential_services":true,"tcf.purpose_1":true,"analytics":false,"behavioral_advertising":false,"email_marketing":false,"data_broking":false,"somepurpose_key":false},"vendors":[]}
-            try {
-                val consent = Gson().fromJson(consentJson, Consent::class.java)
-                Log.d(TAG, "consent: $consent")
-                runOnMainThread {
-                    ketchWebView.listener?.onConsentUpdated(consent)
-                }
-            } catch (ex: JsonParseException) {
-                Log.e(TAG, ex.message, ex)
+            runOnMainThread {
+                ketchWebView.listener?.onConsentUpdated(consentJson)
             }
         }
 
@@ -382,7 +374,6 @@ class KetchWebView(context: Context) : WebView(context) {
     }
 
     interface WebViewListener {
-        fun onLoad()
         fun showConsent()
         fun showPreferences()
         fun onUSPrivacyUpdated(values: Map<String, Any?>)
@@ -393,7 +384,7 @@ class KetchWebView(context: Context) : WebView(context) {
         fun onRegionInfoUpdated(regionInfo: String?)
         fun onJurisdictionUpdated(jurisdiction: String?)
         fun onIdentitiesUpdated(identities: String?)
-        fun onConsentUpdated(consent: Consent)
+        fun onConsentUpdated(json: String?)
         fun onError(errMsg: String?)
         fun changeDialog(display: ContentDisplay)
         fun onClose()
@@ -414,6 +405,5 @@ class KetchWebView(context: Context) : WebView(context) {
         private val TAG: String = KetchWebView::class.java.simpleName
         private const val CLOSE = "close"
         private const val SET_CONSENT = "setConsent"
-        private const val ENGLISH = "en"
     }
 }
