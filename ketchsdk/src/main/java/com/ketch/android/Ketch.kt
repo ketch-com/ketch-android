@@ -2,6 +2,7 @@ package com.ketch.android
 
 import android.content.Context
 import androidx.fragment.app.FragmentManager
+import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.KetchConfig
 import com.ketch.android.ui.KetchDialogFragment
@@ -203,8 +204,8 @@ class Ketch private constructor(
                     this@Ketch.listener?.onIdentitiesUpdated(identities)
                 }
 
-                override fun onConsentUpdated(json: String?) {
-                    this@Ketch.listener?.onConsentUpdated(json)
+                override fun onConsentUpdated(consent: Consent) {
+                    this@Ketch.listener?.onConsentUpdated(consent)
                 }
 
                 override fun onError(errMsg: String?) {
@@ -320,7 +321,7 @@ class Ketch private constructor(
         /**
          * Called when the consent is updated.
          */
-        fun onConsentUpdated(json: String?)
+        fun onConsentUpdated(consent: Consent)
 
         /**
          * Called on error.

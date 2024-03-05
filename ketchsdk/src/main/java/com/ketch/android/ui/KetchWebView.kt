@@ -15,9 +15,11 @@ import android.webkit.WebView
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
 import com.google.gson.FieldNamingPolicy
+import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonParseException
 import com.ketch.android.Ketch
+import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.KetchConfig
 
@@ -249,8 +251,14 @@ class KetchWebView(context: Context) : WebView(context) {
         fun consent(consentJson: String?) {
             Log.d(TAG, "consent: $consentJson")
             // {"purposes":{"essential_services":true,"tcf.purpose_1":true,"analytics":false,"behavioral_advertising":false,"email_marketing":false,"data_broking":false,"somepurpose_key":false},"vendors":[]}
-            runOnMainThread {
-                ketchWebView.listener?.onConsentUpdated(consentJson)
+            try {
+                val consent = Gson().fromJson(consentJson, Consent::class.java)
+                Log.d(TAG, "consent: $consent")
+                runOnMainThread {
+                    ketchWebView.listener?.onConsentUpdated(consent)
+                }
+            } catch (ex: JsonParseException) {
+                Log.e(TAG, ex.message, ex)
             }
         }
 
@@ -384,7 +392,7 @@ class KetchWebView(context: Context) : WebView(context) {
         fun onRegionInfoUpdated(regionInfo: String?)
         fun onJurisdictionUpdated(jurisdiction: String?)
         fun onIdentitiesUpdated(identities: String?)
-        fun onConsentUpdated(json: String?)
+        fun onConsentUpdated(consent: Consent)
         fun onError(errMsg: String?)
         fun changeDialog(display: ContentDisplay)
         fun onClose()

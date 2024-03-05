@@ -242,11 +242,6 @@ with the [application property](https://app.ketch.com/deployment/applications)  
 #### Methods:
 ```kotlin
         /**
-         * Called when the page is loaded by the sdk
-         */
-        fun onLoad()
-
-        /**
          * Called when a dialog is displayed
          */
         fun onShow()
