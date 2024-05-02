@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.fragment.app.FragmentManager
 import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
+import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.KetchConfig
 import com.ketch.android.ui.KetchDialogFragment
 import com.ketch.android.ui.KetchWebView
@@ -95,7 +96,7 @@ class Ketch private constructor(
     fun dismissDialog() {
         findDialogFragment()?.let {
             (it as? KetchDialogFragment)?.dismiss()
-            this@Ketch.listener?.onDismiss()
+            this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
         }
     }
 
@@ -140,7 +141,7 @@ class Ketch private constructor(
     init {
         findDialogFragment()?.let { dialog ->
             (dialog as KetchDialogFragment).dismiss()
-            this@Ketch.listener?.onDismiss()
+            this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
         }
 
         webView = KetchWebView(context).apply {
@@ -160,7 +161,7 @@ class Ketch private constructor(
                 override fun showPreferences() {
                     findDialogFragment()?.let {
                         (it as KetchDialogFragment).dismiss()
-                        this@Ketch.listener?.onDismiss()
+                        this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
                     }
                     val dialog = KetchDialogFragment.newInstance()
                     fragmentManager.let {
@@ -220,10 +221,10 @@ class Ketch private constructor(
                     }
                 }
 
-                override fun onClose() {
+                override fun onClose(status: HideExperienceStatus) {
                     findDialogFragment()?.let {
                         (it as? KetchDialogFragment)?.dismiss()
-                        this@Ketch.listener?.onDismiss()
+                        this@Ketch.listener?.onDismiss(status)
                     }
                 }
 
@@ -231,7 +232,7 @@ class Ketch private constructor(
                     findDialogFragment()?.let {
                         (it as? KetchDialogFragment)?.let {
                             it.dismiss()
-                            this@Ketch.listener?.onDismiss()
+                            this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
                         }
                     }
                 }
@@ -296,7 +297,7 @@ class Ketch private constructor(
         /**
          * Called when a dialog is dismissed
          */
-        fun onDismiss()
+        fun onDismiss(status: HideExperienceStatus)
 
         /**
          * Called when the environment is updated.
