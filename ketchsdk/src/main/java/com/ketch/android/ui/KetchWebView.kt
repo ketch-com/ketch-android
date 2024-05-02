@@ -21,7 +21,9 @@ import com.google.gson.JsonParseException
 import com.ketch.android.Ketch
 import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
+import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.KetchConfig
+import com.ketch.android.data.parseHideExperienceStatus
 
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -205,13 +207,11 @@ class KetchWebView(context: Context) : WebView(context) {
     private class PreferenceCenterJavascriptInterface(private val ketchWebView: KetchWebView) {
         @JavascriptInterface
         fun hideExperience(status: String?) {
-            Log.d(TAG, "hideExperience: $status")
-            if (status?.equals(CLOSE, ignoreCase = true) == true
-                || status?.equals(SET_CONSENT, ignoreCase = true) == true
-            ) {
-                runOnMainThread {
-                    ketchWebView.listener?.onClose()
-                }
+            // Determine the hideExperience event status
+            val parsedStatus = parseHideExperienceStatus(status)
+            Log.d(TAG, "hideExperience: $status = ${parsedStatus.name}")
+            runOnMainThread {
+                ketchWebView.listener?.onClose(parsedStatus)
             }
         }
 
@@ -395,7 +395,7 @@ class KetchWebView(context: Context) : WebView(context) {
         fun onConsentUpdated(consent: Consent)
         fun onError(errMsg: String?)
         fun changeDialog(display: ContentDisplay)
-        fun onClose()
+        fun onClose(status: HideExperienceStatus)
         fun onTapOutside()
     }
 
@@ -411,7 +411,5 @@ class KetchWebView(context: Context) : WebView(context) {
 
     companion object {
         private val TAG: String = KetchWebView::class.java.simpleName
-        private const val CLOSE = "close"
-        private const val SET_CONSENT = "setConsent"
     }
 }
