@@ -3,6 +3,7 @@ package com.ketch.android.ui
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -12,6 +13,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
+import androidx.webkit.WebResourceErrorCompat
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
 import com.google.gson.FieldNamingPolicy
@@ -41,22 +43,17 @@ class KetchWebView(context: Context) : WebView(context) {
     private var jurisdiction: String? = null
     private var region: String? = null
 
-    var listener: WebViewListener? = null
-        set(value) {
-            field = value
-            val assetLoader = WebViewAssetLoader.Builder()
-                .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(context))
-                .addPathHandler("/res/", WebViewAssetLoader.ResourcesPathHandler(context))
-                .build()
+    private val assetLoader = WebViewAssetLoader.Builder()
+        .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(context))
+        .addPathHandler("/res/", WebViewAssetLoader.ResourcesPathHandler(context))
+        .build()
 
-            value?.let {
-                webViewClient = LocalContentWebViewClient(assetLoader, it)
-            }
-        }
+    var listener: WebViewListener? = null
 
     init {
+        webViewClient = LocalContentWebViewClient(assetLoader)
         settings.javaScriptEnabled = true
-        setBackgroundColor(context.getColor(android.R.color.transparent))
+        setBackgroundColor(context.resources.getColor(android.R.color.transparent))
 
         setWebContentsDebuggingEnabled(true)
 
@@ -80,8 +77,7 @@ class KetchWebView(context: Context) : WebView(context) {
     }
 
     private class LocalContentWebViewClient(
-        private val assetLoader: WebViewAssetLoader,
-        private val listener: WebViewListener
+        private val assetLoader: WebViewAssetLoader
     ) : WebViewClientCompat() {
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val intent = Intent(Intent.ACTION_VIEW, request.url)
@@ -94,6 +90,35 @@ class KetchWebView(context: Context) : WebView(context) {
             request: WebResourceRequest
         ): WebResourceResponse? {
             return assetLoader.shouldInterceptRequest(request.url)
+        }
+
+        override fun onLoadResource(view: WebView?, url: String?) {
+            super.onLoadResource(view, url)
+            Log.d(TAG, "onLoadResource: $url")
+        }
+
+        @SuppressLint("RequiresFeature")
+        override fun onReceivedError(
+            view: WebView,
+            request: WebResourceRequest,
+            error: WebResourceErrorCompat
+        ) {
+            super.onReceivedError(view, request, error)
+            Log.e(TAG, "onReceivedError: request: ${request.url}, error: ${error.errorCode} ${error.description}")
+        }
+
+        override fun onReceivedHttpError(
+            view: WebView,
+            request: WebResourceRequest,
+            errorResponse: WebResourceResponse
+        ) {
+            super.onReceivedHttpError(view, request, errorResponse)
+            Log.e(TAG, "onReceivedHttpError: requestL ${request.url}, ${errorResponse.statusCode}")
+        }
+
+        override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+            super.onPageStarted(view, url, favicon)
+            Log.d(TAG, "onPageStarted: $url")
         }
 
         override fun onPageFinished(view: WebView?, url: String?) {
