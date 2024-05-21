@@ -222,19 +222,25 @@ class Ketch private constructor(
                 }
 
                 override fun onClose(status: HideExperienceStatus) {
+
+                    // Dismiss dialog fragment
                     findDialogFragment()?.let {
                         (it as? KetchDialogFragment)?.dismiss()
-                        this@Ketch.listener?.onDismiss(status)
                     }
+
+                    // Execute onDismiss event listener
+                    this@Ketch.listener?.onDismiss(status)
                 }
 
                 override fun onTapOutside() {
+
+                    // Dismiss dialog fragment
                     findDialogFragment()?.let {
-                        (it as? KetchDialogFragment)?.let {
-                            it.dismiss()
-                            this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
-                        }
+                        (it as? KetchDialogFragment)?.dismiss()
                     }
+
+                    // Execute onDismiss event listener
+                    this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
                 }
 
                 private fun showConsentPopup() {
