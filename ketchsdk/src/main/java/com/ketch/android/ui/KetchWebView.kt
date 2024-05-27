@@ -14,7 +14,6 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import androidx.webkit.WebResourceErrorCompat
-import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewClientCompat
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.Gson
@@ -24,8 +23,11 @@ import com.ketch.android.Ketch
 import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.HideExperienceStatus
+import com.ketch.android.data.INDEX_HTML
 import com.ketch.android.data.KetchConfig
 import com.ketch.android.data.parseHideExperienceStatus
+import java.io.ByteArrayInputStream
+import java.nio.charset.Charset
 
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -43,17 +45,12 @@ class KetchWebView(context: Context) : WebView(context) {
     private var jurisdiction: String? = null
     private var region: String? = null
 
-    private val assetLoader = WebViewAssetLoader.Builder()
-        .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(context))
-        .addPathHandler("/res/", WebViewAssetLoader.ResourcesPathHandler(context))
-        .build()
-
     var listener: WebViewListener? = null
 
     init {
-        webViewClient = LocalContentWebViewClient(assetLoader)
+        webViewClient = LocalContentWebViewClient(context)
         settings.javaScriptEnabled = true
-        setBackgroundColor(context.resources.getColor(android.R.color.transparent))
+        setBackgroundColor(context.getColor(android.R.color.transparent))
 
         setWebContentsDebuggingEnabled(true)
 
@@ -77,7 +74,7 @@ class KetchWebView(context: Context) : WebView(context) {
     }
 
     private class LocalContentWebViewClient(
-        private val assetLoader: WebViewAssetLoader
+        private val context: Context
     ) : WebViewClientCompat() {
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val intent = Intent(Intent.ACTION_VIEW, request.url)
@@ -89,7 +86,7 @@ class KetchWebView(context: Context) : WebView(context) {
             view: WebView,
             request: WebResourceRequest
         ): WebResourceResponse? {
-            return assetLoader.shouldInterceptRequest(request.url)
+            return interceptRequest(request.url.toString())
         }
 
         override fun onLoadResource(view: WebView?, url: String?) {
@@ -104,7 +101,10 @@ class KetchWebView(context: Context) : WebView(context) {
             error: WebResourceErrorCompat
         ) {
             super.onReceivedError(view, request, error)
-            Log.e(TAG, "onReceivedError: request: ${request.url}, error: ${error.errorCode} ${error.description}")
+            Log.e(
+                TAG,
+                "onReceivedError: request: ${request.url}, error: ${error.errorCode} ${error.description}"
+            )
         }
 
         override fun onReceivedHttpError(
@@ -124,6 +124,19 @@ class KetchWebView(context: Context) : WebView(context) {
         override fun onPageFinished(view: WebView?, url: String?) {
             super.onPageFinished(view, url)
             Log.d(TAG, "onPageFinished: $url")
+        }
+
+        private fun interceptRequest(url: String): WebResourceResponse? {
+            var webResourceResponse: WebResourceResponse? = null
+            try {
+                if (url.startsWith("ketch://${context.packageName}/index.html")) {
+                    val inputStream = ByteArrayInputStream(INDEX_HTML.toByteArray(Charset.defaultCharset()))
+                    webResourceResponse = WebResourceResponse("text/html", "utf-8", inputStream)
+                }
+            } catch (e: Exception) {
+                Log.w("WebViewClient.interceptRequest", "url = $url", e)
+            }
+            return webResourceResponse
         }
     }
 
@@ -182,7 +195,7 @@ class KetchWebView(context: Context) : WebView(context) {
     private fun load() {
         //pass in the property code and  to be used with the Ketch Smart Tag
         var url =
-            "https://appassets.androidplatform.net/assets/index.html?orgCode=$orgCode&propertyName=$property&ketch_log=${logLevel.name}"
+            "ketch://${context.packageName}/index.html?orgCode=$orgCode&propertyName=$property&ketch_log=${logLevel.name}"
 
         ketchUrl?.let {
             url += "&ketch_mobilesdk_url=$it"
