@@ -189,9 +189,7 @@ class KetchWebView(context: Context) : WebView(context) {
             isMobileSdk = true
         )
 
-        val encodedHtml: String = Base64.encodeToString(indexHtml.toByteArray(Charsets.UTF_8), Base64.NO_PADDING)
-
-        loadDataWithBaseURL("http://localhost", encodedHtml, "text/html", "Base64", null)
+        loadDataWithBaseURL("http://localhost", indexHtml, "text/html", "UTF-8", null)
     }
 
     private class PreferenceCenterJavascriptInterface(private val ketchWebView: KetchWebView) {

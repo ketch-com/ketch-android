@@ -155,6 +155,15 @@ fun getIndexHtml(
     "          emitEvent('tapOutside', [getDialogSize()]);\n" +
     "        }\n" +
     "      });\n" +
+    "      initKetchTag({" +
+            "ketch_log: \"DEBUG\"," +
+            "ketch_lang: \"${language}\"" +
+            "ketch_jurisdiction: \"${jurisdiction}\"" +
+            "ketch_region: \"${region}\"" +
+            "ketch_show: \"${forceShow}\"" +
+            "ketch_preferences_tabs: \"${preferencesTabs}\"" +
+            "ketch_environment: \"${environment}\"" +
+            "})" +
     "    </script>\n" +
     "  </body>\n" +
     "</html>"
