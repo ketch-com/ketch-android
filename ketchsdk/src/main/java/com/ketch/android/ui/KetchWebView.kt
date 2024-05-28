@@ -6,7 +6,6 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
-import android.util.Base64
 import android.util.Log
 import android.webkit.ConsoleMessage
 import android.webkit.JavascriptInterface
@@ -177,13 +176,13 @@ class KetchWebView(context: Context) : WebView(context) {
             propertyName = property,
             logLevel = logLevel.name,
             ketchMobileSdkUrl = ketchUrl ?: "https://global.ketchcdn.com/web/v3",
-            language = language,
+            language = language ?: "en",
             jurisdiction = jurisdiction,
             identities = identities.map { identity ->
                 "${identity.key}=${identity.value}"
             },
-            region = region,
-            environment = environment,
+            region = region ?: "US",
+            environment = environment ?: "",
             forceShow = forceShow?.getUrlParameter(),
             preferencesTabs = preferencesTabs.map { it.getUrlParameter() }.joinToString(","),
             isMobileSdk = true
