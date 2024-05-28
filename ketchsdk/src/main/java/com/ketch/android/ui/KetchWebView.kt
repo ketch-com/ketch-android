@@ -6,6 +6,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
+import android.util.Base64
 import android.util.Log
 import android.webkit.ConsoleMessage
 import android.webkit.JavascriptInterface
@@ -23,11 +24,9 @@ import com.ketch.android.Ketch
 import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.HideExperienceStatus
-import com.ketch.android.data.INDEX_HTML
 import com.ketch.android.data.KetchConfig
+import com.ketch.android.data.getIndexHtml
 import com.ketch.android.data.parseHideExperienceStatus
-import java.io.ByteArrayInputStream
-import java.nio.charset.Charset
 
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -48,7 +47,7 @@ class KetchWebView(context: Context) : WebView(context) {
     var listener: WebViewListener? = null
 
     init {
-        webViewClient = LocalContentWebViewClient(context)
+        webViewClient = LocalContentWebViewClient()
         settings.javaScriptEnabled = true
         setBackgroundColor(context.getColor(android.R.color.transparent))
 
@@ -73,20 +72,11 @@ class KetchWebView(context: Context) : WebView(context) {
         }
     }
 
-    private class LocalContentWebViewClient(
-        private val context: Context
-    ) : WebViewClientCompat() {
+    private class LocalContentWebViewClient() : WebViewClientCompat() {
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val intent = Intent(Intent.ACTION_VIEW, request.url)
             view.context.startActivity(intent)
             return true
-        }
-
-        override fun shouldInterceptRequest(
-            view: WebView,
-            request: WebResourceRequest
-        ): WebResourceResponse? {
-            return interceptRequest(request.url.toString())
         }
 
         override fun onLoadResource(view: WebView?, url: String?) {
@@ -124,19 +114,6 @@ class KetchWebView(context: Context) : WebView(context) {
         override fun onPageFinished(view: WebView?, url: String?) {
             super.onPageFinished(view, url)
             Log.d(TAG, "onPageFinished: $url")
-        }
-
-        private fun interceptRequest(url: String): WebResourceResponse? {
-            var webResourceResponse: WebResourceResponse? = null
-            try {
-                if (url.startsWith("ketch://${context.packageName}/index.html")) {
-                    val inputStream = ByteArrayInputStream(INDEX_HTML.toByteArray(Charset.defaultCharset()))
-                    webResourceResponse = WebResourceResponse("text/html", "utf-8", inputStream)
-                }
-            } catch (e: Exception) {
-                Log.w("WebViewClient.interceptRequest", "url = $url", e)
-            }
-            return webResourceResponse
         }
     }
 
@@ -193,53 +170,28 @@ class KetchWebView(context: Context) : WebView(context) {
     }
 
     private fun load() {
-        //pass in the property code and  to be used with the Ketch Smart Tag
-        var url =
-            "ketch://${context.packageName}/index.html?orgCode=$orgCode&propertyName=$property&ketch_log=${logLevel.name}"
-
-        ketchUrl?.let {
-            url += "&ketch_mobilesdk_url=$it"
-        }
-
-        language?.let {
-            url += "&ketch_lang=$it"
-        }
-
-        jurisdiction?.let {
-            url += "&ketch_jurisdiction=$it"
-        }
-
-        identities.forEach { identity ->
-            url += "&${identity.key}=${identity.value}"
-        }
-
-        region?.let {
-            url += "&ketch_region=$it"
-        }
-
-        environment?.let {
-            url += "&ketch_env=$environment"
-        }
-
-        forceShow?.let {
-            url += "&ketch_show=${it.getUrlParameter()}"
-            if (preferencesTabs.isNotEmpty()) {
-                url += "&ketch_preferences_tabs=${
-                    preferencesTabs.map { it.getUrlParameter() }.joinToString(",")
-                }"
-            }
-            preferencesTab?.let {
-                url += "&ketch_preferences_tab=${it.getUrlParameter()}"
-            }
-        }
-
-        url += "&isMobileSdk=true"
-
-        Log.d(TAG, "load: $url")
-
         clearCache(true)
 
-        loadUrl(url)
+        val indexHtml = getIndexHtml(
+            orgCode = orgCode,
+            propertyName = property,
+            logLevel = logLevel.name,
+            ketchMobileSdkUrl = ketchUrl ?: "https://global.ketchcdn.com/web/v3",
+            language = language,
+            jurisdiction = jurisdiction,
+            identities = identities.map { identity ->
+                "${identity.key}=${identity.value}"
+            },
+            region = region,
+            environment = environment,
+            forceShow = forceShow?.getUrlParameter(),
+            preferencesTabs = preferencesTabs.map { it.getUrlParameter() }.joinToString(","),
+            isMobileSdk = true
+        )
+
+        val encodedHtml: String = Base64.encodeToString(indexHtml.toByteArray(Charsets.UTF_8), Base64.NO_PADDING)
+
+        loadData(encodedHtml, "text/html", "Base64")
     }
 
     private class PreferenceCenterJavascriptInterface(private val ketchWebView: KetchWebView) {

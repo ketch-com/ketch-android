@@ -1,6 +1,24 @@
 package com.ketch.android.data
 
-const val INDEX_HTML =
+/*
+* https://global.ketchcdn.com/web/v3//config/ketch_samples/android/boot.js?ketch_log=DEBUG
+*       &ketch_lang=en&ketch_jurisdiction=default&ketch_region=US
+*       &ketch_show=preferences&ketch_preferences_tabs=overviewTab,rightsTab,consentsTab,subscriptionsTab
+ */
+fun getIndexHtml(
+    orgCode: String,
+    propertyName: String,
+    logLevel: String,
+    ketchMobileSdkUrl: String,
+    language: String? = null,
+    jurisdiction: String? = null,
+    identities: List<String>,
+    region: String? = null,
+    environment: String?,
+    forceShow: String?,
+    preferencesTabs: String,
+    isMobileSdk: Boolean
+) =
     "<html>\n" +
         "  <head>\n" +
         "    <style>\n" +
@@ -123,25 +141,12 @@ const val INDEX_HTML =
         "        let params = new URL(document.location).searchParams;\n" +
         "\n" +
         "        console.log('Ketch Parameters AFTER:', params);\n" +
-        "        // Get url override from query parameters\n" +
-        "        let url =\n" +
-        "          params.get('ketch_mobilesdk_url') ||\n" +
-        "          'https://global.ketchcdn.com/web/v3';\n" +
         "\n" +
-        "        // Get property name from query parameters\n" +
-        "        let propertyName = params.get('propertyCode');\n" +
-        "\n" +
-        "        // Get organization code from query parameters\n" +
-        "        let orgCode = params.get('organizationCode');\n" +
-        "        console.log('Ketch org data:', orgCode, propertyName, url);\n" +
-        "\n" +
-        "        if (orgCode && propertyName) {\n" +
-        "          var e = document.createElement('script');\n" +
-        "          e.type = 'text/javascript';\n" +
-        "          e.src = `\${url}/config/\${orgCode}/\${propertyName}/boot.js`;\n" +
-        "          e.defer = e.async = !0;\n" +
-        "          document.getElementsByTagName('head')[0].appendChild(e);\n" +
-        "        }\n" +
+        "        var e = document.createElement('script');\n" +
+        "        e.type = 'text/javascript';\n" +
+        "        e.src = `${ketchMobileSdkUrl}/config/${orgCode}/${propertyName}/boot.js`;\n" +
+        "        e.defer = e.async = !0;\n" +
+        "        document.getElementsByTagName('head')[0].appendChild(e);\n" +
         "      }\n" +
         "    </script>\n" +
         "    <script>\n" +
