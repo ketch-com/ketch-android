@@ -162,7 +162,7 @@ fun getIndexHtml(
             "ketch_region: \"${region}\"," +
             "ketch_show: \"${forceShow}\"," +
             "ketch_preferences_tabs: \"${preferencesTabs}\"," +
-            "ketch_environment: \"${environment}\"" +
+            "ketch_environment: \"${environment}\"," +
             "${identities}" +
            "});" +
            "\n" +
