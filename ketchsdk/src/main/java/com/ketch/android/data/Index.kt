@@ -12,7 +12,7 @@ fun getIndexHtml(
     ketchMobileSdkUrl: String,
     language: String? = null,
     jurisdiction: String? = null,
-    identities: List<String>,
+    identities: String,
     region: String? = null,
     environment: String?,
     forceShow: String?,
@@ -163,7 +163,15 @@ fun getIndexHtml(
             "ketch_show: \"${forceShow}\"," +
             "ketch_preferences_tabs: \"${preferencesTabs}\"," +
             "ketch_environment: \"${environment}\"" +
-            "})" +
+            "${identities}" +
+           "});" +
+           "\n" +
+           "if (\"${forceShow}\" === \"cd\") {" +
+           "   ketch(\"showConsent\");" +
+           "}" +
+           "if (\"${forceShow}\" === \"preferences\") {" +
+           "   ketch(\"showPreferences\");" +
+           "}" +
     "    </script>\n" +
     "  </body>\n" +
     "</html>"

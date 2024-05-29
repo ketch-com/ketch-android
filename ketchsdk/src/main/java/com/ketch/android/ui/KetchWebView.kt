@@ -179,8 +179,8 @@ class KetchWebView(context: Context) : WebView(context) {
             language = language ?: "en",
             jurisdiction = jurisdiction,
             identities = identities.map { identity ->
-                "${identity.key}=${identity.value}"
-            },
+                "${identity.key}: \\\"${identity.value}\\\","
+            }.joinToString(separator = "\n", prefix = "\n", postfix = "\n"),
             region = region ?: "US",
             environment = environment ?: "",
             forceShow = forceShow?.getUrlParameter(),
