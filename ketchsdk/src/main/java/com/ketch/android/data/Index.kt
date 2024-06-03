@@ -17,6 +17,7 @@ fun getIndexHtml(
     environment: String?,
     forceShow: String?,
     preferencesTabs: String,
+    preferencesTab: String,
     isMobileSdk: Boolean
 ) =
     "<html>\n" +
@@ -162,7 +163,8 @@ fun getIndexHtml(
             "ketch_region: \"${region}\"," +
             "ketch_show: \"${forceShow}\"," +
             "ketch_preferences_tabs: \"${preferencesTabs}\"," +
-            "ketch_environment: \"${environment}\"," +
+            "ketch_preferences_tab: \"${preferencesTab}\"," +
+            "ketch_env: \"${environment}\"," +
             "${identities}" +
            "});" +
            "\n" +
