@@ -185,7 +185,7 @@ class KetchWebView(context: Context) : WebView(context) {
             environment = environment ?: "",
             forceShow = forceShow?.getUrlParameter(),
             preferencesTabs = preferencesTabs.map { it.getUrlParameter() }.joinToString(","),
-            preferencesTab = preferencesTab,
+            preferencesTab = preferencesTab.toString(),
             isMobileSdk = true
         )
 
