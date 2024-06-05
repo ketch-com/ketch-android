@@ -186,7 +186,10 @@ class Ketch private constructor(
                 }
 
                 override fun onConfigUpdated(config: KetchConfig?) {
+                    // Set internal config field
                     this.config = config
+                    // Call config update listener
+                    this@Ketch.listener?.onConfigUpdated(config)
                 }
 
                 override fun onEnvironmentUpdated(environment: String?) {
@@ -304,6 +307,11 @@ class Ketch private constructor(
          * Called when a dialog is dismissed
          */
         fun onDismiss(status: HideExperienceStatus)
+
+        /**
+         * Called when the config is updated
+         */
+        fun onConfigUpdated(config: KetchConfig?)
 
         /**
          * Called when the environment is updated.
