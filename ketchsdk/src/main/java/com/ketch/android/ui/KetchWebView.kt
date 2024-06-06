@@ -30,18 +30,6 @@ import com.ketch.android.data.parseHideExperienceStatus
 
 @SuppressLint("SetJavaScriptEnabled")
 class KetchWebView(context: Context) : WebView(context) {
-    private lateinit var orgCode: String
-    private lateinit var property: String
-    private var environment: String? = null
-    private var ketchUrl: String? = null
-    private lateinit var logLevel: Ketch.LogLevel
-    private var identities: Map<String, String> = emptyMap()
-    private var forceShow: ExperienceType? = null
-    private var preferencesTabs: List<Ketch.PreferencesTab> = emptyList()
-    private var preferencesTab: Ketch.PreferencesTab? = null
-    private var language: String? = null
-    private var jurisdiction: String? = null
-    private var region: String? = null
 
     var listener: WebViewListener? = null
 
@@ -116,59 +104,20 @@ class KetchWebView(context: Context) : WebView(context) {
         }
     }
 
-    fun load(
+    internal fun load(
         orgCode: String,
         property: String,
+        language: String?,
+        jurisdiction: String?,
+        region: String?,
         environment: String?,
-        identities: Map<String, String> = emptyMap(),
+        identities: Map<String, String>,
+        forceShow: ExperienceType?,
+        preferencesTabs: List<Ketch.PreferencesTab>,
+        preferencesTab: Ketch.PreferencesTab?,
         ketchUrl: String?,
         logLevel: Ketch.LogLevel
     ) {
-        this.orgCode = orgCode
-        this.property = property
-        this.environment = environment
-        this.identities = identities
-        this.ketchUrl = ketchUrl
-        this.logLevel = logLevel
-        load()
-    }
-
-    internal fun forceShow(forceShow: ExperienceType?) {
-        this.forceShow = forceShow
-        this.preferencesTabs = emptyList()
-        this.preferencesTab = null
-        load()
-    }
-
-    internal fun showPreferencesTab(tabs: List<Ketch.PreferencesTab>, tab: Ketch.PreferencesTab) {
-        this.forceShow = ExperienceType.PREFERENCES
-        this.preferencesTabs = tabs
-        this.preferencesTab = tab
-        load()
-    }
-
-    fun setLanguage(language: String?) {
-        this.forceShow = null
-        this.preferencesTab = null
-        this.preferencesTabs = emptyList()
-        this.language = language?.lowercase()
-    }
-
-    fun setJurisdiction(jurisdiction: String?) {
-        this.forceShow = null
-        this.preferencesTab = null
-        this.preferencesTabs = emptyList()
-        this.jurisdiction = jurisdiction
-    }
-
-    fun setRegion(region: String?) {
-        this.forceShow = null
-        this.preferencesTab = null
-        this.preferencesTabs = emptyList()
-        this.region = region
-    }
-
-    private fun load() {
         clearCache(true)
 
         val indexHtml = getIndexHtml(

@@ -13,7 +13,7 @@ import com.ketch.android.ui.KetchWebView
  * Main Ketch SDK class
  **/
 class Ketch private constructor(
-    context: Context,
+    private val context: Context,
     private val fragmentManager: FragmentManager,
     private val orgCode: String,
     private val property: String,
@@ -25,14 +25,10 @@ class Ketch private constructor(
 
     private val preferences: KetchSharedPreferences = KetchSharedPreferences(context)
 
-    private var identities: Map<String, String> = mapOf()
-
-    /**
-     * Loads a web page and shows a popup if necessary
-     */
-    fun load() {
-        webView.load(orgCode, property, environment, identities, ketchUrl, logLevel)
-    }
+    private var identities: Map<String, String> = emptyMap()
+    private var language: String? = null
+    private var jurisdiction: String? = null
+    private var region: String? = null
 
     /**
      * Retrieve a String value from the preferences.
@@ -67,17 +63,63 @@ class Ketch private constructor(
         preferences.getSavedValue(KetchSharedPreferences.IAB_GPP_HDR_GPP_STRING)
 
     /**
+     * Loads a web page and shows a popup if necessary
+     */
+    fun load() {
+        createWebView().load(
+            orgCode,
+            property,
+            language,
+            jurisdiction,
+            region,
+            environment,
+            identities,
+            null,
+            emptyList(),
+            null,
+            ketchUrl,
+            logLevel
+        )
+    }
+
+    /**
      * Display the consent, adding the fragment dialog to the given FragmentManager.
      */
     fun showConsent() {
-        webView.forceShow(KetchWebView.ExperienceType.CONSENT)
+        createWebView().load(
+            orgCode,
+            property,
+            language,
+            jurisdiction,
+            region,
+            environment,
+            identities,
+            KetchWebView.ExperienceType.CONSENT,
+            emptyList(),
+            null,
+            ketchUrl,
+            logLevel
+        )
     }
 
     /**
      * Display the preferences, adding the fragment dialog to the given FragmentManager.
      */
     fun showPreferences() {
-        webView.forceShow(KetchWebView.ExperienceType.PREFERENCES)
+        createWebView().load(
+            orgCode,
+            property,
+            language,
+            jurisdiction,
+            region,
+            environment,
+            identities,
+            KetchWebView.ExperienceType.PREFERENCES,
+            emptyList(),
+            null,
+            ketchUrl,
+            logLevel
+        )
     }
 
     /**
@@ -87,7 +129,20 @@ class Ketch private constructor(
      * @param tab: the current tab
      */
     fun showPreferencesTab(tabs: List<PreferencesTab>, tab: PreferencesTab) {
-        webView.showPreferencesTab(tabs, tab)
+        createWebView().load(
+            orgCode,
+            property,
+            language,
+            jurisdiction,
+            region,
+            environment,
+            identities,
+            KetchWebView.ExperienceType.PREFERENCES,
+            tabs,
+            tab,
+            ketchUrl,
+            logLevel
+        )
     }
 
     /**
@@ -115,7 +170,7 @@ class Ketch private constructor(
      * @param language: a language name (EN, FR, etc.)
      */
     fun setLanguage(language: String?) {
-        webView.setLanguage(language)
+        this.language = language
     }
 
     /**
@@ -124,7 +179,7 @@ class Ketch private constructor(
      * @param jurisdiction: the jurisdiction value
      */
     fun setJurisdiction(jurisdiction: String?) {
-        webView.setJurisdiction(jurisdiction)
+        this.jurisdiction = jurisdiction
     }
 
     /**
@@ -133,144 +188,145 @@ class Ketch private constructor(
      * @param region: the region name
      */
     fun setRegion(region: String?) {
-        webView.setRegion(region)
+        this.region = region
     }
-
-    private lateinit var webView: KetchWebView
 
     init {
         findDialogFragment()?.let { dialog ->
             (dialog as KetchDialogFragment).dismiss()
             this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
         }
+    }
 
-        webView = KetchWebView(context).apply {
-            listener = object : KetchWebView.WebViewListener {
+    private fun createWebView(): KetchWebView {
+        val webView = KetchWebView(context)
+        webView.listener = object : KetchWebView.WebViewListener {
 
-                private var config: KetchConfig? = null
-                private var showConsent: Boolean = false
+            private var config: KetchConfig? = null
+            private var showConsent: Boolean = false
 
-                override fun showConsent() {
-                    if (config == null) {
-                        showConsent = true
-                        return
+            override fun showConsent() {
+                if (config == null) {
+                    showConsent = true
+                    return
+                }
+                showConsentPopup()
+            }
+
+            override fun showPreferences() {
+                if (findDialogFragment() != null) {
+                    return
+                }
+                val dialog = KetchDialogFragment.newInstance()
+                fragmentManager.let {
+                    dialog.show(it, webView)
+                    this@Ketch.listener?.onShow()
+                }
+            }
+
+            override fun onUSPrivacyUpdated(values: Map<String, Any?>) {
+                preferences.saveUSPrivacy(values)
+                this@Ketch.listener?.onUSPrivacyUpdated(values)
+            }
+
+            override fun onTCFUpdated(values: Map<String, Any?>) {
+                preferences.saveTCFTC(values)
+                this@Ketch.listener?.onTCFUpdated(values)
+            }
+
+            override fun onGPPUpdated(values: Map<String, Any?>) {
+                preferences.saveGPP(values)
+                this@Ketch.listener?.onGPPUpdated(values)
+            }
+
+            override fun onConfigUpdated(config: KetchConfig?) {
+                this.config = config
+                if (!showConsent) {
+                    return
+                }
+                showConsentPopup()
+            }
+
+            override fun onEnvironmentUpdated(environment: String?) {
+                this@Ketch.listener?.onEnvironmentUpdated(environment)
+            }
+
+            override fun onRegionInfoUpdated(regionInfo: String?) {
+                this@Ketch.listener?.onRegionInfoUpdated(regionInfo)
+            }
+
+            override fun onJurisdictionUpdated(jurisdiction: String?) {
+                this@Ketch.listener?.onJurisdictionUpdated(jurisdiction)
+            }
+
+            override fun onIdentitiesUpdated(identities: String?) {
+                this@Ketch.listener?.onIdentitiesUpdated(identities)
+            }
+
+            override fun onConsentUpdated(consent: Consent) {
+                this@Ketch.listener?.onConsentUpdated(consent)
+            }
+
+            override fun onError(errMsg: String?) {
+                this@Ketch.listener?.onError(errMsg)
+            }
+
+            override fun changeDialog(display: ContentDisplay) {
+                findDialogFragment()?.let {
+                    (it as? KetchDialogFragment)?.apply {
+                        isCancelable = getDisposableContentInteractions(display)
                     }
-                    showConsentPopup()
                 }
+            }
 
-                override fun showPreferences() {
-                    findDialogFragment()?.let {
-                        (it as KetchDialogFragment).dismiss()
-                        this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
-                    }
-                    val dialog = KetchDialogFragment.newInstance()
-                    fragmentManager.let {
-                        dialog.show(it, webView)
-                        this@Ketch.listener?.onShow()
-                    }
-                }
-
-                override fun onUSPrivacyUpdated(values: Map<String, Any?>) {
-                    preferences.saveUSPrivacy(values)
-                    this@Ketch.listener?.onUSPrivacyUpdated(values)
-                }
-
-                override fun onTCFUpdated(values: Map<String, Any?>) {
-                    preferences.saveTCFTC(values)
-                    this@Ketch.listener?.onTCFUpdated(values)
-                }
-
-                override fun onGPPUpdated(values: Map<String, Any?>) {
-                    preferences.saveGPP(values)
-                    this@Ketch.listener?.onGPPUpdated(values)
-                }
-
-                override fun onConfigUpdated(config: KetchConfig?) {
-                    this.config = config
-                }
-
-                override fun onEnvironmentUpdated(environment: String?) {
-                    this@Ketch.listener?.onEnvironmentUpdated(environment)
-                }
-
-                override fun onRegionInfoUpdated(regionInfo: String?) {
-                    this@Ketch.listener?.onRegionInfoUpdated(regionInfo)
-                }
-
-                override fun onJurisdictionUpdated(jurisdiction: String?) {
-                    this@Ketch.listener?.onJurisdictionUpdated(jurisdiction)
-                }
-
-                override fun onIdentitiesUpdated(identities: String?) {
-                    this@Ketch.listener?.onIdentitiesUpdated(identities)
-                }
-
-                override fun onConsentUpdated(consent: Consent) {
-                    this@Ketch.listener?.onConsentUpdated(consent)
-                }
-
-                override fun onError(errMsg: String?) {
-                    this@Ketch.listener?.onError(errMsg)
-                }
-
-                override fun changeDialog(display: ContentDisplay) {
-                    findDialogFragment()?.let {
-                        (it as? KetchDialogFragment)?.apply {
-                            isCancelable = getDisposableContentInteractions(display)
-                        }
-                    }
-                }
-
-                override fun onClose(status: HideExperienceStatus) {
-
-                    // Dismiss dialog fragment
-                    findDialogFragment()?.let {
-                        (it as? KetchDialogFragment)?.dismiss()
-                    }
+            override fun onClose(status: HideExperienceStatus) {
+                // Dismiss dialog fragment
+                findDialogFragment()?.let {
+                    (it as? KetchDialogFragment)?.dismiss()
 
                     // Execute onDismiss event listener
                     this@Ketch.listener?.onDismiss(status)
                 }
+            }
 
-                override fun onTapOutside() {
-
-                    // Dismiss dialog fragment
-                    findDialogFragment()?.let {
-                        (it as? KetchDialogFragment)?.dismiss()
-                    }
+            override fun onTapOutside() {
+                // Dismiss dialog fragment
+                findDialogFragment()?.let {
+                    (it as? KetchDialogFragment)?.dismiss()
 
                     // Execute onDismiss event listener
                     this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
                 }
+            }
 
-                private fun showConsentPopup() {
-                    if (findDialogFragment() != null) {
-                        return
-                    }
-
-                    val dialog = KetchDialogFragment.newInstance().apply {
-                        val disableContentInteractions = getDisposableContentInteractions(
-                            config?.experiences?.consent?.display ?: ContentDisplay.Banner
-                        )
-                        isCancelable = !disableContentInteractions
-                    }
-                    fragmentManager.let {
-                        dialog.show(it, webView)
-                        this@Ketch.listener?.onShow()
-                    }
-                    showConsent = false
+            private fun showConsentPopup() {
+                if (findDialogFragment() != null) {
+                    return
                 }
 
-                private fun getDisposableContentInteractions(display: ContentDisplay): Boolean =
-                    config?.let {
-                        if (display == ContentDisplay.Modal) {
-                            it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
-                        } else if (display == ContentDisplay.Banner) {
-                            it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
-                        } else false
-                    } ?: false
+                val dialog = KetchDialogFragment.newInstance().apply {
+                    val disableContentInteractions = getDisposableContentInteractions(
+                        config?.experiences?.consent?.display ?: ContentDisplay.Banner
+                    )
+                    isCancelable = !disableContentInteractions
+                }
+                fragmentManager.let {
+                    dialog.show(it, webView)
+                    this@Ketch.listener?.onShow()
+                }
+                showConsent = false
             }
+
+            private fun getDisposableContentInteractions(display: ContentDisplay): Boolean =
+                config?.let {
+                    if (display == ContentDisplay.Modal) {
+                        it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
+                    } else if (display == ContentDisplay.Banner) {
+                        it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
+                    } else false
+                } ?: false
         }
+        return webView
     }
 
     private fun findDialogFragment() =
@@ -361,6 +417,15 @@ class Ketch private constructor(
             listener: Listener?,
             ketchUrl: String?,
             logLevel: LogLevel
-        ) = Ketch(context, fragmentManager, orgCode, property, environment, listener, ketchUrl, logLevel)
+        ) = Ketch(
+            context,
+            fragmentManager,
+            orgCode,
+            property,
+            environment,
+            listener,
+            ketchUrl,
+            logLevel
+        )
     }
 }
