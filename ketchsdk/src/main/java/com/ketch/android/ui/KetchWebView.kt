@@ -38,7 +38,8 @@ class KetchWebView(context: Context) : WebView(context) {
         settings.javaScriptEnabled = true
         setBackgroundColor(context.getColor(android.R.color.transparent))
 
-        setWebContentsDebuggingEnabled(true)
+        // Explicitly set to false to address android webview security concern
+        setWebContentsDebuggingEnabled(false)
 
         addJavascriptInterface(
             PreferenceCenterJavascriptInterface(this),
@@ -57,6 +58,10 @@ class KetchWebView(context: Context) : WebView(context) {
                 Log.d(TAG, "progress: $newProgress")
             }
         }
+    }
+
+    fun setDebugMode() {
+        setWebContentsDebuggingEnabled(true)
     }
 
     private class LocalContentWebViewClient() : WebViewClientCompat() {

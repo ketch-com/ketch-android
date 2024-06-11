@@ -200,6 +200,12 @@ class Ketch private constructor(
 
     private fun createWebView(): KetchWebView {
         val webView = KetchWebView(context)
+
+        // Enable debug mode
+        if (logLevel === LogLevel.DEBUG) {
+            webView.setDebugMode()
+        }
+
         webView.listener = object : KetchWebView.WebViewListener {
 
             private var config: KetchConfig? = null
