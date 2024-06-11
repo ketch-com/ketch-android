@@ -125,17 +125,16 @@ class KetchWebView(context: Context) : WebView(context) {
             propertyName = property,
             logLevel = logLevel.name,
             ketchMobileSdkUrl = ketchUrl ?: "https://global.ketchcdn.com/web/v3",
-            language = language ?: "en",
+            language = language,
             jurisdiction = jurisdiction,
             identities = identities.map { identity ->
                 "${identity.key}: \"${identity.value}\""
             }.joinToString(separator = ",\n", prefix = "\n", postfix = "\n"),
-            region = region ?: "US",
-            environment = environment ?: "",
+            region = region,
+            environment = environment,
             forceShow = forceShow?.getUrlParameter(),
-            preferencesTabs = preferencesTabs.map { it.getUrlParameter() }.joinToString(","),
-            preferencesTab = preferencesTab.toString(),
-            isMobileSdk = true
+            preferencesTabs = preferencesTabs.takeIf { it.isNotEmpty() }?.map { it.getUrlParameter() }?.joinToString(","),
+            preferencesTab = preferencesTab?.getUrlParameter()
         )
 
         loadDataWithBaseURL("http://localhost", indexHtml, "text/html", "UTF-8", null)

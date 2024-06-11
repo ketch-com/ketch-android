@@ -14,11 +14,10 @@ fun getIndexHtml(
     jurisdiction: String? = null,
     identities: String,
     region: String? = null,
-    environment: String?,
-    forceShow: String?,
-    preferencesTabs: String,
-    preferencesTab: String,
-    isMobileSdk: Boolean
+    environment: String? = null,
+    forceShow: String? = null,
+    preferencesTabs: String? = null,
+    preferencesTab: String? = null
 ) =
     "<html>\n" +
     "  <head>\n" +
@@ -157,14 +156,42 @@ fun getIndexHtml(
     "        }\n" +
     "      });\n" +
     "      initKetchTag({" +
-            "ketch_log: \"DEBUG\"," +
-            "ketch_lang: \"${language}\"," +
-            "ketch_jurisdiction: \"${jurisdiction}\"," +
-            "ketch_region: \"${region}\"," +
-            "ketch_show: \"${forceShow}\"," +
-            "ketch_preferences_tabs: \"${preferencesTabs}\"," +
-            "ketch_preferences_tab: \"${preferencesTab}\"," +
-            "ketch_env: \"${environment}\"," +
+            "ketch_log: \"${logLevel}\"," +
+            if (language?.isNotBlank() == true) {
+                "ketch_lang: \"${language}\","
+            } else {
+                ""
+            } +
+            if (jurisdiction?.isNotBlank() == true) {
+                "ketch_jurisdiction: \"${jurisdiction}\","
+            } else {
+                ""
+            } +
+            if (region?.isNotBlank() == true) {
+                "ketch_region: \"${region}\","
+            } else {
+                ""
+            } +
+            if (forceShow?.isNotBlank() == true) {
+                "ketch_show: \"${forceShow}\","
+            } else {
+                ""
+            } +
+            if (preferencesTabs?.isNotBlank() == true) {
+                "ketch_preferences_tabs: \"${preferencesTabs}\","
+            } else {
+                ""
+            } +
+            if (preferencesTab?.isNotBlank() == true) {
+                "ketch_preferences_tab: \"${preferencesTab}\","
+            } else {
+                ""
+            } +
+            if (environment?.isNotBlank() == true) {
+                "ketch_env: \"${environment}\","
+            } else {
+                ""
+            } +
             "${identities}" +
            "});" +
            "\n" +
