@@ -3,6 +3,7 @@ package com.ketch.android.ui
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -12,7 +13,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
-import androidx.webkit.WebViewAssetLoader
+import androidx.webkit.WebResourceErrorCompat
 import androidx.webkit.WebViewClientCompat
 import com.google.gson.FieldNamingPolicy
 import com.google.gson.Gson
@@ -23,42 +24,22 @@ import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.KetchConfig
+import com.ketch.android.data.getIndexHtml
 import com.ketch.android.data.parseHideExperienceStatus
 
 
 @SuppressLint("SetJavaScriptEnabled")
 class KetchWebView(context: Context) : WebView(context) {
-    private lateinit var orgCode: String
-    private lateinit var property: String
-    private var environment: String? = null
-    private var ketchUrl: String? = null
-    private lateinit var logLevel: Ketch.LogLevel
-    private var identities: Map<String, String> = emptyMap()
-    private var forceShow: ExperienceType? = null
-    private var preferencesTabs: List<Ketch.PreferencesTab> = emptyList()
-    private var preferencesTab: Ketch.PreferencesTab? = null
-    private var language: String? = null
-    private var jurisdiction: String? = null
-    private var region: String? = null
 
     var listener: WebViewListener? = null
-        set(value) {
-            field = value
-            val assetLoader = WebViewAssetLoader.Builder()
-                .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(context))
-                .addPathHandler("/res/", WebViewAssetLoader.ResourcesPathHandler(context))
-                .build()
-
-            value?.let {
-                webViewClient = LocalContentWebViewClient(assetLoader, it)
-            }
-        }
 
     init {
+        webViewClient = LocalContentWebViewClient()
         settings.javaScriptEnabled = true
         setBackgroundColor(context.getColor(android.R.color.transparent))
 
-        setWebContentsDebuggingEnabled(true)
+        // Explicitly set to false to address android webview security concern
+        setWebContentsDebuggingEnabled(false)
 
         addJavascriptInterface(
             PreferenceCenterJavascriptInterface(this),
@@ -79,21 +60,47 @@ class KetchWebView(context: Context) : WebView(context) {
         }
     }
 
-    private class LocalContentWebViewClient(
-        private val assetLoader: WebViewAssetLoader,
-        private val listener: WebViewListener
-    ) : WebViewClientCompat() {
+    fun setDebugMode() {
+        setWebContentsDebuggingEnabled(true)
+    }
+
+    private class LocalContentWebViewClient() : WebViewClientCompat() {
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val intent = Intent(Intent.ACTION_VIEW, request.url)
             view.context.startActivity(intent)
             return true
         }
 
-        override fun shouldInterceptRequest(
+        override fun onLoadResource(view: WebView?, url: String?) {
+            super.onLoadResource(view, url)
+            Log.d(TAG, "onLoadResource: $url")
+        }
+
+        @SuppressLint("RequiresFeature")
+        override fun onReceivedError(
             view: WebView,
-            request: WebResourceRequest
-        ): WebResourceResponse? {
-            return assetLoader.shouldInterceptRequest(request.url)
+            request: WebResourceRequest,
+            error: WebResourceErrorCompat
+        ) {
+            super.onReceivedError(view, request, error)
+            Log.e(
+                TAG,
+                "onReceivedError: request: ${request.url}, error: ${error.errorCode} ${error.description}"
+            )
+        }
+
+        override fun onReceivedHttpError(
+            view: WebView,
+            request: WebResourceRequest,
+            errorResponse: WebResourceResponse
+        ) {
+            super.onReceivedHttpError(view, request, errorResponse)
+            Log.e(TAG, "onReceivedHttpError: requestL ${request.url}, ${errorResponse.statusCode}")
+        }
+
+        override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+            super.onPageStarted(view, url, favicon)
+            Log.d(TAG, "onPageStarted: $url")
         }
 
         override fun onPageFinished(view: WebView?, url: String?) {
@@ -102,106 +109,40 @@ class KetchWebView(context: Context) : WebView(context) {
         }
     }
 
-    fun load(
+    internal fun load(
         orgCode: String,
         property: String,
+        language: String?,
+        jurisdiction: String?,
+        region: String?,
         environment: String?,
-        identities: Map<String, String> = emptyMap(),
+        identities: Map<String, String>,
+        forceShow: ExperienceType?,
+        preferencesTabs: List<Ketch.PreferencesTab>,
+        preferencesTab: Ketch.PreferencesTab?,
         ketchUrl: String?,
         logLevel: Ketch.LogLevel
     ) {
-        this.orgCode = orgCode
-        this.property = property
-        this.environment = environment
-        this.identities = identities
-        this.ketchUrl = ketchUrl
-        this.logLevel = logLevel
-        load()
-    }
-
-    internal fun forceShow(forceShow: ExperienceType?) {
-        this.forceShow = forceShow
-        this.preferencesTabs = emptyList()
-        this.preferencesTab = null
-        load()
-    }
-
-    internal fun showPreferencesTab(tabs: List<Ketch.PreferencesTab>, tab: Ketch.PreferencesTab) {
-        this.forceShow = ExperienceType.PREFERENCES
-        this.preferencesTabs = tabs
-        this.preferencesTab = tab
-        load()
-    }
-
-    fun setLanguage(language: String?) {
-        this.forceShow = null
-        this.preferencesTab = null
-        this.preferencesTabs = emptyList()
-        this.language = language?.lowercase()
-    }
-
-    fun setJurisdiction(jurisdiction: String?) {
-        this.forceShow = null
-        this.preferencesTab = null
-        this.preferencesTabs = emptyList()
-        this.jurisdiction = jurisdiction
-    }
-
-    fun setRegion(region: String?) {
-        this.forceShow = null
-        this.preferencesTab = null
-        this.preferencesTabs = emptyList()
-        this.region = region
-    }
-
-    private fun load() {
-        //pass in the property code and  to be used with the Ketch Smart Tag
-        var url =
-            "https://appassets.androidplatform.net/assets/index.html?orgCode=$orgCode&propertyName=$property&ketch_log=${logLevel.name}"
-
-        ketchUrl?.let {
-            url += "&ketch_mobilesdk_url=$it"
-        }
-
-        language?.let {
-            url += "&ketch_lang=$it"
-        }
-
-        jurisdiction?.let {
-            url += "&ketch_jurisdiction=$it"
-        }
-
-        identities.forEach { identity ->
-            url += "&${identity.key}=${identity.value}"
-        }
-
-        region?.let {
-            url += "&ketch_region=$it"
-        }
-
-        environment?.let {
-            url += "&ketch_env=$environment"
-        }
-
-        forceShow?.let {
-            url += "&ketch_show=${it.getUrlParameter()}"
-            if (preferencesTabs.isNotEmpty()) {
-                url += "&ketch_preferences_tabs=${
-                    preferencesTabs.map { it.getUrlParameter() }.joinToString(",")
-                }"
-            }
-            preferencesTab?.let {
-                url += "&ketch_preferences_tab=${it.getUrlParameter()}"
-            }
-        }
-
-        url += "&isMobileSdk=true"
-
-        Log.d(TAG, "load: $url")
-
         clearCache(true)
 
-        loadUrl(url)
+        val indexHtml = getIndexHtml(
+            orgCode = orgCode,
+            propertyName = property,
+            logLevel = logLevel.name,
+            ketchMobileSdkUrl = ketchUrl ?: "https://global.ketchcdn.com/web/v3",
+            language = language,
+            jurisdiction = jurisdiction,
+            identities = identities.map { identity ->
+                "${identity.key}: \"${identity.value}\""
+            }.joinToString(separator = ",\n", prefix = "\n", postfix = "\n"),
+            region = region,
+            environment = environment,
+            forceShow = forceShow?.getUrlParameter(),
+            preferencesTabs = preferencesTabs.takeIf { it.isNotEmpty() }?.map { it.getUrlParameter() }?.joinToString(","),
+            preferencesTab = preferencesTab?.getUrlParameter()
+        )
+
+        loadDataWithBaseURL("http://localhost", indexHtml, "text/html", "UTF-8", null)
     }
 
     private class PreferenceCenterJavascriptInterface(private val ketchWebView: KetchWebView) {
