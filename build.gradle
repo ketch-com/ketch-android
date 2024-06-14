@@ -5,7 +5,7 @@ apply plugin: "org.jetbrains.dokka"
 
 buildscript {
     ext.buildConfig = [
-            'minSdk'    : 28,
+            'minSdk'    : 26,
             'targetSdk' : 34,
             'compileSdk': 34,
             'versionCode': 3,
