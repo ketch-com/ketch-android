@@ -5,6 +5,7 @@ enum class HideExperienceStatus(val value: String?) {
     SetConsent("setConsent"),
     InvokeRight("invokeRight"),
     Close("close"),
+    CloseWithoutSettingConsent("closeWithoutSettingConsent"),
     WillNotShow("willNotShow"),
     None(null);
 
