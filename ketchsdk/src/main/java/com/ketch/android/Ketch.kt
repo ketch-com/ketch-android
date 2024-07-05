@@ -2,18 +2,21 @@ package com.ketch.android
 
 import android.content.Context
 import androidx.fragment.app.FragmentManager
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.KetchConfig
 import com.ketch.android.ui.KetchDialogFragment
 import com.ketch.android.ui.KetchWebView
+import java.lang.ref.WeakReference
 
 /**
  * Main Ketch SDK class
  **/
 class Ketch private constructor(
-    private val context: Context,
+    private val context: WeakReference<Context>,
     private val fragmentManager: FragmentManager,
     private val orgCode: String,
     private val property: String,
@@ -22,9 +25,6 @@ class Ketch private constructor(
     private val ketchUrl: String?,
     private val logLevel: LogLevel
 ) {
-
-    private val preferences: KetchSharedPreferences = KetchSharedPreferences(context)
-
     private var identities: Map<String, String> = emptyMap()
     private var language: String? = null
     private var jurisdiction: String? = null
@@ -37,14 +37,14 @@ class Ketch private constructor(
      *
      * @return Returns the preference value if it exists
      */
-    fun getSavedString(key: String) = preferences.getSavedValue(key)
+    fun getSavedString(key: String) = getPreferences()?.getSavedValue(key)
 
     /**
      * Retrieve IABTCF_TCString value from the preferences.
      *
      * @return Returns the preference value if it exists
      */
-    fun getTCFTCString() = preferences.getSavedValue(KetchSharedPreferences.IAB_TCF_TC_STRING)
+    fun getTCFTCString() = getPreferences()?.getSavedValue(KetchSharedPreferences.IAB_TCF_TC_STRING)
 
     /**
      * Retrieve IABUSPrivacy_String value from the preferences.
@@ -52,7 +52,7 @@ class Ketch private constructor(
      * @return Returns the preference value if it exists
      */
     fun getUSPrivacyString() =
-        preferences.getSavedValue(KetchSharedPreferences.IAB_US_PRIVACY_STRING)
+        getPreferences()?.getSavedValue(KetchSharedPreferences.IAB_US_PRIVACY_STRING)
 
     /**
      * Retrieve IABGPP_HDR_GppString value from the preferences.
@@ -60,13 +60,13 @@ class Ketch private constructor(
      * @return Returns the preference value if it exists
      */
     fun getGPPHDRGppString() =
-        preferences.getSavedValue(KetchSharedPreferences.IAB_GPP_HDR_GPP_STRING)
+        getPreferences()?.getSavedValue(KetchSharedPreferences.IAB_GPP_HDR_GPP_STRING)
 
     /**
      * Loads a web page and shows a popup if necessary
      */
     fun load() {
-        createWebView().load(
+        createWebView()?.load(
             orgCode,
             property,
             language,
@@ -86,7 +86,7 @@ class Ketch private constructor(
      * Display the consent, adding the fragment dialog to the given FragmentManager.
      */
     fun showConsent() {
-        createWebView().load(
+        createWebView()?.load(
             orgCode,
             property,
             language,
@@ -106,7 +106,7 @@ class Ketch private constructor(
      * Display the preferences, adding the fragment dialog to the given FragmentManager.
      */
     fun showPreferences() {
-        createWebView().load(
+        createWebView()?.load(
             orgCode,
             property,
             language,
@@ -129,7 +129,7 @@ class Ketch private constructor(
      * @param tab: the current tab
      */
     fun showPreferencesTab(tabs: List<PreferencesTab>, tab: PreferencesTab) {
-        createWebView().load(
+        createWebView()?.load(
             orgCode,
             property,
             language,
@@ -198,8 +198,12 @@ class Ketch private constructor(
         }
     }
 
-    private fun createWebView(): KetchWebView {
-        val webView = KetchWebView(context)
+    private fun getPreferences(): KetchSharedPreferences? = context.get()?.let {
+        KetchSharedPreferences(it)
+    }
+
+    private fun createWebView(): KetchWebView? {
+        val webView = context.get()?.let { KetchWebView(it) } ?: return null
 
         // Enable debug mode
         if (logLevel === LogLevel.DEBUG) {
@@ -220,9 +224,14 @@ class Ketch private constructor(
             }
 
             override fun showPreferences() {
+                if (!isActivityActive()) {
+                    return
+                }
+
                 if (findDialogFragment() != null) {
                     return
                 }
+
                 val dialog = KetchDialogFragment.newInstance()
                 fragmentManager.let {
                     dialog.show(it, webView)
@@ -231,27 +240,27 @@ class Ketch private constructor(
             }
 
             override fun onUSPrivacyUpdated(values: Map<String, Any?>) {
-                preferences.saveUSPrivacy(values)
+                getPreferences()?.saveUSPrivacy(values)
                 this@Ketch.listener?.onUSPrivacyUpdated(values)
             }
 
             override fun onTCFUpdated(values: Map<String, Any?>) {
-                preferences.saveTCFTC(values)
+                getPreferences()?.saveTCFTC(values)
                 this@Ketch.listener?.onTCFUpdated(values)
             }
 
             override fun onGPPUpdated(values: Map<String, Any?>) {
-                preferences.saveGPP(values)
+                getPreferences()?.saveGPP(values)
                 this@Ketch.listener?.onGPPUpdated(values)
             }
 
             override fun onConfigUpdated(config: KetchConfig?) {
                 // Set internal config field
                 this.config = config
-                
+
                 // Call config update listener
                 this@Ketch.listener?.onConfigUpdated(config)
-              
+
                 if (!showConsent) {
                     return
                 }
@@ -311,6 +320,10 @@ class Ketch private constructor(
             }
 
             private fun showConsentPopup() {
+                if (!isActivityActive()) {
+                    return
+                }
+
                 if (findDialogFragment() != null) {
                     return
                 }
@@ -342,6 +355,11 @@ class Ketch private constructor(
 
     private fun findDialogFragment() =
         fragmentManager.findFragmentByTag(KetchDialogFragment.TAG)
+
+    private fun isActivityActive(): Boolean {
+        return (context.get() as? LifecycleOwner)?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED)
+            ?: false
+    }
 
     enum class PreferencesTab {
         OVERVIEW,
@@ -434,7 +452,7 @@ class Ketch private constructor(
             ketchUrl: String?,
             logLevel: LogLevel
         ) = Ketch(
-            context,
+            WeakReference(context),
             fragmentManager,
             orgCode,
             property,
