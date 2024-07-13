@@ -23,8 +23,8 @@ fun getIndexHtml(
     "  <head>\n" +
     "    <style>\n" +
     "      body {\n" +
-    "        height: 50dvh;\n" +
-    "        width: 100dvw;\n" +
+    "        height: 50vh;\n" +
+    "        width: 50vw;\n" +
     "      }\n" +
     "    </style>\n" +
     "    <meta\n" +
