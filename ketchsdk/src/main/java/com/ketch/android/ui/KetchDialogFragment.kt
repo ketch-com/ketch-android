@@ -50,6 +50,7 @@ internal class KetchDialogFragment() : DialogFragment() {
 
     override fun onDestroyView() {
         binding.root.removeView(webView)
+        webView = null
         super.onDestroyView()
     }
 
