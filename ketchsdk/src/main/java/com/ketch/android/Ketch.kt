@@ -303,10 +303,10 @@ class Ketch private constructor(
                 // Dismiss dialog fragment
                 findDialogFragment()?.let {
                     (it as? KetchDialogFragment)?.dismiss()
-
-                    // Execute onDismiss event listener
-                    this@Ketch.listener?.onDismiss(status)
                 }
+
+                // Execute onDismiss event listener
+                this@Ketch.listener?.onDismiss(status)
             }
 
             override fun onTapOutside() {
