@@ -17,7 +17,7 @@ import java.lang.ref.WeakReference
  **/
 class Ketch private constructor(
     private val context: WeakReference<Context>,
-    private val fragmentManager: FragmentManager,
+    private val fragmentManager: WeakReference<FragmentManager>,
     private val orgCode: String,
     private val property: String,
     private val environment: String?,
@@ -233,7 +233,7 @@ class Ketch private constructor(
                 }
 
                 val dialog = KetchDialogFragment.newInstance()
-                fragmentManager.let {
+                fragmentManager.get()?.let {
                     dialog.show(it, webView)
                     this@Ketch.listener?.onShow()
                 }
@@ -334,7 +334,7 @@ class Ketch private constructor(
                     )
                     isCancelable = !disableContentInteractions
                 }
-                fragmentManager.let {
+                fragmentManager.get()?.let {
                     dialog.show(it, webView)
                     this@Ketch.listener?.onShow()
                 }
@@ -354,7 +354,7 @@ class Ketch private constructor(
     }
 
     private fun findDialogFragment() =
-        fragmentManager.findFragmentByTag(KetchDialogFragment.TAG)
+        fragmentManager.get()?.findFragmentByTag(KetchDialogFragment.TAG)
 
     private fun isActivityActive(): Boolean {
         return (context.get() as? LifecycleOwner)?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED)
@@ -453,7 +453,7 @@ class Ketch private constructor(
             logLevel: LogLevel
         ) = Ketch(
             WeakReference(context),
-            fragmentManager,
+            WeakReference(fragmentManager),
             orgCode,
             property,
             environment,
