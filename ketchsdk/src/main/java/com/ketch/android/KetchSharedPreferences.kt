@@ -2,6 +2,7 @@ package com.ketch.android
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.preference.PreferenceManager
 import android.util.Log
 import androidx.core.content.edit
 
@@ -9,45 +10,37 @@ internal class KetchSharedPreferences(context: Context) {
     private val sharedPreferences: SharedPreferences
 
     init {
-        sharedPreferences = context.getSharedPreferences(context.packageName, Context.MODE_PRIVATE)
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
     }
 
     fun getSavedValue(key: String): String? = sharedPreferences.getString(key, null)
 
-    fun saveTCFTC(values: Map<String, Any?>) {
+    private fun saveValues(values: Map<String, Any?>, logMessage: String) {
         sharedPreferences.edit {
-            values.onEach { map ->
-                map.value?.let {
-                    putString(map.key, it.toString())
-                } ?: remove(map.key)
+            values.forEach { (key, value) ->
+                when (value) {
+                    is Int, is Long, is Float, is Double -> putString(key, value.toString().replace(".0", ""))
+                    is Boolean -> putString(key, value.toString())
+                    is String -> putString(key, value)
+                    null -> remove(key)
+                    else -> putString(key, value.toString())
+                }
             }
             apply()
-            Log.d(TAG, "$IAB_TCF_TC_STRING is saved")
+            Log.d(TAG, logMessage)
         }
+    }
+
+    fun saveTCFTC(values: Map<String, Any?>) {
+        saveValues(values, "$IAB_TCF_TC_STRING is saved")
     }
 
     fun saveUSPrivacy(values: Map<String, Any?>) {
-        sharedPreferences.edit {
-            values.onEach { map ->
-                map.value?.let {
-                    putString(map.key, it.toString())
-                } ?: remove(map.key)
-            }
-            apply()
-            Log.d(TAG, "$IAB_US_PRIVACY_STRING is saved")
-        }
+        saveValues(values, "$IAB_US_PRIVACY_STRING is saved")
     }
 
     fun saveGPP(values: Map<String, Any?>) {
-        sharedPreferences.edit {
-            values.onEach { map ->
-                map.value?.let {
-                    putString(map.key, it.toString())
-                } ?: remove(map.key)
-            }
-            apply()
-            Log.d(TAG, "$IAB_GPP_HDR_GPP_STRING is saved")
-        }
+        saveValues(values, "$IAB_GPP_HDR_GPP_STRING is saved")
     }
 
     companion object {

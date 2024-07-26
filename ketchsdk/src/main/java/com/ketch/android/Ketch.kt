@@ -1,6 +1,9 @@
 package com.ketch.android
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -202,12 +205,29 @@ class Ketch private constructor(
         KetchSharedPreferences(it)
     }
 
+    // the number of times that createWebView has been called before Ketch has successfully loaded
+    private var createWebViewCallCount = 0
+    // hasLoaded - a boolean representing if Ketch has successfully loaded
+    private var hasLoaded = false
+
     private fun createWebView(): KetchWebView? {
         val webView = context.get()?.let { KetchWebView(it) } ?: return null
 
         // Enable debug mode
         if (logLevel === LogLevel.DEBUG) {
             webView.setDebugMode()
+        }
+
+        val handler = Handler(Looper.getMainLooper())
+        // recreate WebView if not loaded before timeout
+        val handleRecreate = object : Runnable {
+            override fun run() {
+                // check if context is still valid
+                context.get()?.let {
+                    Log.d(TAG, "recreate WebView")
+                    load()
+                }
+            }
         }
 
         webView.listener = object : KetchWebView.WebViewListener {
@@ -255,6 +275,10 @@ class Ketch private constructor(
             }
 
             override fun onConfigUpdated(config: KetchConfig?) {
+                // cancel recreate callback as Ketch has loaded successfully
+                handler.removeCallbacks(handleRecreate)
+                hasLoaded = true
+
                 // Set internal config field
                 this.config = config
 
@@ -349,6 +373,27 @@ class Ketch private constructor(
                         it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
                     } else false
                 } ?: false
+
+            init {
+                // if Ketch hasn't loaded, register recreate callback with timeout
+                if (!hasLoaded) {
+                    // increase timeout
+                    val delay = when (createWebViewCallCount) {
+                        0 -> 6000L
+                        1 -> 9000L
+                        2 -> 15000L
+                        else -> null
+                    }
+
+                    // register callback
+                    delay?.let {
+                        handler.postDelayed(handleRecreate, it)
+                    }
+
+                    // increment call count
+                    createWebViewCallCount++
+                }
+            }
         }
         return webView
     }
@@ -442,6 +487,7 @@ class Ketch private constructor(
     }
 
     companion object {
+        val TAG = Ketch::class.java.simpleName
         fun create(
             context: Context,
             fragmentManager: FragmentManager,
