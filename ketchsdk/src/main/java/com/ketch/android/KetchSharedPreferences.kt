@@ -20,7 +20,7 @@ internal class KetchSharedPreferences(context: Context) {
             values.forEach { (key, value) ->
                 when (value) {
                     is Int, is Long, is Float, is Double -> putString(key, value.toString().replace(".0", ""))
-                    is Boolean -> putString(key, value.toString())
+                    is Boolean -> putString(key, if (value) "1" else "0")
                     is String -> putString(key, value)
                     null -> remove(key)
                     else -> putString(key, value.toString())
