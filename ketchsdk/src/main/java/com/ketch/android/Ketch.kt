@@ -68,8 +68,8 @@ class Ketch private constructor(
     /**
      * Loads a web page and shows a popup if necessary
      */
-    fun load() {
-        createWebView()?.load(
+    fun load(shouldDelay: Boolean = false, shouldRetry: Boolean = false) {
+        createWebView(shouldDelay, shouldRetry)?.load(
             orgCode,
             property,
             language,
@@ -210,7 +210,25 @@ class Ketch private constructor(
     // hasLoaded - a boolean representing if Ketch has successfully loaded
     private var hasLoaded = false
 
-    private fun createWebView(): KetchWebView? {
+    private fun createWebView(shouldDelay: Boolean = false, shouldRetry: Boolean = false): KetchWebView? {
+
+        // Delay this function if delay flag is set
+        val handleDelay = object : Runnable {
+            override fun run() {
+                // check if context is still valid
+                context.get()?.let {
+                    Log.d(TAG, "running createWebView after delay")
+                    load()
+                }
+                createWebView(shouldDelay = false, shouldRetry = shouldRetry)
+            }
+        }
+        if (shouldDelay) {
+            val handler = Handler(Looper.getMainLooper())
+            handler.postDelayed(handleDelay, 2000L)
+            return null
+        }
+
         val webView = context.get()?.let { KetchWebView(it) } ?: return null
 
         // Enable debug mode
@@ -376,12 +394,12 @@ class Ketch private constructor(
 
             init {
                 // if Ketch hasn't loaded, register recreate callback with timeout
-                if (!hasLoaded) {
+                if (!hasLoaded && shouldRetry) {
                     // increase timeout
                     val delay = when (createWebViewCallCount) {
-                        0 -> 6000L
-                        1 -> 9000L
-                        2 -> 15000L
+                        0 -> 4000L
+                        1 -> 10000L
+                        2 -> 20000L
                         else -> null
                     }
 
@@ -496,7 +514,7 @@ class Ketch private constructor(
             environment: String?,
             listener: Listener?,
             ketchUrl: String?,
-            logLevel: LogLevel
+            logLevel: LogLevel,
         ) = Ketch(
             WeakReference(context),
             WeakReference(fragmentManager),
