@@ -26,15 +26,22 @@ import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.KetchConfig
 import com.ketch.android.data.getIndexHtml
 import com.ketch.android.data.parseHideExperienceStatus
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
+const val INITIAL_RELOAD_DELAY = 4000L
 
-@SuppressLint("SetJavaScriptEnabled")
-class KetchWebView(context: Context) : WebView(context) {
+@SuppressLint("SetJavaScriptEnabled", "ViewConstructor")
+class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(context) {
 
     var listener: WebViewListener? = null
 
     init {
-        webViewClient = LocalContentWebViewClient()
+        webViewClient = LocalContentWebViewClient(shouldRetry)
         settings.javaScriptEnabled = true
         setBackgroundColor(context.getColor(android.R.color.transparent))
 
@@ -64,7 +71,27 @@ class KetchWebView(context: Context) : WebView(context) {
         setWebContentsDebuggingEnabled(true)
     }
 
-    private class LocalContentWebViewClient() : WebViewClientCompat() {
+    // Cancel any coroutines in KetchWebView and fully tear down webview to prevent memory leaks
+    fun kill() {
+        (webViewClient as LocalContentWebViewClient).cancelCoroutines()
+        stopLoading()
+        clearHistory()
+        clearCache(true)
+        loadUrl("about:blank")
+        removeAllViews()
+        destroy()
+    }
+
+    class LocalContentWebViewClient(private var shouldRetry: Boolean = false) : WebViewClientCompat() {
+
+        // Flag indicating if the webview has finished loading
+        private var isLoaded = false
+
+        // Reload delay, increases exponentially in onPageStarted
+        private var reloadDelay = INITIAL_RELOAD_DELAY
+
+        private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val intent = Intent(Intent.ACTION_VIEW, request.url)
             view.context.startActivity(intent)
@@ -101,11 +128,44 @@ class KetchWebView(context: Context) : WebView(context) {
         override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
             super.onPageStarted(view, url, favicon)
             Log.d(TAG, "onPageStarted: $url")
+
+            // Reset loaded flag
+            isLoaded = false
+
+            // Launch retry if flag set
+            if (shouldRetry) {
+                scope.launch(Dispatchers.Main) {
+                    delay(reloadDelay)
+
+                    // If not yet loaded stop current webview, reload, and increase future delay
+                    if (!isLoaded) {
+                        Log.d(TAG, "Reloading webview after $reloadDelay ms")
+                        view?.stopLoading()
+                        view?.reload()
+                        reloadDelay *= 2 // Exponentially increase reload delay
+                    }
+                }
+            }
         }
 
         override fun onPageFinished(view: WebView?, url: String?) {
             super.onPageFinished(view, url)
+
+            // Set loaded flag
+            isLoaded = true
+
+            // Only reset reload delay when second onPageFinished callback has fired
+            if (url === "data:text/html;charset=utf-8;base64,") {
+                reloadDelay = INITIAL_RELOAD_DELAY
+
+            }
             Log.d(TAG, "onPageFinished: $url")
+        }
+
+        // Cancel all coroutines
+        fun cancelCoroutines() {
+            scope.cancel()
+            Log.d(TAG, "webViewClient coroutines cancelled")
         }
     }
 
