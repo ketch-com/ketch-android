@@ -1,8 +1,6 @@
 package com.ketch.android
 
 import android.content.Context
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle
@@ -32,6 +30,7 @@ class Ketch private constructor(
     private var language: String? = null
     private var jurisdiction: String? = null
     private var region: String? = null
+    private var webView: KetchWebView? = null
 
     /**
      * Retrieve a String value from the preferences.
@@ -68,8 +67,8 @@ class Ketch private constructor(
     /**
      * Loads a web page and shows a popup if necessary
      */
-    fun load(shouldDelay: Boolean = false, shouldRetry: Boolean = false) {
-        createWebView(shouldDelay, shouldRetry)?.load(
+    fun load(shouldRetry: Boolean = false) {
+        createWebView(shouldRetry)?.load(
             orgCode,
             property,
             language,
@@ -88,8 +87,8 @@ class Ketch private constructor(
     /**
      * Display the consent, adding the fragment dialog to the given FragmentManager.
      */
-    fun showConsent() {
-        createWebView()?.load(
+    fun showConsent(shouldRetry: Boolean = false) {
+        createWebView(shouldRetry)?.load(
             orgCode,
             property,
             language,
@@ -108,8 +107,8 @@ class Ketch private constructor(
     /**
      * Display the preferences, adding the fragment dialog to the given FragmentManager.
      */
-    fun showPreferences() {
-        createWebView()?.load(
+    fun showPreferences(shouldRetry: Boolean = false) {
+        createWebView(shouldRetry)?.load(
             orgCode,
             property,
             language,
@@ -205,50 +204,18 @@ class Ketch private constructor(
         KetchSharedPreferences(it)
     }
 
-    // the number of times that createWebView has been called before Ketch has successfully loaded
-    private var createWebViewCallCount = 0
-    // hasLoaded - a boolean representing if Ketch has successfully loaded
-    private var hasLoaded = false
+    private fun createWebView(shouldRetry: Boolean = false): KetchWebView? {
 
-    private fun createWebView(shouldDelay: Boolean = false, shouldRetry: Boolean = false): KetchWebView? {
+        if (context.get() == null) return null
 
-        // Delay this function if delay flag is set
-        val handleDelay = object : Runnable {
-            override fun run() {
-                // check if context is still valid
-                context.get()?.let {
-                    Log.d(TAG, "running createWebView after delay")
-                    load()
-                }
-                createWebView(shouldDelay = false, shouldRetry = shouldRetry)
-            }
-        }
-        if (shouldDelay) {
-            val handler = Handler(Looper.getMainLooper())
-            handler.postDelayed(handleDelay, 2000L)
-            return null
-        }
-
-        val webView = context.get()?.let { KetchWebView(it) } ?: return null
+        webView = context.get()?.let { KetchWebView(it, shouldRetry) } ?: return null
 
         // Enable debug mode
         if (logLevel === LogLevel.DEBUG) {
-            webView.setDebugMode()
+            webView?.setDebugMode()
         }
 
-        val handler = Handler(Looper.getMainLooper())
-        // recreate WebView if not loaded before timeout
-        val handleRecreate = object : Runnable {
-            override fun run() {
-                // check if context is still valid
-                context.get()?.let {
-                    Log.d(TAG, "recreate WebView")
-                    load()
-                }
-            }
-        }
-
-        webView.listener = object : KetchWebView.WebViewListener {
+        webView?.listener = object : KetchWebView.WebViewListener {
 
             private var config: KetchConfig? = null
             private var showConsent: Boolean = false
@@ -263,17 +230,22 @@ class Ketch private constructor(
 
             override fun showPreferences() {
                 if (!isActivityActive()) {
+                    Log.d(TAG, "Not showing as activity is not active")
                     return
                 }
 
                 if (findDialogFragment() != null) {
+                    Log.d(TAG, "Not showing as dialog already exists")
                     return
                 }
 
                 val dialog = KetchDialogFragment.newInstance()
-                fragmentManager.get()?.let {
-                    dialog.show(it, webView)
-                    this@Ketch.listener?.onShow()
+
+                if (webView != null) {
+                    fragmentManager.get()?.let {
+                        dialog.show(it, webView!!)
+                        this@Ketch.listener?.onShow()
+                    }
                 }
             }
 
@@ -293,10 +265,6 @@ class Ketch private constructor(
             }
 
             override fun onConfigUpdated(config: KetchConfig?) {
-                // cancel recreate callback as Ketch has loaded successfully
-                handler.removeCallbacks(handleRecreate)
-                hasLoaded = true
-
                 // Set internal config field
                 this.config = config
 
@@ -363,10 +331,12 @@ class Ketch private constructor(
 
             private fun showConsentPopup() {
                 if (!isActivityActive()) {
+                    Log.d(TAG, "Not showing as activity is not active")
                     return
                 }
 
                 if (findDialogFragment() != null) {
+                    Log.d(TAG, "Not showing as dialog already exists")
                     return
                 }
 
@@ -376,9 +346,11 @@ class Ketch private constructor(
                     )
                     isCancelable = !disableContentInteractions
                 }
-                fragmentManager.get()?.let {
-                    dialog.show(it, webView)
-                    this@Ketch.listener?.onShow()
+                if (webView != null) {
+                    fragmentManager.get()?.let {
+                        dialog.show(it, webView!!)
+                        this@Ketch.listener?.onShow()
+                    }
                 }
                 showConsent = false
             }
@@ -391,27 +363,6 @@ class Ketch private constructor(
                         it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
                     } else false
                 } ?: false
-
-            init {
-                // if Ketch hasn't loaded, register recreate callback with timeout
-                if (!hasLoaded && shouldRetry) {
-                    // increase timeout
-                    val delay = when (createWebViewCallCount) {
-                        0 -> 4000L
-                        1 -> 10000L
-                        2 -> 20000L
-                        else -> null
-                    }
-
-                    // register callback
-                    delay?.let {
-                        handler.postDelayed(handleRecreate, it)
-                    }
-
-                    // increment call count
-                    createWebViewCallCount++
-                }
-            }
         }
         return webView
     }
