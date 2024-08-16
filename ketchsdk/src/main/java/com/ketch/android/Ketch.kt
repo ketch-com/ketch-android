@@ -30,7 +30,6 @@ class Ketch private constructor(
     private var language: String? = null
     private var jurisdiction: String? = null
     private var region: String? = null
-    private var webView: KetchWebView? = null
 
     /**
      * Retrieve a String value from the preferences.
@@ -206,16 +205,14 @@ class Ketch private constructor(
 
     private fun createWebView(shouldRetry: Boolean = false): KetchWebView? {
 
-        if (context.get() == null) return null
-
-        webView = context.get()?.let { KetchWebView(it, shouldRetry) } ?: return null
+        val webView = context.get()?.let { KetchWebView(it, shouldRetry) } ?: return null
 
         // Enable debug mode
         if (logLevel === LogLevel.DEBUG) {
-            webView?.setDebugMode()
+            webView.setDebugMode()
         }
 
-        webView?.listener = object : KetchWebView.WebViewListener {
+        webView.listener = object : KetchWebView.WebViewListener {
 
             private var config: KetchConfig? = null
             private var showConsent: Boolean = false
@@ -241,11 +238,9 @@ class Ketch private constructor(
 
                 val dialog = KetchDialogFragment.newInstance()
 
-                if (webView != null) {
-                    fragmentManager.get()?.let {
-                        dialog.show(it, webView!!)
-                        this@Ketch.listener?.onShow()
-                    }
+                fragmentManager.get()?.let {
+                    dialog.show(it, webView)
+                    this@Ketch.listener?.onShow()
                 }
             }
 
@@ -346,11 +341,9 @@ class Ketch private constructor(
                     )
                     isCancelable = !disableContentInteractions
                 }
-                if (webView != null) {
-                    fragmentManager.get()?.let {
-                        dialog.show(it, webView!!)
-                        this@Ketch.listener?.onShow()
-                    }
+                fragmentManager.get()?.let {
+                    dialog.show(it, webView)
+                    this@Ketch.listener?.onShow()
                 }
                 showConsent = false
             }
