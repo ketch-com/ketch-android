@@ -32,8 +32,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 
-const val INITIAL_RELOAD_DELAY = 4000L
+const val INITIAL_RELOAD_DELAY = 1L
 
 @SuppressLint("SetJavaScriptEnabled", "ViewConstructor")
 class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(context) {
@@ -85,7 +86,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
     class LocalContentWebViewClient(private var shouldRetry: Boolean = false) : WebViewClientCompat() {
 
         // Flag indicating if the webview has finished loading
-        private var isLoaded = false
+        // We use atomic boolean here because we are using it within a coroutine
+        private var isLoaded = AtomicBoolean(false)
 
         // Reload delay, increases exponentially in onPageStarted
         private var reloadDelay = INITIAL_RELOAD_DELAY
@@ -130,7 +132,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             Log.d(TAG, "onPageStarted: $url")
 
             // Reset loaded flag
-            isLoaded = false
+            isLoaded.set(false)
 
             // Launch retry if flag set
             if (shouldRetry) {
@@ -138,7 +140,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
                     delay(reloadDelay)
 
                     // If not yet loaded stop current webview, reload, and increase future delay
-                    if (!isLoaded) {
+                    if (!isLoaded.get()) {
                         Log.d(TAG, "Reloading webview after $reloadDelay ms")
                         view?.stopLoading()
                         view?.reload()
@@ -152,7 +154,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             super.onPageFinished(view, url)
 
             // Set loaded flag
-            isLoaded = true
+            isLoaded.set(true)
 
             // Only reset reload delay when second onPageFinished callback has fired
             if (url === "data:text/html;charset=utf-8;base64,") {
