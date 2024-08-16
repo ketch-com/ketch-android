@@ -29,10 +29,10 @@ fun getIndexHtml(
         "        height: 100dvh;\n" +
         "        width: 100dvw;\n" +
         "        min-height: -webkit-fill-available;\n" +
-        "        --safe-area-inset-top: ${safeArea.top} !important;\n" +
-        "        --safe-area-inset-right: ${safeArea.right} !important;\n" +
-        "        --safe-area-inset-bottom: ${safeArea.bottom} !important;\n" +
-        "        --safe-area-inset-left: ${safeArea.left} !important;\n" +
+        "        --safe-area-inset-top: ${safeArea.top}px !important;\n" +
+        "        --safe-area-inset-right: ${safeArea.right}px !important;\n" +
+        "        --safe-area-inset-bottom: ${safeArea.bottom}px !important;\n" +
+        "        --safe-area-inset-left: ${safeArea.left}px !important;\n" +
         "      }\n" +
         "    </style>\n" +
         "    <meta\n" +
