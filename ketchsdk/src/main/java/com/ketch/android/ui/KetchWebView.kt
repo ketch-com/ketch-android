@@ -34,7 +34,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 
-const val INITIAL_RELOAD_DELAY = 1L
+const val INITIAL_RELOAD_DELAY = 4000L
 
 @SuppressLint("SetJavaScriptEnabled", "ViewConstructor")
 class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(context) {
