@@ -159,7 +159,6 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             // Only reset reload delay when second onPageFinished callback has fired
             if (url === "data:text/html;charset=utf-8;base64,") {
                 reloadDelay = INITIAL_RELOAD_DELAY
-
             }
             Log.d(TAG, "onPageFinished: $url")
         }
