@@ -1,9 +1,12 @@
 package com.ketch.android.ui
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.Rect
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -199,10 +202,25 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             environment = environment,
             forceShow = forceShow?.getUrlParameter(),
             preferencesTabs = preferencesTabs.takeIf { it.isNotEmpty() }?.map { it.getUrlParameter() }?.joinToString(","),
-            preferencesTab = preferencesTab?.getUrlParameter()
+            preferencesTab = preferencesTab?.getUrlParameter(),
+            safeArea = getSafeArea(context)
         )
 
         loadDataWithBaseURL("http://localhost", indexHtml, "text/html", "UTF-8", null)
+    }
+
+    private fun getSafeArea(context: Context): Rect {
+        val safeInsetRect = Rect()
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+            return safeInsetRect
+        }
+        val windowInsets = (context as Activity).window.decorView.rootWindowInsets ?: return safeInsetRect
+        val displayCutout = windowInsets.displayCutout
+        if (displayCutout != null) {
+            safeInsetRect[displayCutout.safeInsetLeft, displayCutout.safeInsetTop, displayCutout.safeInsetRight] =
+                displayCutout.safeInsetBottom
+        }
+        return safeInsetRect
     }
 
     private class PreferenceCenterJavascriptInterface(private val ketchWebView: KetchWebView) {
