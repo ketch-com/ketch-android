@@ -85,6 +85,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
     class LocalContentWebViewClient(private var shouldRetry: Boolean = false) : WebViewClientCompat() {
 
         // Flag indicating if the webview has finished loading
+        // NOTE: Should switch to atomic boolean
         private var isLoaded = false
 
         // Reload delay, increases exponentially in onPageStarted

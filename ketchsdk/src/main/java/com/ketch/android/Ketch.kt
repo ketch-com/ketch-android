@@ -1,7 +1,12 @@
 package com.ketch.android
 
+import android.app.Activity
+import android.app.Application
+import android.app.Application.ActivityLifecycleCallbacks
 import android.content.Context
+import android.os.Bundle
 import android.util.Log
+import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -17,20 +22,25 @@ import java.lang.ref.WeakReference
  * Main Ketch SDK class
  **/
 class Ketch private constructor(
-    private val context: WeakReference<Context>,
-    private val fragmentManager: WeakReference<FragmentManager>,
+
+    private val application: Application,
+
+//    private val context: WeakReference<Context>,
+//    private val fragmentManager: WeakReference<FragmentManager>,
     private val orgCode: String,
     private val property: String,
     private val environment: String?,
     private val listener: Listener?,
     private val ketchUrl: String?,
     private val logLevel: LogLevel
-) {
+): ActivityLifecycleCallbacks {
     private var identities: Map<String, String> = emptyMap()
     private var language: String? = null
     private var jurisdiction: String? = null
     private var region: String? = null
     private var webView: KetchWebView? = null
+
+    private var activityWR: WeakReference<FragmentActivity> = WeakReference(null)
 
     /**
      * Retrieve a String value from the preferences.
@@ -458,8 +468,9 @@ class Ketch private constructor(
     companion object {
         val TAG = Ketch::class.java.simpleName
         fun create(
-            context: Context,
-            fragmentManager: FragmentManager,
+            application: Application,
+//            context: Context,
+//            fragmentManager: FragmentManager,
             orgCode: String,
             property: String,
             environment: String?,
@@ -467,8 +478,9 @@ class Ketch private constructor(
             ketchUrl: String?,
             logLevel: LogLevel,
         ) = Ketch(
-            WeakReference(context),
-            WeakReference(fragmentManager),
+            application,
+//            WeakReference(context),
+//            WeakReference(fragmentManager),
             orgCode,
             property,
             environment,
@@ -476,5 +488,33 @@ class Ketch private constructor(
             ketchUrl,
             logLevel
         )
+    }
+
+    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+        (activity as? FragmentActivity)?.let { activityWR = WeakReference(it) }
+    }
+
+    override fun onActivityStarted(activity: Activity) {
+        // No-op
+    }
+
+    override fun onActivityResumed(activity: Activity) {
+        (activity as? FragmentActivity)?.let { activityWR = WeakReference(it) }
+    }
+
+    override fun onActivityPaused(activity: Activity) {
+        // No-op
+    }
+
+    override fun onActivityStopped(activity: Activity) {
+        // No-op
+    }
+
+    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
+        // No-op
+    }
+
+    override fun onActivityDestroyed(activity: Activity) {
+        // No-op
     }
 }
