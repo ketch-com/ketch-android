@@ -364,7 +364,7 @@ class Ketch private constructor(
         fragmentManager.get()?.findFragmentByTag(KetchDialogFragment.TAG)
 
     private fun isActivityActive(): Boolean {
-        return (context.get() as? LifecycleOwner)?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED)
+        return (context.get() as? LifecycleOwner)?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.STARTED)
             ?: false
     }
 
