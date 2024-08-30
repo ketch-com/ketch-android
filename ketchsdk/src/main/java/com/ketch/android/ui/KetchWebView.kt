@@ -29,12 +29,13 @@ import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.KetchConfig
 import com.ketch.android.data.getIndexHtml
 import com.ketch.android.data.parseHideExperienceStatus
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
 
 const val INITIAL_RELOAD_DELAY = 4000L
 
@@ -85,7 +86,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         destroy()
     }
 
-    class LocalContentWebViewClient(private var shouldRetry: Boolean = false) : WebViewClientCompat() {
+    class LocalContentWebViewClient(private var shouldRetry: Boolean = false) :
+        WebViewClientCompat() {
 
         // Flag indicating if the webview has finished loading
         private var isLoaded = false
@@ -201,26 +203,12 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             region = region,
             environment = environment,
             forceShow = forceShow?.getUrlParameter(),
-            preferencesTabs = preferencesTabs.takeIf { it.isNotEmpty() }?.map { it.getUrlParameter() }?.joinToString(","),
-            preferencesTab = preferencesTab?.getUrlParameter(),
-            safeArea = getSafeArea(context)
+            preferencesTabs = preferencesTabs.takeIf { it.isNotEmpty() }
+                ?.map { it.getUrlParameter() }?.joinToString(","),
+            preferencesTab = preferencesTab?.getUrlParameter()
         )
 
         loadDataWithBaseURL("http://localhost", indexHtml, "text/html", "UTF-8", null)
-    }
-
-    private fun getSafeArea(context: Context): Rect {
-        val safeInsetRect = Rect()
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
-            return safeInsetRect
-        }
-        val windowInsets = (context as Activity).window.decorView.rootWindowInsets ?: return safeInsetRect
-        val displayCutout = windowInsets.displayCutout
-        if (displayCutout != null) {
-            safeInsetRect[displayCutout.safeInsetLeft, displayCutout.safeInsetTop, displayCutout.safeInsetRight] =
-                displayCutout.safeInsetBottom
-        }
-        return safeInsetRect
     }
 
     private class PreferenceCenterJavascriptInterface(private val ketchWebView: KetchWebView) {
