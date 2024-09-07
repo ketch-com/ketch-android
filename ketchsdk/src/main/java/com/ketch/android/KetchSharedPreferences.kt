@@ -20,9 +20,9 @@ internal class KetchSharedPreferences(context: Context) {
             values.forEach { (key, value) ->
                 when (value) {
                     is Int -> putInt(key, value)
-                    is Long -> putLong(key, value)
-                    is Float -> putFloat(key, value)
-                    is Double -> putFloat(key, value.toFloat())
+                    is Long -> putInt(key, value.toInt())
+                    is Float -> putInt(key, value.toInt())
+                    is Double -> putInt(key, value.toInt())
                     is Boolean -> putInt(key, if (value) 1 else 0)
                     is String -> putString(key, value)
                     else -> putString(key, value.toString())
