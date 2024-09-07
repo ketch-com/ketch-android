@@ -129,8 +129,8 @@ class Ketch private constructor(
      * @param tabs: list of preferences tab
      * @param tab: the current tab
      */
-    fun showPreferencesTab(tabs: List<PreferencesTab>, tab: PreferencesTab) {
-        createWebView()?.load(
+    fun showPreferencesTab(tabs: List<PreferencesTab>, tab: PreferencesTab, shouldRetry: Boolean = false) {
+        createWebView(shouldRetry)?.load(
             orgCode,
             property,
             language,
