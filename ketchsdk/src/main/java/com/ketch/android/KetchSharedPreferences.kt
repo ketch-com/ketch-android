@@ -28,7 +28,8 @@ internal class KetchSharedPreferences(context: Context) {
                     else -> putString(key, value.toString())
                 }
             }
-            apply()
+            // We used the synchronous write method so shared_preferences values are available to ad vendors asap
+            commit()
             Log.d(TAG, logMessage)
         }
     }
