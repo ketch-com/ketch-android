@@ -15,7 +15,7 @@ internal class KetchSharedPreferences(context: Context) {
 
     fun getSavedValue(key: String): String? = sharedPreferences.getString(key, null)
 
-    private fun saveValues(values: Map<String, Any?>, logMessage: String) {
+    private fun saveValues(values: Map<String, Any?>, logMessage: String, synchronousPreferences: Boolean = false) {
         sharedPreferences.edit {
             values.forEach { (key, value) ->
                 when (value) {
@@ -28,22 +28,25 @@ internal class KetchSharedPreferences(context: Context) {
                     else -> putString(key, value.toString())
                 }
             }
-            // We used the synchronous write method so shared_preferences values are available to ad vendors asap
-            commit()
-            Log.d(TAG, logMessage)
+            if (synchronousPreferences) {
+                val result = commit()
+                Log.d(TAG, "$logMessage - $result")
+            } else {
+                apply()
+            }
         }
     }
 
-    fun saveTCFTC(values: Map<String, Any?>) {
-        saveValues(values, "$IAB_TCF_TC_STRING is saved")
+    fun saveTCFTC(values: Map<String, Any?>, synchronousPreferences: Boolean = false) {
+        saveValues(values, "$IAB_TCF_TC_STRING is saved", synchronousPreferences)
     }
 
-    fun saveUSPrivacy(values: Map<String, Any?>) {
-        saveValues(values, "$IAB_US_PRIVACY_STRING is saved")
+    fun saveUSPrivacy(values: Map<String, Any?>, synchronousPreferences: Boolean = false) {
+        saveValues(values, "$IAB_US_PRIVACY_STRING is saved", synchronousPreferences)
     }
 
-    fun saveGPP(values: Map<String, Any?>) {
-        saveValues(values, "$IAB_GPP_HDR_GPP_STRING is saved")
+    fun saveGPP(values: Map<String, Any?>, synchronousPreferences: Boolean = false) {
+        saveValues(values, "$IAB_GPP_HDR_GPP_STRING is saved", synchronousPreferences)
     }
 
     companion object {
