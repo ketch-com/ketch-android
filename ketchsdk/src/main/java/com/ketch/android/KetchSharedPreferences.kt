@@ -33,6 +33,7 @@ internal class KetchSharedPreferences(context: Context) {
                 Log.d(TAG, "$logMessage - $result")
             } else {
                 apply()
+                Log.d(TAG, logMessage)
             }
         }
     }
