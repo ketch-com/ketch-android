@@ -26,7 +26,7 @@ fun getIndexHtml(
     "        height: 100dvh;\n" +
     "        width: 100dvw;\n" +
     "        min-height: -webkit-fill-available;\n" +
-    "        --safe-area-inset-bottom: 40px;\n" +
+    "        --safe-area-inset-bottom: 30px;\n" +
     "      }\n" +
     "    </style>\n" +
     "    <meta\n" +
