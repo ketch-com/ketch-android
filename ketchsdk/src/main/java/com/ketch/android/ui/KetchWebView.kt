@@ -40,9 +40,10 @@ const val INITIAL_RELOAD_DELAY = 4000L
 class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(context) {
 
     var listener: WebViewListener? = null
+    private val localContentWebViewClient = LocalContentWebViewClient(shouldRetry)
 
     init {
-        webViewClient = LocalContentWebViewClient(shouldRetry)
+        webViewClient = localContentWebViewClient
         settings.javaScriptEnabled = true
         setBackgroundColor(context.getColor(android.R.color.transparent))
 
@@ -74,7 +75,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
 
     // Cancel any coroutines in KetchWebView and fully tear down webview to prevent memory leaks
     fun kill() {
-        (webViewClient as LocalContentWebViewClient).cancelCoroutines()
+        localContentWebViewClient.cancelCoroutines()
         stopLoading()
         clearHistory()
         clearCache(true)
