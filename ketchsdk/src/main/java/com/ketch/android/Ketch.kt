@@ -151,7 +151,7 @@ class Ketch private constructor(
      */
     fun dismissDialog() {
         findDialogFragment()?.let {
-            (it as? KetchDialogFragment)?.dismiss()
+            (it as? KetchDialogFragment)?.dismissAllowingStateLoss()
             this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
         }
     }
@@ -194,7 +194,7 @@ class Ketch private constructor(
 
     init {
         findDialogFragment()?.let { dialog ->
-            (dialog as KetchDialogFragment).dismiss()
+            (dialog as KetchDialogFragment).dismissAllowingStateLoss()
             this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
         }
     }
@@ -307,7 +307,7 @@ class Ketch private constructor(
             override fun onClose(status: HideExperienceStatus) {
                 // Dismiss dialog fragment
                 findDialogFragment()?.let {
-                    (it as? KetchDialogFragment)?.dismiss()
+                    (it as? KetchDialogFragment)?.dismissAllowingStateLoss()
                 }
 
                 // Execute onDismiss event listener
@@ -317,7 +317,7 @@ class Ketch private constructor(
             override fun onTapOutside() {
                 // Dismiss dialog fragment
                 findDialogFragment()?.let {
-                    (it as? KetchDialogFragment)?.dismiss()
+                    (it as? KetchDialogFragment)?.dismissAllowingStateLoss()
 
                     // Execute onDismiss event listener
                     this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
