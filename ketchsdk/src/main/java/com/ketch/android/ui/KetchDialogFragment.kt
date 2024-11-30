@@ -12,6 +12,9 @@ import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND
 import android.widget.FrameLayout
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentManager
 import com.ketch.android.R
@@ -23,6 +26,13 @@ internal class KetchDialogFragment() : DialogFragment() {
 
     private var webView: KetchWebView? = null
 
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        val dialog = super.onCreateDialog(savedInstanceState).apply {
+            requestWindowFeature(Window.FEATURE_NO_TITLE)
+        }
+        return dialog
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -30,22 +40,19 @@ internal class KetchDialogFragment() : DialogFragment() {
     ): View {
         binding =
             KetchDialogLayoutBinding.bind(inflater.inflate(R.layout.ketch_dialog_layout, container))
+
         webView?.let { web ->
             (web.parent as? ViewGroup)?.removeView(web)
-            binding.root.addView(
-                web,
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
+
+            with(binding) {
+                root.addView(
+                    web,
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                )
+            }
         }
         return binding.root
-    }
-
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val dialog = super.onCreateDialog(savedInstanceState).apply {
-            requestWindowFeature(Window.FEATURE_NO_TITLE)
-        }
-        return dialog
     }
 
     override fun onDestroyView() {
@@ -63,39 +70,36 @@ internal class KetchDialogFragment() : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         dialog?.window?.also { window ->
-            window.clearFlags(FLAG_DIM_BEHIND)
-            window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            val displayMetrics = requireActivity().resources.displayMetrics
-
-            val width = displayMetrics.widthPixels
-            val height = displayMetrics.heightPixels
-
-            val params = window.attributes.apply {
-                this.width = width
-                this.height = height
-                gravity = Gravity.CENTER
-            }
-
-            window.attributes = params
+            setWindow(window)
         }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         dialog?.window?.also { window ->
-            val displayMetrics = requireActivity().resources.displayMetrics
-
-            val width = displayMetrics.widthPixels
-            val height = displayMetrics.heightPixels
-
-            val params = window.attributes.apply {
-                this.width = width
-                this.height = height
-                gravity = Gravity.CENTER
-            }
-
-            window.attributes = params
+            setWindow(window)
         }
+    }
+
+    private fun setWindow(window: Window) {
+        window.clearFlags(FLAG_DIM_BEHIND)
+        window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        WindowCompat.getInsetsController(window,window.decorView).apply {
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            hide(WindowInsetsCompat.Type.statusBars())
+            hide(WindowInsetsCompat.Type.navigationBars())
+        }
+
+        val windowAttributes = requireActivity().window.attributes
+
+        val params = window.attributes.apply {
+            this.width = windowAttributes.width
+            this.height = windowAttributes.height
+            this.x = windowAttributes.x
+            this.x = windowAttributes.y
+        }
+
+        window.attributes = params
     }
 
     fun show(manager: FragmentManager, webView: KetchWebView) {

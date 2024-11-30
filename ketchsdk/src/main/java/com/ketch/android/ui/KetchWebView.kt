@@ -1,9 +1,12 @@
 package com.ketch.android.ui
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.Rect
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -26,13 +29,14 @@ import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.KetchConfig
 import com.ketch.android.data.getIndexHtml
 import com.ketch.android.data.parseHideExperienceStatus
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
+
 
 const val INITIAL_RELOAD_DELAY = 4000L
 
@@ -84,7 +88,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         destroy()
     }
 
-    class LocalContentWebViewClient(private var shouldRetry: Boolean = false) : WebViewClientCompat() {
+    class LocalContentWebViewClient(private var shouldRetry: Boolean = false) :
+        WebViewClientCompat() {
 
         // Flag indicating if the webview has finished loading
         // We use atomic boolean here because we are using it within a coroutine
@@ -200,7 +205,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             region = region,
             environment = environment,
             forceShow = forceShow?.getUrlParameter(),
-            preferencesTabs = preferencesTabs.takeIf { it.isNotEmpty() }?.map { it.getUrlParameter() }?.joinToString(","),
+            preferencesTabs = preferencesTabs.takeIf { it.isNotEmpty() }
+                ?.map { it.getUrlParameter() }?.joinToString(","),
             preferencesTab = preferencesTab?.getUrlParameter()
         )
 
