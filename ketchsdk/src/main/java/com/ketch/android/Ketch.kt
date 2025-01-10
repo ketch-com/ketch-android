@@ -38,14 +38,14 @@ class Ketch private constructor(
      *
      * @return Returns the preference value if it exists
      */
-    fun getSavedString(key: String) = getPreferences()?.getSavedValue(key)
+    fun getSavedString(key: String) = getPreferences().getSavedValue(key)
 
     /**
      * Retrieve IABTCF_TCString value from the preferences.
      *
      * @return Returns the preference value if it exists
      */
-    fun getTCFTCString() = getPreferences()?.getSavedValue(KetchSharedPreferences.IAB_TCF_TC_STRING)
+    fun getTCFTCString() = getPreferences().getSavedValue(KetchSharedPreferences.IAB_TCF_TC_STRING)
 
     /**
      * Retrieve IABUSPrivacy_String value from the preferences.
@@ -53,7 +53,7 @@ class Ketch private constructor(
      * @return Returns the preference value if it exists
      */
     fun getUSPrivacyString() =
-        getPreferences()?.getSavedValue(KetchSharedPreferences.IAB_US_PRIVACY_STRING)
+        getPreferences().getSavedValue(KetchSharedPreferences.IAB_US_PRIVACY_STRING)
 
     /**
      * Retrieve IABGPP_HDR_GppString value from the preferences.
@@ -61,7 +61,7 @@ class Ketch private constructor(
      * @return Returns the preference value if it exists
      */
     fun getGPPHDRGppString() =
-        getPreferences()?.getSavedValue(KetchSharedPreferences.IAB_GPP_HDR_GPP_STRING)
+        getPreferences().getSavedValue(KetchSharedPreferences.IAB_GPP_HDR_GPP_STRING)
 
     /**
      * Loads a web page and shows a popup if necessary
@@ -193,14 +193,22 @@ class Ketch private constructor(
     }
 
     init {
+
+        getPreferences()
+
         findDialogFragment()?.let { dialog ->
             (dialog as KetchDialogFragment).dismissAllowingStateLoss()
             this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
         }
     }
 
-    private fun getPreferences(): KetchSharedPreferences? = context.get()?.let {
-        KetchSharedPreferences(it)
+    // Get the singleton KetchSharedPreferences object
+    private fun getPreferences(): KetchSharedPreferences {
+        context.get()?.let {
+            // Initialize will create KetchSharedPreferences if it doesn't already exist
+            KetchSharedPreferences.initialize(it)
+        }
+        return KetchSharedPreferences
     }
 
     private fun createWebView(shouldRetry: Boolean = false, synchronousPreferences: Boolean = false): KetchWebView? {
@@ -245,17 +253,17 @@ class Ketch private constructor(
             }
 
             override fun onUSPrivacyUpdated(values: Map<String, Any?>) {
-                getPreferences()?.saveUSPrivacy(values, synchronousPreferences)
+                getPreferences().saveValues(values, "USPrivacy", synchronousPreferences)
                 this@Ketch.listener?.onUSPrivacyUpdated(values)
             }
 
             override fun onTCFUpdated(values: Map<String, Any?>) {
-                getPreferences()?.saveTCFTC(values, synchronousPreferences)
+                getPreferences().saveValues(values, "TCF", synchronousPreferences)
                 this@Ketch.listener?.onTCFUpdated(values)
             }
 
             override fun onGPPUpdated(values: Map<String, Any?>) {
-                getPreferences()?.saveGPP(values, synchronousPreferences)
+                getPreferences().saveValues(values, "GPP", synchronousPreferences)
                 this@Ketch.listener?.onGPPUpdated(values)
             }
 
