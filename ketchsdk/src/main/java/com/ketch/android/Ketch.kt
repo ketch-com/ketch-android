@@ -66,61 +66,88 @@ class Ketch private constructor(
     /**
      * Loads a web page and shows a popup if necessary
      */
-    fun load(shouldRetry: Boolean = false, synchronousPreferences: Boolean = false) {
-        createWebView(shouldRetry, synchronousPreferences)?.load(
-            orgCode,
-            property,
-            language,
-            jurisdiction,
-            region,
-            environment,
-            identities,
-            null,
-            emptyList(),
-            null,
-            ketchUrl,
-            logLevel
-        )
+    fun load(
+        shouldRetry: Boolean = false,
+        synchronousPreferences: Boolean = false
+    ): Boolean {
+        val webView = createWebView(shouldRetry, synchronousPreferences)
+        return if (webView != null) {
+            webView.load(
+                orgCode,
+                property,
+                language,
+                jurisdiction,
+                region,
+                environment,
+                identities,
+                null,
+                emptyList(),
+                null,
+                ketchUrl,
+                logLevel
+            )
+            true
+        } else {
+            false
+        }
     }
 
     /**
      * Display the consent, adding the fragment dialog to the given FragmentManager.
      */
-    fun showConsent(shouldRetry: Boolean = false, synchronousPreferences: Boolean = false) {
-        createWebView(shouldRetry, synchronousPreferences)?.load(
-            orgCode,
-            property,
-            language,
-            jurisdiction,
-            region,
-            environment,
-            identities,
-            KetchWebView.ExperienceType.CONSENT,
-            emptyList(),
-            null,
-            ketchUrl,
-            logLevel
-        )
+    fun showConsent(
+        shouldRetry: Boolean = false,
+        synchronousPreferences: Boolean = false
+    ): Boolean {
+        val webView = createWebView(shouldRetry, synchronousPreferences)
+        return if (webView != null) {
+            webView.load(
+                orgCode,
+                property,
+                language,
+                jurisdiction,
+                region,
+                environment,
+                identities,
+                KetchWebView.ExperienceType.CONSENT,
+                emptyList(),
+                null,
+                ketchUrl,
+                logLevel
+            )
+            true
+        } else {
+            false
+        }
     }
 
     /**
      * Display the preferences, adding the fragment dialog to the given FragmentManager.
      */
-    fun showPreferences(shouldRetry: Boolean = false, synchronousPreferences: Boolean = false) {
-        createWebView(shouldRetry, synchronousPreferences)?.load(
-            orgCode,
-            property,
-            language,
-            jurisdiction,
-            region,
-            environment,
-            identities,
-            KetchWebView.ExperienceType.PREFERENCES,
-            emptyList(),
-            null,
-            ketchUrl,
-            logLevel
-        )
+    fun showPreferences(
+        shouldRetry: Boolean = false,
+        synchronousPreferences: Boolean = false
+    ): Boolean {
+        val webView = createWebView(shouldRetry, synchronousPreferences)
+        return if (webView != null) {
+            webView.load(
+                orgCode,
+                property,
+                language,
+                jurisdiction,
+                region,
+                environment,
+                identities,
+                KetchWebView.ExperienceType.PREFERENCES,
+                emptyList(),
+                null,
+                ketchUrl,
+                logLevel
+            )
+            true
+        } else {
+            false
+        }
     }
 
     /**
@@ -129,21 +156,32 @@ class Ketch private constructor(
      * @param tabs: list of preferences tab
      * @param tab: the current tab
      */
-    fun showPreferencesTab(tabs: List<PreferencesTab>, tab: PreferencesTab, shouldRetry: Boolean = false, synchronousPreferences: Boolean = false) {
-        createWebView(shouldRetry, synchronousPreferences)?.load(
-            orgCode,
-            property,
-            language,
-            jurisdiction,
-            region,
-            environment,
-            identities,
-            KetchWebView.ExperienceType.PREFERENCES,
-            tabs,
-            tab,
-            ketchUrl,
-            logLevel
-        )
+    fun showPreferencesTab(
+        tabs: List<PreferencesTab>,
+        tab: PreferencesTab,
+        shouldRetry: Boolean = false,
+        synchronousPreferences: Boolean = false
+    ): Boolean {
+        val webView = createWebView(shouldRetry, synchronousPreferences)
+        return if (webView != null) {
+            webView.load(
+                orgCode,
+                property,
+                language,
+                jurisdiction,
+                region,
+                environment,
+                identities,
+                KetchWebView.ExperienceType.PREFERENCES,
+                tabs,
+                tab,
+                ketchUrl,
+                logLevel
+            )
+            true
+        } else {
+            false
+        }
     }
 
     /**
