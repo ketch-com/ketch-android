@@ -24,8 +24,10 @@ import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.KetchConfig
+import com.ketch.android.data.WillShowExperienceType
 import com.ketch.android.data.getIndexHtml
 import com.ketch.android.data.parseHideExperienceStatus
+import com.ketch.android.data.parseWillShowExperienceType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -266,14 +268,16 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         }
 
         @JavascriptInterface
-        fun willShowExperience(willShowExperience: String?) {
-            Log.d(TAG, "willShowExperience: $willShowExperience")
+        fun willShowExperience(type: String?) {
+            val parsedType = parseWillShowExperienceType(type)
+            Log.d(TAG, "willShowExperience: $type = ${parsedType.name}")
             runOnMainThread {
-                if (willShowExperience == "experiences.consent") {
+                if (parsedType === WillShowExperienceType.ConsentExperience) {
                     ketchWebView.listener?.showConsent()
                 } else {
                     ketchWebView.listener?.showPreferences()
                 }
+                ketchWebView.listener?.onWillShowExperience(parsedType)
             }
         }
 
@@ -399,6 +403,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         fun onError(errMsg: String?)
         fun changeDialog(display: ContentDisplay)
         fun onClose(status: HideExperienceStatus)
+        fun onWillShowExperience(experienceType: WillShowExperienceType)
         fun onTapOutside()
     }
 

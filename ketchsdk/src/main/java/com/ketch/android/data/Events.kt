@@ -20,3 +20,21 @@ enum class HideExperienceStatus(val value: String?) {
 fun parseHideExperienceStatus(status: String?): HideExperienceStatus {
     return HideExperienceStatus.fromValue(status)
 }
+
+// Type the accompanies a willShowExperience event
+enum class WillShowExperienceType(val value: String?) {
+    ConsentExperience("experiences.consent"),
+    PreferenceExperience("experiences.preference"),
+    None(null);
+
+    companion object {
+        fun fromValue(value: String?): WillShowExperienceType {
+            return values().find { it.value == value } ?: None
+        }
+    }
+}
+
+// Determine which enum value corresponds to some string
+fun parseWillShowExperienceType(type: String?): WillShowExperienceType {
+    return WillShowExperienceType.fromValue(type)
+}
