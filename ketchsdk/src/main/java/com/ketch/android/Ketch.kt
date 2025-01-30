@@ -9,6 +9,7 @@ import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.KetchConfig
+import com.ketch.android.data.WillShowExperienceType
 import com.ketch.android.ui.KetchDialogFragment
 import com.ketch.android.ui.KetchWebView
 import java.lang.ref.WeakReference
@@ -360,6 +361,11 @@ class Ketch private constructor(
                 this@Ketch.listener?.onDismiss(status)
             }
 
+            override fun onWillShowExperience(experienceType: WillShowExperienceType) {
+                // Execute onWillShowExperience listener
+                this@Ketch.listener?.onWillShowExperience(experienceType)
+            }
+
             override fun onTapOutside() {
                 // Dismiss dialog fragment
                 findDialogFragment()?.let {
@@ -492,6 +498,11 @@ class Ketch private constructor(
          * Called when GPP is updated.
          */
         fun onGPPUpdated(values: Map<String, Any?>)
+
+        /**
+         * Called when an experience will show.
+         */
+        fun onWillShowExperience(type: WillShowExperienceType)
     }
 
     companion object {
