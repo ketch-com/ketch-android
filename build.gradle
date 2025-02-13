@@ -17,7 +17,6 @@ buildscript {
             'kotlin'       : '1.8.21',
             'ktx'          : '1.12.0',
             'appcompat'    : '1.6.1',
-            'material'     : '1.11.0',
             'parcelize'    : '1.8.21',
             'dokka'        : '1.7.20',
             'junit'        : '4.13.2',
