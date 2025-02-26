@@ -185,9 +185,16 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         preferencesTabs: List<Ketch.PreferencesTab>,
         preferencesTab: Ketch.PreferencesTab?,
         ketchUrl: String?,
-        logLevel: Ketch.LogLevel
+        logLevel: Ketch.LogLevel,
+        bottomPadding: Int?
     ) {
-        clearCache(true)
+        clearCach
+
+        // Convert padding value to string
+        var bottomPaddingPx = "0px"
+        if (bottomPadding != null) {
+            bottomPaddingPx = bottomPadding.toString() + "px"
+        }
 
         val indexHtml = getIndexHtml(
             orgCode = orgCode,
@@ -203,7 +210,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             environment = environment,
             forceShow = forceShow?.getUrlParameter(),
             preferencesTabs = preferencesTabs.takeIf { it.isNotEmpty() }?.map { it.getUrlParameter() }?.joinToString(","),
-            preferencesTab = preferencesTab?.getUrlParameter()
+            preferencesTab = preferencesTab?.getUrlParameter(),
+            bottomPadding = bottomPaddingPx
         )
 
         loadDataWithBaseURL("http://localhost", indexHtml, "text/html", "UTF-8", null)

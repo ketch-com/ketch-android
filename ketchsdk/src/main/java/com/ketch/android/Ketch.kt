@@ -66,10 +66,13 @@ class Ketch private constructor(
 
     /**
      * Loads a web page and shows a popup if necessary
+     *
+     * @param bottomPadding: Pixels of padding to add to the bottom of the experience (if shown)
      */
     fun load(
         shouldRetry: Boolean = false,
-        synchronousPreferences: Boolean = false
+        synchronousPreferences: Boolean = false,
+        bottomPadding: Int = 0,
     ): Boolean {
         val webView = createWebView(shouldRetry, synchronousPreferences)
         return if (webView != null) {
@@ -85,7 +88,8 @@ class Ketch private constructor(
                 emptyList(),
                 null,
                 ketchUrl,
-                logLevel
+                logLevel,
+                bottomPadding,
             )
             true
         } else {
@@ -95,10 +99,13 @@ class Ketch private constructor(
 
     /**
      * Display the consent, adding the fragment dialog to the given FragmentManager.
+     *
+     * @param bottomPadding: Pixels of padding to add to the bottom of the experience
      */
     fun showConsent(
         shouldRetry: Boolean = false,
-        synchronousPreferences: Boolean = false
+        synchronousPreferences: Boolean = false,
+        bottomPadding: Int = 0,
     ): Boolean {
         val webView = createWebView(shouldRetry, synchronousPreferences)
         return if (webView != null) {
@@ -114,7 +121,8 @@ class Ketch private constructor(
                 emptyList(),
                 null,
                 ketchUrl,
-                logLevel
+                logLevel,
+                bottomPadding
             )
             true
         } else {
@@ -124,10 +132,13 @@ class Ketch private constructor(
 
     /**
      * Display the preferences, adding the fragment dialog to the given FragmentManager.
+     *
+     * @param bottomPadding: Pixels of padding to add to the bottom of the experience
      */
     fun showPreferences(
         shouldRetry: Boolean = false,
-        synchronousPreferences: Boolean = false
+        synchronousPreferences: Boolean = false,
+        bottomPadding: Int = 0,
     ): Boolean {
         val webView = createWebView(shouldRetry, synchronousPreferences)
         return if (webView != null) {
@@ -143,7 +154,8 @@ class Ketch private constructor(
                 emptyList(),
                 null,
                 ketchUrl,
-                logLevel
+                logLevel,
+                bottomPadding
             )
             true
         } else {
@@ -156,12 +168,14 @@ class Ketch private constructor(
      *
      * @param tabs: list of preferences tab
      * @param tab: the current tab
+     * @param bottomPadding: Pixels of padding to add to the bottom of the experience
      */
     fun showPreferencesTab(
         tabs: List<PreferencesTab>,
         tab: PreferencesTab,
         shouldRetry: Boolean = false,
-        synchronousPreferences: Boolean = false
+        synchronousPreferences: Boolean = false,
+        bottomPadding: Int = 0,
     ): Boolean {
         val webView = createWebView(shouldRetry, synchronousPreferences)
         return if (webView != null) {
@@ -177,7 +191,8 @@ class Ketch private constructor(
                 tabs,
                 tab,
                 ketchUrl,
-                logLevel
+                logLevel,
+                bottomPadding
             )
             true
         } else {
