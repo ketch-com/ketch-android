@@ -188,7 +188,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         logLevel: Ketch.LogLevel,
         bottomPadding: Int?
     ) {
-        clearCach
+        clearCache(true)
 
         // Convert padding value to string
         var bottomPaddingPx = "0px"
