@@ -1,7 +1,6 @@
 package com.ketch.android
 
-import android.content.Context
-import androidx.fragment.app.FragmentManager
+import android.app.Application
 
 /**
  * Factory to create the Ketch object.
@@ -21,7 +20,7 @@ object KetchSdk {
     /**
      * Creates the Ketch
      *
-     * @param context - an Activity Context to access application assets
+     * @param application - an Application Context to access application assets
      * @param fragmentManager - The FragmentManager this KetchDialogFragment will be added to.
      * @param organization - your organization code
      * @param property - the property name
@@ -31,8 +30,7 @@ object KetchSdk {
      * @param logLevel - the log level, can be TRACE, DEBUG, INFO, WARN, ERROR. Default is ERROR
      */
     fun create(
-        context: Context,
-        fragmentManager: FragmentManager,
+        application: Application,
         organization: String,
         property: String,
         environment: String? = null,
@@ -41,8 +39,7 @@ object KetchSdk {
         logLevel: Ketch.LogLevel = Ketch.LogLevel.ERROR
     ): Ketch {
         return Ketch.create(
-            context = context,
-            fragmentManager = fragmentManager,
+            application = application,
             orgCode = organization,
             property = property,
             environment = environment,

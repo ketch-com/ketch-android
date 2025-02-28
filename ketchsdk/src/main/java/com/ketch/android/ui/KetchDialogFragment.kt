@@ -49,11 +49,8 @@ internal class KetchDialogFragment() : DialogFragment() {
     }
 
     override fun onDestroyView() {
-
-        binding.root.removeView(webView)
-
         // Cancel any coroutines in KetchWebView and fully tear down webview to prevent memory leaks
-        webView?.kill()
+        binding.root.removeView(webView)
 
         // Set webview reference to null to prevent memory leaks
         webView = null

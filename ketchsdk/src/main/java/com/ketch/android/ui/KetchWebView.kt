@@ -26,8 +26,8 @@ import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.KetchConfig
 import com.ketch.android.data.getIndexHtml
 import com.ketch.android.data.parseHideExperienceStatus
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -40,10 +40,11 @@ const val INITIAL_RELOAD_DELAY = 4000L
 class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(context) {
 
     var listener: WebViewListener? = null
+
     private val localContentWebViewClient = LocalContentWebViewClient(shouldRetry)
 
     init {
-        webViewClient = localContentWebViewClient
+        webViewClient = LocalContentWebViewClient(shouldRetry)
         settings.javaScriptEnabled = true
         setBackgroundColor(context.getColor(android.R.color.transparent))
 
@@ -73,18 +74,54 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         setWebContentsDebuggingEnabled(true)
     }
 
+    internal fun load(
+        orgCode: String,
+        property: String,
+        language: String?,
+        jurisdiction: String?,
+        region: String?,
+        environment: String?,
+        identities: Map<String, String>,
+        forceShow: ExperienceType?,
+        preferencesTabs: List<Ketch.PreferencesTab>,
+        preferencesTab: Ketch.PreferencesTab?,
+        ketchUrl: String?,
+        logLevel: Ketch.LogLevel
+    ) {
+        clearCache(true)
+
+        val indexHtml = getIndexHtml(
+            orgCode = orgCode,
+            propertyName = property,
+            logLevel = logLevel.name,
+            ketchMobileSdkUrl = ketchUrl ?: "https://global.ketchcdn.com/web/v3",
+            language = language,
+            jurisdiction = jurisdiction,
+            identities = identities.map { identity ->
+                "${identity.key}: \"${identity.value}\""
+            }.joinToString(separator = ",\n", prefix = "\n", postfix = "\n"),
+            region = region,
+            environment = environment,
+            forceShow = forceShow?.getUrlParameter(),
+            preferencesTabs = preferencesTabs.takeIf { it.isNotEmpty() }
+                ?.map { it.getUrlParameter() }?.joinToString(","),
+            preferencesTab = preferencesTab?.getUrlParameter()
+        )
+
+        loadDataWithBaseURL("http://localhost", indexHtml, "text/html", "UTF-8", null)
+    }
+
     // Cancel any coroutines in KetchWebView and fully tear down webview to prevent memory leaks
-    fun kill() {
+    internal fun stop() {
         localContentWebViewClient.cancelCoroutines()
         stopLoading()
         clearHistory()
         clearCache(true)
         loadUrl("about:blank")
-        removeAllViews()
-        destroy()
     }
 
-    class LocalContentWebViewClient(private var shouldRetry: Boolean = false) : WebViewClientCompat() {
+    class LocalContentWebViewClient(private var shouldRetry: Boolean = false) :
+        WebViewClientCompat() {
 
         // Flag indicating if the webview has finished loading
         // We use atomic boolean here because we are using it within a coroutine
@@ -169,42 +206,6 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             scope.cancel()
             Log.d(TAG, "webViewClient coroutines cancelled")
         }
-    }
-
-    internal fun load(
-        orgCode: String,
-        property: String,
-        language: String?,
-        jurisdiction: String?,
-        region: String?,
-        environment: String?,
-        identities: Map<String, String>,
-        forceShow: ExperienceType?,
-        preferencesTabs: List<Ketch.PreferencesTab>,
-        preferencesTab: Ketch.PreferencesTab?,
-        ketchUrl: String?,
-        logLevel: Ketch.LogLevel
-    ) {
-        clearCache(true)
-
-        val indexHtml = getIndexHtml(
-            orgCode = orgCode,
-            propertyName = property,
-            logLevel = logLevel.name,
-            ketchMobileSdkUrl = ketchUrl ?: "https://global.ketchcdn.com/web/v3",
-            language = language,
-            jurisdiction = jurisdiction,
-            identities = identities.map { identity ->
-                "${identity.key}: \"${identity.value}\""
-            }.joinToString(separator = ",\n", prefix = "\n", postfix = "\n"),
-            region = region,
-            environment = environment,
-            forceShow = forceShow?.getUrlParameter(),
-            preferencesTabs = preferencesTabs.takeIf { it.isNotEmpty() }?.map { it.getUrlParameter() }?.joinToString(","),
-            preferencesTab = preferencesTab?.getUrlParameter()
-        )
-
-        loadDataWithBaseURL("http://localhost", indexHtml, "text/html", "UTF-8", null)
     }
 
     private class PreferenceCenterJavascriptInterface(private val ketchWebView: KetchWebView) {
