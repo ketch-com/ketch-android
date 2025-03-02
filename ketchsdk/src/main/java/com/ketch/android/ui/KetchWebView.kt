@@ -77,7 +77,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
     }
 
     // Properly clean up WebView resources to prevent memory leaks and renderer crashes
-    fun destroy() {
+    override fun destroy() {
         try {
             Log.d(TAG, "Beginning WebView cleanup")
             

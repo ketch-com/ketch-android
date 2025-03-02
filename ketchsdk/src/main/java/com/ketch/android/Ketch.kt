@@ -32,6 +32,10 @@ class Ketch private constructor(
     private var language: String? = null
     private var jurisdiction: String? = null
     private var region: String? = null
+    
+    // Add a WebView instance and dialog state flag
+    private var currentWebView: KetchWebView? = null
+    private var isActive = false
 
     /**
      * Retrieve a String value from the preferences.
@@ -207,7 +211,13 @@ class Ketch private constructor(
     fun dismissDialog() {
         findDialogFragment()?.let {
             (it as? KetchDialogFragment)?.dismissAllowingStateLoss()
+            Handler(android.os.Looper.getMainLooper()).postDelayed({
+                this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
+                isActive = false
+            }, 100)
+        } ?: run {
             this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
+            isActive = false
         }
     }
 
@@ -267,172 +277,203 @@ class Ketch private constructor(
     }
 
     private fun createWebView(shouldRetry: Boolean = false, synchronousPreferences: Boolean = false): KetchWebView? {
-
-        val webView = context.get()?.let { KetchWebView(it, shouldRetry) } ?: return null
-
-        // Enable debug mode
-        if (logLevel === LogLevel.DEBUG) {
-            webView.setDebugMode()
+        if (isActive) {
+            Log.d(TAG, "WebView creation blocked - dialog operation in progress")
+            return null
         }
-
-        webView.listener = object : KetchWebView.WebViewListener {
-
-            private var config: KetchConfig? = null
-            private var showConsent: Boolean = false
-
-            override fun showConsent() {
-                if (config == null) {
-                    showConsent = true
-                    return
-                }
-                showConsentPopup()
-            }
-
-            override fun showPreferences() {
-                if (!isActivityActive()) {
-                    Log.d(TAG, "Not showing as activity is not active")
-                    return
-                }
-
-                if (findDialogFragment() != null) {
-                    Log.d(TAG, "Not showing as dialog already exists")
-                    return
-                }
-
-                val dialog = KetchDialogFragment.newInstance()
-
-                fragmentManager.get()?.let {
-                    dialog.show(it, webView)
-                    this@Ketch.listener?.onShow()
+        
+        if (findDialogFragment() != null) {
+            Log.d(TAG, "WebView creation blocked - dialog already exists")
+            return null
+        }
+        
+        isActive = true
+        
+        try {
+            if (currentWebView != null) {
+                val contextRef = context.get()
+                if (contextRef != null && contextRef is LifecycleOwner && 
+                    contextRef.lifecycle.currentState.isAtLeast(Lifecycle.State.CREATED)) {
+                    Log.d(TAG, "Reusing current WebView instance")
+                    return currentWebView
+                } else {
+                    Log.d(TAG, "Context invalid, cleaning up WebView")
+                    currentWebView?.destroy()
+                    currentWebView = null
                 }
             }
+            
+            val webView = context.get()?.let { KetchWebView(it, shouldRetry) } ?: run {
+                isActive = false
+                return null
+            }
+            
+            currentWebView = webView
 
-            override fun onUSPrivacyUpdated(values: Map<String, Any?>) {
-                getPreferences().saveValues(values, "USPrivacy", synchronousPreferences)
-                this@Ketch.listener?.onUSPrivacyUpdated(values)
+            if (logLevel === LogLevel.DEBUG) {
+                webView.setDebugMode()
             }
 
-            override fun onTCFUpdated(values: Map<String, Any?>) {
-                getPreferences().saveValues(values, "TCF", synchronousPreferences)
-                this@Ketch.listener?.onTCFUpdated(values)
-            }
-
-            override fun onGPPUpdated(values: Map<String, Any?>) {
-                getPreferences().saveValues(values, "GPP", synchronousPreferences)
-                this@Ketch.listener?.onGPPUpdated(values)
-            }
-
-            override fun onConfigUpdated(config: KetchConfig?) {
-                // Set internal config field
-                this.config = config
-
-                // Call config update listener
-                this@Ketch.listener?.onConfigUpdated(config)
-
-                if (!showConsent) {
-                    return
+            webView.listener = object : KetchWebView.WebViewListener {
+            
+                private var config: KetchConfig? = null
+                private var showConsent: Boolean = false
+                
+                override fun showConsent() {
+                    if (config == null) {
+                        showConsent = true
+                        return
+                    }
+                    showConsentPopup()
                 }
-                showConsentPopup()
-            }
 
-            override fun onEnvironmentUpdated(environment: String?) {
-                this@Ketch.listener?.onEnvironmentUpdated(environment)
-            }
+                override fun showPreferences() {
+                    if (!isActivityActive()) {
+                        Log.d(TAG, "Not showing as activity is not active")
+                        return
+                    }
 
-            override fun onRegionInfoUpdated(regionInfo: String?) {
-                this@Ketch.listener?.onRegionInfoUpdated(regionInfo)
-            }
+                    if (findDialogFragment() != null) {
+                        Log.d(TAG, "Not showing as dialog already exists")
+                        return
+                    }
 
-            override fun onJurisdictionUpdated(jurisdiction: String?) {
-                this@Ketch.listener?.onJurisdictionUpdated(jurisdiction)
-            }
+                    val dialog = KetchDialogFragment.newInstance()
 
-            override fun onIdentitiesUpdated(identities: String?) {
-                this@Ketch.listener?.onIdentitiesUpdated(identities)
-            }
-
-            override fun onConsentUpdated(consent: Consent) {
-                this@Ketch.listener?.onConsentUpdated(consent)
-            }
-
-            override fun onError(errMsg: String?) {
-                this@Ketch.listener?.onError(errMsg)
-            }
-
-            override fun changeDialog(display: ContentDisplay) {
-                findDialogFragment()?.let {
-                    (it as? KetchDialogFragment)?.apply {
-                        isCancelable = getDisposableContentInteractions(display)
+                    fragmentManager.get()?.let {
+                        dialog.show(it, webView)
+                        this@Ketch.listener?.onShow()
                     }
                 }
-            }
 
-            override fun onClose(status: HideExperienceStatus) {
-                // Log the close event for debugging
-                Log.d(TAG, "onClose called with status: ${status.name}")
-                
-                // Dismiss dialog fragment with safety checks
-                try {
-                    findDialogFragment()?.let { fragment ->
-                        if (fragment.isAdded && !fragment.isRemoving) {
-                            (fragment as? KetchDialogFragment)?.dismissAllowingStateLoss()
-                            // Small delay to ensure the fragment has time to start dismissal
-                            Handler(android.os.Looper.getMainLooper()).postDelayed({
-                                // Execute onDismiss event listener after dialog is dismissed
-                                this@Ketch.listener?.onDismiss(status)
-                            }, 50)
-                            return@onClose
+                override fun onUSPrivacyUpdated(values: Map<String, Any?>) {
+                    getPreferences().saveValues(values, "USPrivacy", synchronousPreferences)
+                    this@Ketch.listener?.onUSPrivacyUpdated(values)
+                }
+
+                override fun onTCFUpdated(values: Map<String, Any?>) {
+                    getPreferences().saveValues(values, "TCF", synchronousPreferences)
+                    this@Ketch.listener?.onTCFUpdated(values)
+                }
+
+                override fun onGPPUpdated(values: Map<String, Any?>) {
+                    getPreferences().saveValues(values, "GPP", synchronousPreferences)
+                    this@Ketch.listener?.onGPPUpdated(values)
+                }
+
+                override fun onConfigUpdated(config: KetchConfig?) {
+                    // Set internal config field
+                    this.config = config
+
+                    // Call config update listener
+                    this@Ketch.listener?.onConfigUpdated(config)
+
+                    if (!showConsent) {
+                        return
+                    }
+                    showConsentPopup()
+                }
+
+                override fun onEnvironmentUpdated(environment: String?) {
+                    this@Ketch.listener?.onEnvironmentUpdated(environment)
+                }
+
+                override fun onRegionInfoUpdated(regionInfo: String?) {
+                    this@Ketch.listener?.onRegionInfoUpdated(regionInfo)
+                }
+
+                override fun onJurisdictionUpdated(jurisdiction: String?) {
+                    this@Ketch.listener?.onJurisdictionUpdated(jurisdiction)
+                }
+
+                override fun onIdentitiesUpdated(identities: String?) {
+                    this@Ketch.listener?.onIdentitiesUpdated(identities)
+                }
+
+                override fun onConsentUpdated(consent: Consent) {
+                    this@Ketch.listener?.onConsentUpdated(consent)
+                }
+
+                override fun onError(errMsg: String?) {
+                    this@Ketch.listener?.onError(errMsg)
+                }
+
+                override fun changeDialog(display: ContentDisplay) {
+                    findDialogFragment()?.let {
+                        (it as? KetchDialogFragment)?.apply {
+                            isCancelable = getDisposableContentInteractions(display)
                         }
                     }
+                }
+
+                override fun onClose(status: HideExperienceStatus) {
+                    Log.d(TAG, "onClose called with status: ${status.name}")
                     
-                    // If we didn't return above, call the listener directly
-                    this@Ketch.listener?.onDismiss(status)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error dismissing dialog: ${e.message}", e)
-                    // Ensure listener is called even if there's an exception
-                    this@Ketch.listener?.onDismiss(status)
+                    try {
+                        findDialogFragment()?.let { fragment ->
+                            if (fragment.isAdded && !fragment.isRemoving) {
+                                (fragment as? KetchDialogFragment)?.dismissAllowingStateLoss()
+                                Handler(android.os.Looper.getMainLooper()).postDelayed({
+                                    this@Ketch.listener?.onDismiss(status)
+                                    isActive = false
+                                }, 100)
+                                return@onClose
+                            }
+                        }
+                        
+                        this@Ketch.listener?.onDismiss(status)
+                        isActive = false
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error dismissing dialog: ${e.message}", e)
+                        this@Ketch.listener?.onDismiss(status)
+                        isActive = false
+                    }
                 }
+
+                override fun onWillShowExperience(experienceType: WillShowExperienceType) {
+                    // Execute onWillShowExperience listener
+                    this@Ketch.listener?.onWillShowExperience(experienceType)
+                }
+
+                private fun showConsentPopup() {
+                    if (!isActivityActive()) {
+                        Log.d(TAG, "Not showing as activity is not active")
+                        return
+                    }
+
+                    if (findDialogFragment() != null) {
+                        Log.d(TAG, "Not showing as dialog already exists")
+                        return
+                    }
+
+                    val dialog = KetchDialogFragment.newInstance().apply {
+                        val disableContentInteractions = getDisposableContentInteractions(
+                            config?.experiences?.consent?.display ?: ContentDisplay.Banner
+                        )
+                        isCancelable = !disableContentInteractions
+                    }
+                    fragmentManager.get()?.let {
+                        dialog.show(it, webView)
+                        this@Ketch.listener?.onShow()
+                    }
+                    showConsent = false
+                }
+
+                private fun getDisposableContentInteractions(display: ContentDisplay): Boolean =
+                    config?.let {
+                        if (display == ContentDisplay.Modal) {
+                            it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
+                        } else if (display == ContentDisplay.Banner) {
+                            it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
+                        } else false
+                    } ?: false
             }
-
-            override fun onWillShowExperience(experienceType: WillShowExperienceType) {
-                // Execute onWillShowExperience listener
-                this@Ketch.listener?.onWillShowExperience(experienceType)
-            }
-
-            private fun showConsentPopup() {
-                if (!isActivityActive()) {
-                    Log.d(TAG, "Not showing as activity is not active")
-                    return
-                }
-
-                if (findDialogFragment() != null) {
-                    Log.d(TAG, "Not showing as dialog already exists")
-                    return
-                }
-
-                val dialog = KetchDialogFragment.newInstance().apply {
-                    val disableContentInteractions = getDisposableContentInteractions(
-                        config?.experiences?.consent?.display ?: ContentDisplay.Banner
-                    )
-                    isCancelable = !disableContentInteractions
-                }
-                fragmentManager.get()?.let {
-                    dialog.show(it, webView)
-                    this@Ketch.listener?.onShow()
-                }
-                showConsent = false
-            }
-
-            private fun getDisposableContentInteractions(display: ContentDisplay): Boolean =
-                config?.let {
-                    if (display == ContentDisplay.Modal) {
-                        it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
-                    } else if (display == ContentDisplay.Banner) {
-                        it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
-                    } else false
-                } ?: false
+            return webView
+        } catch (e: Exception) {
+            Log.e(TAG, "Error creating WebView: ${e.message}", e)
+            isActive = false
+            return null
         }
-        return webView
     }
 
     private fun findDialogFragment() =
@@ -549,5 +590,25 @@ class Ketch private constructor(
             ketchUrl,
             logLevel
         )
+    }
+
+    /**
+     * Clean up resources when the host app is being destroyed or paused for a long time
+     * This should be called from onDestroy or when the app knows it won't use the SDK for a while
+     */
+    fun cleanup() {
+        dismissDialog()
+        
+        Handler(android.os.Looper.getMainLooper()).postDelayed({
+            try {
+                Log.d(TAG, "Cleaning up WebView resources")
+                currentWebView?.destroy()
+                currentWebView = null
+                Runtime.getRuntime().gc()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error during cleanup: ${e.message}", e)
+            }
+            isActive = false
+        }, 200)
     }
 }

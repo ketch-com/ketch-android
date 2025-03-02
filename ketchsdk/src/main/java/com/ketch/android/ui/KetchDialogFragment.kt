@@ -67,7 +67,7 @@ internal class KetchDialogFragment() : DialogFragment() {
                 wv.setOnTouchListener { _, _ -> true }
                 
                 try {
-                    // Prevent any JavaScript execution by removeing event listeners
+                    // Prevent any JavaScript execution by removing event listeners
                     wv.evaluateJavascript(
                         "document.body.removeEventListener('touchstart', handleTapOutside);" +
                         "document.body.removeEventListener('mousedown', handleTapOutside);",
@@ -81,14 +81,11 @@ internal class KetchDialogFragment() : DialogFragment() {
                 // Wait a moment for any pending events to clear
                 Handler(Looper.getMainLooper()).post {
                     try {
-                        // Remove from view hierarchy 
+                        // Just remove from view hierarchy
+                        (wv.parent as? ViewGroup)?.removeView(wv)
                         binding.root.removeView(wv)
                         
-                        // Clean up the WebView
-                        wv.destroy()
-                        
-                        // Suggest garbage collection
-                        Runtime.getRuntime().gc()
+                        Log.d(TAG, "onDestroyView: WebView removed from view hierarchy")
                     } catch (e: Exception) {
                         Log.e(TAG, "Error in delayed WebView cleanup: ${e.message}", e)
                     }
