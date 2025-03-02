@@ -7,6 +7,7 @@ import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.ViewGroup
 import android.webkit.ConsoleMessage
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
@@ -75,15 +76,63 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         setWebContentsDebuggingEnabled(true)
     }
 
-    // Cancel any coroutines in KetchWebView and fully tear down webview to prevent memory leaks
-    fun kill() {
-        localContentWebViewClient.cancelCoroutines()
-        stopLoading()
-        clearHistory()
-        clearCache(true)
-        loadUrl("about:blank")
-        removeAllViews()
-        destroy()
+    // Properly clean up WebView resources to prevent memory leaks and renderer crashes
+    fun destroy() {
+        try {
+            Log.d(TAG, "Beginning WebView cleanup")
+            
+            // Prevent further page loads
+            stopLoading()
+            
+            // Add a blank/empty handler for JS errors during cleanup
+            evaluateJavascript("window.onerror = function(message, url, line, column, error) { return true; };", null)
+            
+            // Remove JavaScript interface first to prevent any further callbacks
+            removeJavascriptInterface("androidListener")
+            
+            // Set listener to null to prevent callbacks during cleanup
+            listener = null
+            
+            // Cancel all coroutines next
+            localContentWebViewClient.cancelCoroutines()
+            
+            // Disable JavaScript to prevent further execution
+            settings.javaScriptEnabled = false
+            
+            // Stop any ongoing loads or processing
+            onPause()
+            
+            // Small pause to allow WebView internals to stabilize
+            try {
+                Thread.sleep(50)
+            } catch (e: InterruptedException) {
+                Log.e(TAG, "Sleep interrupted during WebView cleanup", e)
+            }
+            
+            // Clear WebView state
+            clearHistory()
+            clearCache(true)
+            clearFormData()
+            clearSslPreferences()
+            
+            // Remove all views
+            removeAllViews()
+            
+            // Set a low global layout limit to reduce memory pressure
+            setLayoutParams(
+                ViewGroup.LayoutParams(1, 1)
+            )
+            
+            // Finally call the parent WebView's destroy method
+            super.destroy()
+            
+            // Suggest garbage collection to reclaim memory
+            Runtime.getRuntime().gc()
+            
+            Log.d(TAG, "WebView cleanup completed successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during WebView cleanup: ${e.message}", e)
+        }
     }
 
     class LocalContentWebViewClient(private var shouldRetry: Boolean = false) : WebViewClientCompat() {
@@ -319,14 +368,6 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         }
 
         @JavascriptInterface
-        fun tapOutside(dialogSize: String?) {
-            Log.d(TAG, "tapOutside: $dialogSize")
-            runOnMainThread {
-                ketchWebView.listener?.onTapOutside()
-            }
-        }
-
-        @JavascriptInterface
         fun geoip(ip: String?) {
         }
 
@@ -412,7 +453,6 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         fun changeDialog(display: ContentDisplay)
         fun onClose(status: HideExperienceStatus)
         fun onWillShowExperience(experienceType: WillShowExperienceType)
-        fun onTapOutside()
     }
 
     internal enum class ExperienceType {

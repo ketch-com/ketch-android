@@ -1,6 +1,7 @@
 package com.ketch.android
 
 import android.content.Context
+import android.os.Handler
 import android.util.Log
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle
@@ -367,28 +368,35 @@ class Ketch private constructor(
             }
 
             override fun onClose(status: HideExperienceStatus) {
-                // Dismiss dialog fragment
-                findDialogFragment()?.let {
-                    (it as? KetchDialogFragment)?.dismissAllowingStateLoss()
+                // Log the close event for debugging
+                Log.d(TAG, "onClose called with status: ${status.name}")
+                
+                // Dismiss dialog fragment with safety checks
+                try {
+                    findDialogFragment()?.let { fragment ->
+                        if (fragment.isAdded && !fragment.isRemoving) {
+                            (fragment as? KetchDialogFragment)?.dismissAllowingStateLoss()
+                            // Small delay to ensure the fragment has time to start dismissal
+                            Handler(android.os.Looper.getMainLooper()).postDelayed({
+                                // Execute onDismiss event listener after dialog is dismissed
+                                this@Ketch.listener?.onDismiss(status)
+                            }, 50)
+                            return@onClose
+                        }
+                    }
+                    
+                    // If we didn't return above, call the listener directly
+                    this@Ketch.listener?.onDismiss(status)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error dismissing dialog: ${e.message}", e)
+                    // Ensure listener is called even if there's an exception
+                    this@Ketch.listener?.onDismiss(status)
                 }
-
-                // Execute onDismiss event listener
-                this@Ketch.listener?.onDismiss(status)
             }
 
             override fun onWillShowExperience(experienceType: WillShowExperienceType) {
                 // Execute onWillShowExperience listener
                 this@Ketch.listener?.onWillShowExperience(experienceType)
-            }
-
-            override fun onTapOutside() {
-                // Dismiss dialog fragment
-                findDialogFragment()?.let {
-                    (it as? KetchDialogFragment)?.dismissAllowingStateLoss()
-
-                    // Execute onDismiss event listener
-                    this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
-                }
             }
 
             private fun showConsentPopup() {
