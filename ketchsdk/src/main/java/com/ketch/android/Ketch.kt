@@ -3,6 +3,7 @@ package com.ketch.android
 import android.content.Context
 import android.os.Handler
 import android.util.Log
+import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -212,12 +213,185 @@ class Ketch private constructor(
         findDialogFragment()?.let {
             (it as? KetchDialogFragment)?.dismissAllowingStateLoss()
             Handler(android.os.Looper.getMainLooper()).postDelayed({
+                // Ensure WebView is properly cleaned up
+                currentWebView?.let { webView ->
+                    Log.d(TAG, "Cleaning up WebView after dialog dismissal")
+                    webView.setOnTouchListener { _, _ -> true } // Disable touch events during cleanup
+                    webView.clearCache(true)
+                    webView.clearHistory()
+                    webView.destroy()
+                    currentWebView = null
+                }
+                
                 this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
                 isActive = false
             }, 100)
         } ?: run {
+            // Even if no dialog is found, clean up any lingering WebView resources
+            currentWebView?.let { webView ->
+                Log.d(TAG, "Cleaning up orphaned WebView")
+                webView.destroy()
+                currentWebView = null
+            }
             this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
             isActive = false
+        }
+    }
+
+    /**
+     * Force cleanup of any existing dialog fragments - use this if dialogs appear to be stuck
+     */
+    fun forceCleanupDialogs() {
+        // First, set isActive to false to allow new WebView creation
+        isActive = false
+        
+        // Thoroughly clean up WebView
+        if (currentWebView != null) {
+            try {
+                Log.d(TAG, "Force cleaning up WebView")
+                currentWebView?.setOnTouchListener { _, _ -> true } // Disable touch interactions
+                // Clear out all content and event handlers
+                currentWebView?.evaluateJavascript(
+                    """
+                    (function() {
+                        // Remove all event listeners from document and window
+                        var oldElement = document.documentElement;
+                        var newElement = oldElement.cloneNode(true);
+                        oldElement.parentNode.replaceChild(newElement, oldElement);
+                        
+                        // Empty the body to remove any content
+                        document.body.innerHTML = '';
+                        
+                        // Disable all pointer events
+                        document.body.style.pointerEvents = 'none';
+                        
+                        // Remove any overlay elements that might block input
+                        var overlays = document.querySelectorAll('.ketch-backdrop, .ketch-modal, .ketch-banner');
+                        for (var i = 0; i < overlays.length; i++) {
+                            if (overlays[i].parentNode) {
+                                overlays[i].parentNode.removeChild(overlays[i]);
+                            }
+                        }
+                    })();
+                    """,
+                    null
+                )
+                
+                // Force WebView to reset its internal state
+                currentWebView?.clearCache(true)
+                currentWebView?.clearHistory()
+                currentWebView?.clearFocus() // Clear focus to prevent lingering keyboard or focus issues
+                currentWebView?.reload() // Force refresh the WebView to clear any stuck state
+                
+                // Schedule delayed destruction to ensure JS has executed
+                Handler(android.os.Looper.getMainLooper()).postDelayed({
+                    currentWebView?.destroy()
+                    currentWebView = null
+                    
+                    // Suggest garbage collection
+                    System.gc()
+                }, 100)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error cleaning up WebView: ${e.message}", e)
+                // Ensure WebView is nulled out even if error occurs
+                currentWebView = null
+            }
+        }
+        
+        findDialogFragment()?.let { fragment ->
+            try {
+                if (fragment is KetchDialogFragment) {
+                    fragment.dismissAllowingStateLoss()
+                }
+                
+                // Ensure it's really removed if still hanging around
+                Handler(android.os.Looper.getMainLooper()).postDelayed({
+                    fragmentManager.get()?.let { fm ->
+                        try {
+                            // Check any fragment with our tag and remove it
+                            fm.findFragmentByTag(KetchDialogFragment.TAG)?.let { foundFragment ->
+                                if (foundFragment.isAdded) {
+                                    Log.d(TAG, "Fragment still exists - force removing it")
+                                    fm.beginTransaction()
+                                        .remove(foundFragment)
+                                        .commitNowAllowingStateLoss()
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error force removing fragment: ${e.message}", e)
+                        }
+                    }
+                }, 200)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error in force cleanup: ${e.message}", e)
+            }
+        }
+    }
+
+    /**
+     * Provides a complete reset of the SDK state.
+     * Call this method if the UI becomes unresponsive to restore normal operation.
+     */
+    fun resetState() {
+        Log.d(TAG, "Performing full SDK state reset")
+        
+        // First, aggressively clean up dialogs
+        try {
+            forceCleanupDialogs()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during force cleanup: ${e.message}", e)
+        }
+        
+        // Make sure isActive flag is reset
+        isActive = false
+        
+        // Clean up WebView
+        try {
+            if (currentWebView != null) {
+                currentWebView?.destroy()
+                currentWebView = null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error clearing WebView: ${e.message}", e)
+            currentWebView = null
+        }
+        
+        // Make one more attempt to cleanup fragments
+        try {
+            val fm = fragmentManager.get()
+            if (fm != null) {
+                val tag = KetchDialogFragment.TAG
+                val fragment = fm.findFragmentByTag(tag)
+                if (fragment != null) {
+                    try {
+                        fm.beginTransaction()
+                            .remove(fragment)
+                            .commitNowAllowingStateLoss()
+                        Log.d(TAG, "Removed lingering fragment during reset")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error removing fragment: ${e.message}", e)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during fragment cleanup: ${e.message}", e)
+        }
+        
+        // Try to reclaim memory
+        try {
+            System.gc()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during GC: ${e.message}", e)
+        }
+        
+        // Schedule status completion message
+        try {
+            Handler(android.os.Looper.getMainLooper()).postDelayed(
+                { Log.d(TAG, "State reset completed") },
+                100
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Error scheduling completion message: ${e.message}", e)
         }
     }
 
@@ -258,13 +432,42 @@ class Ketch private constructor(
     }
 
     init {
-
         getPreferences()
 
-        findDialogFragment()?.let { dialog ->
-            (dialog as KetchDialogFragment).dismissAllowingStateLoss()
-            this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
+        // Aggressively clean up any existing dialogs that might be leftover
+        fragmentManager.get()?.let { fm ->
+            try {
+                val existingDialog = fm.findFragmentByTag(KetchDialogFragment.TAG)
+                if (existingDialog != null) {
+                    Log.d(TAG, "Found existing dialog during initialization - removing it")
+                    
+                    if (existingDialog is KetchDialogFragment) {
+                        existingDialog.dismissAllowingStateLoss()
+                    } else {
+                        // Non-KetchDialogFragment, still attempt to dismiss
+                        try {
+                            (existingDialog as? DialogFragment)?.dismissAllowingStateLoss()
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error dismissing non-KetchDialogFragment: ${e.message}")
+                        }
+                    }
+                    
+                    // Force remove it from the fragment manager
+                    fm.beginTransaction()
+                        .remove(existingDialog)
+                        .commitNowAllowingStateLoss()
+                    
+                    this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
+                } else {
+                    // No existing dialog found, nothing to clean up
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error cleaning up existing dialogs: ${e.message}", e)
+            }
         }
+        
+        // Ensure the isActive flag is reset to a clean state
+        isActive = false
     }
 
     // Get the singleton KetchSharedPreferences object
@@ -282,24 +485,38 @@ class Ketch private constructor(
             return null
         }
         
-        if (findDialogFragment() != null) {
+        val existingDialog = findDialogFragment()
+        if (existingDialog != null) {
             Log.d(TAG, "WebView creation blocked - dialog already exists")
+            
+            // Extra safety: if we detected a dialog but isActive is false,
+            // force dismiss the dialog as it may be stuck
+            if (!isActive) {
+                Log.d(TAG, "Detected orphaned dialog - force cleaning up")
+                (existingDialog as? KetchDialogFragment)?.dismissAllowingStateLoss()
+                Handler(android.os.Looper.getMainLooper()).postDelayed({
+                    forceCleanupDialogs()
+                }, 100)
+            }
+            
             return null
         }
         
         isActive = true
         
         try {
+            // Always create a new WebView instance for better reliability
+            // This prevents potential issues with reuse of WebView instances
             if (currentWebView != null) {
-                val contextRef = context.get()
-                if (contextRef != null && contextRef is LifecycleOwner && 
-                    contextRef.lifecycle.currentState.isAtLeast(Lifecycle.State.CREATED)) {
-                    Log.d(TAG, "Reusing current WebView instance")
-                    return currentWebView
-                } else {
-                    Log.d(TAG, "Context invalid, cleaning up WebView")
-                    currentWebView?.destroy()
-                    currentWebView = null
+                Log.d(TAG, "Cleaning up previous WebView instance")
+                currentWebView?.destroy()
+                currentWebView = null
+                
+                // Short delay to ensure cleanup is complete
+                try {
+                    Thread.sleep(50)
+                } catch (e: InterruptedException) {
+                    Log.e(TAG, "Sleep interrupted during WebView cleanup", e)
                 }
             }
             
@@ -330,19 +547,41 @@ class Ketch private constructor(
                 override fun showPreferences() {
                     if (!isActivityActive()) {
                         Log.d(TAG, "Not showing as activity is not active")
+                        isActive = false
                         return
                     }
 
-                    if (findDialogFragment() != null) {
+                    val existingDialog = findDialogFragment()
+                    if (existingDialog != null) {
                         Log.d(TAG, "Not showing as dialog already exists")
+                        
+                        // Extra safety: ensure the dialog state is consistent
+                        if (!isActive) {
+                            Log.d(TAG, "Dialog exists but isActive=false - fixing state")
+                            isActive = true
+                        }
+                        
                         return
                     }
 
                     val dialog = KetchDialogFragment.newInstance()
 
                     fragmentManager.get()?.let {
+                        // Make sure any existing dialogs with the same tag are removed first
+                        val existingFragment = it.findFragmentByTag(KetchDialogFragment.TAG)
+                        if (existingFragment != null) {
+                            try {
+                                it.beginTransaction().remove(existingFragment).commitNow()
+                                Log.d(TAG, "Removed existing fragment before showing new one")
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Error removing existing fragment: ${e.message}", e)
+                            }
+                        }
+                        
                         dialog.show(it, webView)
                         this@Ketch.listener?.onShow()
+                    } ?: run {
+                        isActive = false
                     }
                 }
 
@@ -438,11 +677,20 @@ class Ketch private constructor(
                 private fun showConsentPopup() {
                     if (!isActivityActive()) {
                         Log.d(TAG, "Not showing as activity is not active")
+                        isActive = false
                         return
                     }
 
-                    if (findDialogFragment() != null) {
+                    val existingDialog = findDialogFragment()
+                    if (existingDialog != null) {
                         Log.d(TAG, "Not showing as dialog already exists")
+                        
+                        // Extra safety: ensure the dialog state is consistent
+                        if (!isActive) {
+                            Log.d(TAG, "Dialog exists but isActive=false - fixing state")
+                            isActive = true
+                        }
+                        
                         return
                     }
 
@@ -452,21 +700,43 @@ class Ketch private constructor(
                         )
                         isCancelable = !disableContentInteractions
                     }
+                    
                     fragmentManager.get()?.let {
+                        // Make sure any existing dialogs with the same tag are removed first
+                        val existingFragment = it.findFragmentByTag(KetchDialogFragment.TAG)
+                        if (existingFragment != null) {
+                            try {
+                                it.beginTransaction().remove(existingFragment).commitNow()
+                                Log.d(TAG, "Removed existing fragment before showing new one")
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Error removing existing fragment: ${e.message}", e)
+                            }
+                        }
+                        
                         dialog.show(it, webView)
                         this@Ketch.listener?.onShow()
+                    } ?: run {
+                        isActive = false
                     }
+                    
                     showConsent = false
                 }
 
-                private fun getDisposableContentInteractions(display: ContentDisplay): Boolean =
-                    config?.let {
-                        if (display == ContentDisplay.Modal) {
-                            it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
-                        } else if (display == ContentDisplay.Banner) {
-                            it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
-                        } else false
+                private fun getDisposableContentInteractions(display: ContentDisplay): Boolean {
+                    return config?.let {
+                        when (display) {
+                            ContentDisplay.Modal -> {
+                                it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
+                            }
+                            ContentDisplay.Banner -> {
+                                it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
+                            }
+                            else -> {
+                                false
+                            }
+                        }
                     } ?: false
+                }
             }
             return webView
         } catch (e: Exception) {
@@ -476,12 +746,12 @@ class Ketch private constructor(
         }
     }
 
-    private fun findDialogFragment() =
-        fragmentManager.get()?.findFragmentByTag(KetchDialogFragment.TAG)
+    private fun findDialogFragment(): androidx.fragment.app.Fragment? {
+        return fragmentManager.get()?.findFragmentByTag(KetchDialogFragment.TAG)
+    }
 
     private fun isActivityActive(): Boolean {
-        return (context.get() as? LifecycleOwner)?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.STARTED)
-            ?: false
+        return (context.get() as? LifecycleOwner)?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.STARTED) ?: false
     }
 
     enum class PreferencesTab {
