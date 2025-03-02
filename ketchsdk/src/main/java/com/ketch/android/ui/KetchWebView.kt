@@ -119,6 +119,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             removeAllViews()
             
             // Set a low global layout limit to reduce memory pressure
+            // This is a common practice for WebView cleanup to ensure the view doesn't
+            // maintain large layout allocations while waiting for destruction
             setLayoutParams(
                 ViewGroup.LayoutParams(1, 1)
             )

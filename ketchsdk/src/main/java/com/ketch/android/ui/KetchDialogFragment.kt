@@ -67,9 +67,8 @@ internal class KetchDialogFragment() : DialogFragment() {
                 wv.setOnTouchListener { _, _ -> true }
                 
                 try {
-                    // Prevent any JavaScript execution during cleanup
+                    // Prevent any JavaScript execution by removeing event listeners
                     wv.evaluateJavascript(
-                        "document.body.style.pointerEvents = 'none';" +
                         "document.body.removeEventListener('touchstart', handleTapOutside);" +
                         "document.body.removeEventListener('mousedown', handleTapOutside);",
                         null
