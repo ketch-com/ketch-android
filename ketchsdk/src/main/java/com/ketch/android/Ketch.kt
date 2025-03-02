@@ -213,26 +213,16 @@ class Ketch private constructor(
         findDialogFragment()?.let {
             (it as? KetchDialogFragment)?.dismissAllowingStateLoss()
             Handler(android.os.Looper.getMainLooper()).postDelayed({
-                // Ensure WebView is properly cleaned up
-                currentWebView?.let { webView ->
-                    Log.d(TAG, "Cleaning up WebView after dialog dismissal")
-                    webView.setOnTouchListener { _, _ -> true } // Disable touch events during cleanup
-                    webView.clearCache(true)
-                    webView.clearHistory()
-                    webView.destroy()
-                    currentWebView = null
-                }
+                // Clean up WebView resources
+                currentWebView?.destroy()
+                currentWebView = null
                 
                 this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
                 isActive = false
             }, 100)
         } ?: run {
-            // Even if no dialog is found, clean up any lingering WebView resources
-            currentWebView?.let { webView ->
-                Log.d(TAG, "Cleaning up orphaned WebView")
-                webView.destroy()
-                currentWebView = null
-            }
+            currentWebView?.destroy()
+            currentWebView = null
             this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
             isActive = false
         }
@@ -242,83 +232,31 @@ class Ketch private constructor(
      * Force cleanup of any existing dialog fragments - use this if dialogs appear to be stuck
      */
     fun forceCleanupDialogs() {
-        // First, set isActive to false to allow new WebView creation
+        // Reset state flag
         isActive = false
         
-        // Thoroughly clean up WebView
-        if (currentWebView != null) {
-            try {
-                Log.d(TAG, "Force cleaning up WebView")
-                currentWebView?.setOnTouchListener { _, _ -> true } // Disable touch interactions
-                // Clear out all content and event handlers
-                currentWebView?.evaluateJavascript(
-                    """
-                    (function() {
-                        // Remove all event listeners from document and window
-                        var oldElement = document.documentElement;
-                        var newElement = oldElement.cloneNode(true);
-                        oldElement.parentNode.replaceChild(newElement, oldElement);
-                        
-                        // Empty the body to remove any content
-                        document.body.innerHTML = '';
-                        
-                        // Disable all pointer events
-                        document.body.style.pointerEvents = 'none';
-                        
-                        // Remove any overlay elements that might block input
-                        var overlays = document.querySelectorAll('.ketch-backdrop, .ketch-modal, .ketch-banner');
-                        for (var i = 0; i < overlays.length; i++) {
-                            if (overlays[i].parentNode) {
-                                overlays[i].parentNode.removeChild(overlays[i]);
-                            }
-                        }
-                    })();
-                    """,
-                    null
-                )
-                
-                // Force WebView to reset its internal state
-                currentWebView?.clearCache(true)
-                currentWebView?.clearHistory()
-                currentWebView?.clearFocus() // Clear focus to prevent lingering keyboard or focus issues
-                currentWebView?.reload() // Force refresh the WebView to clear any stuck state
-                
-                // Schedule delayed destruction to ensure JS has executed
-                Handler(android.os.Looper.getMainLooper()).postDelayed({
-                    currentWebView?.destroy()
-                    currentWebView = null
-                    
-                    // Suggest garbage collection
-                    System.gc()
-                }, 100)
-            } catch (e: Exception) {
-                Log.e(TAG, "Error cleaning up WebView: ${e.message}", e)
-                // Ensure WebView is nulled out even if error occurs
-                currentWebView = null
-            }
-        }
+        // Clean up WebView
+        currentWebView?.destroy()
+        currentWebView = null
         
+        // Remove any lingering dialog fragments
         findDialogFragment()?.let { fragment ->
             try {
                 if (fragment is KetchDialogFragment) {
                     fragment.dismissAllowingStateLoss()
                 }
                 
-                // Ensure it's really removed if still hanging around
+                // Ensure it's really removed
                 Handler(android.os.Looper.getMainLooper()).postDelayed({
                     fragmentManager.get()?.let { fm ->
                         try {
-                            // Check any fragment with our tag and remove it
-                            fm.findFragmentByTag(KetchDialogFragment.TAG)?.let { foundFragment ->
-                                if (foundFragment.isAdded) {
-                                    Log.d(TAG, "Fragment still exists - force removing it")
-                                    fm.beginTransaction()
-                                        .remove(foundFragment)
-                                        .commitNowAllowingStateLoss()
+                            fm.findFragmentByTag(KetchDialogFragment.TAG)?.let { f ->
+                                if (f.isAdded) {
+                                    fm.beginTransaction().remove(f).commitNowAllowingStateLoss()
                                 }
                             }
                         } catch (e: Exception) {
-                            Log.e(TAG, "Error force removing fragment: ${e.message}", e)
+                            Log.e(TAG, "Error removing fragment: ${e.message}", e)
                         }
                     }
                 }, 200)
@@ -494,9 +432,7 @@ class Ketch private constructor(
             if (!isActive) {
                 Log.d(TAG, "Detected orphaned dialog - force cleaning up")
                 (existingDialog as? KetchDialogFragment)?.dismissAllowingStateLoss()
-                Handler(android.os.Looper.getMainLooper()).postDelayed({
-                    forceCleanupDialogs()
-                }, 100)
+                forceCleanupDialogs()
             }
             
             return null
@@ -505,19 +441,11 @@ class Ketch private constructor(
         isActive = true
         
         try {
-            // Always create a new WebView instance for better reliability
-            // This prevents potential issues with reuse of WebView instances
+            // Always create a new WebView instance to avoid stale state
             if (currentWebView != null) {
                 Log.d(TAG, "Cleaning up previous WebView instance")
                 currentWebView?.destroy()
                 currentWebView = null
-                
-                // Short delay to ensure cleanup is complete
-                try {
-                    Thread.sleep(50)
-                } catch (e: InterruptedException) {
-                    Log.e(TAG, "Sleep interrupted during WebView cleanup", e)
-                }
             }
             
             val webView = context.get()?.let { KetchWebView(it, shouldRetry) } ?: run {
