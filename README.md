@@ -222,13 +222,6 @@ includeBuild('../../ketch-android') {
 We use relative path here under assumption that both repositories are in the same parent directory.
 If using a different structure, adjust the path accordingly.
 
-### Development Workflow
-
-1. Make changes to the SDK code in the ketch-android repository
-2. Build and run the sample app from Android Studio
-3. Android Studio will automatically include your local SDK changes
-4. You can debug through both codebases in a single session
-
 ### Troubleshooting
 
 Make sure you're rebuilding the project after making changes to the SDK.
