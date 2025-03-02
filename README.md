@@ -65,8 +65,6 @@ Feel free to skip the listeners you don't really need.
    import com.ketch.android.KetchSdk
    import com.ketch.android.Consent
    // ...
-
-   // Create a listener to handle Ketch SDK events
    private val listener = object : Ketch.Listener {
         override fun onShow() {
             // Called when a consent or preferences dialog is displayed

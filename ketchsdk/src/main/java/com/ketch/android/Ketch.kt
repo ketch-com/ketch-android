@@ -210,21 +210,8 @@ class Ketch private constructor(
      * Dismiss the dialog
      */
     fun dismissDialog() {
-        findDialogFragment()?.let {
-            (it as? KetchDialogFragment)?.dismissAllowingStateLoss()
-            Handler(android.os.Looper.getMainLooper()).postDelayed({
-                // Clean up WebView resources
-                currentWebView?.destroy()
-                currentWebView = null
-                
-                this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
-                isActive = false
-            }, 100)
-        } ?: run {
-            currentWebView?.destroy()
-            currentWebView = null
-            this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
-            isActive = false
+        cleanupDialogFragment { status ->
+            this@Ketch.listener?.onDismiss(status ?: HideExperienceStatus.None)
         }
     }
 
@@ -235,35 +222,9 @@ class Ketch private constructor(
         // Reset state flag
         isActive = false
         
-        // Clean up WebView
-        currentWebView?.destroy()
-        currentWebView = null
-        
-        // Remove any lingering dialog fragments
-        findDialogFragment()?.let { fragment ->
-            try {
-                if (fragment is KetchDialogFragment) {
-                    fragment.dismissAllowingStateLoss()
-                }
-                
-                // Ensure it's really removed
-                Handler(android.os.Looper.getMainLooper()).postDelayed({
-                    fragmentManager.get()?.let { fm ->
-                        try {
-                            fm.findFragmentByTag(KetchDialogFragment.TAG)?.let { f ->
-                                if (f.isAdded) {
-                                    fm.beginTransaction().remove(f).commitNowAllowingStateLoss()
-                                }
-                            }
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Error removing fragment: ${e.message}", e)
-                        }
-                    }
-                }, 200)
-            } catch (e: Exception) {
-                Log.e(TAG, "Error in force cleanup: ${e.message}", e)
-            }
-        }
+        // Clean up WebView and fragments
+        cleanupWebView()
+        cleanupDialogFragment(forceRemove = true)
     }
 
     /**
@@ -273,64 +234,25 @@ class Ketch private constructor(
     fun resetState() {
         Log.d(TAG, "Performing full SDK state reset")
         
-        // First, aggressively clean up dialogs
+        // Aggressively clean up dialogs and WebView
         try {
-            forceCleanupDialogs()
-        } catch (e: Exception) {
-            Log.e(TAG, "Error during force cleanup: ${e.message}", e)
-        }
-        
-        // Make sure isActive flag is reset
-        isActive = false
-        
-        // Clean up WebView
-        try {
-            if (currentWebView != null) {
-                currentWebView?.destroy()
-                currentWebView = null
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error clearing WebView: ${e.message}", e)
-            currentWebView = null
-        }
-        
-        // Make one more attempt to cleanup fragments
-        try {
-            val fm = fragmentManager.get()
-            if (fm != null) {
-                val tag = KetchDialogFragment.TAG
-                val fragment = fm.findFragmentByTag(tag)
-                if (fragment != null) {
-                    try {
-                        fm.beginTransaction()
-                            .remove(fragment)
-                            .commitNowAllowingStateLoss()
-                        Log.d(TAG, "Removed lingering fragment during reset")
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error removing fragment: ${e.message}", e)
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error during fragment cleanup: ${e.message}", e)
-        }
-        
-        // Try to reclaim memory
-        try {
+            cleanupDialogFragment(forceRemove = true)
+            cleanupWebView()
+            
+            // Reset active state
+            isActive = false
+            
+            // Try to reclaim memory
             System.gc()
         } catch (e: Exception) {
-            Log.e(TAG, "Error during GC: ${e.message}", e)
+            Log.e(TAG, "Error during state reset: ${e.message}", e)
         }
         
         // Schedule status completion message
-        try {
-            Handler(android.os.Looper.getMainLooper()).postDelayed(
-                { Log.d(TAG, "State reset completed") },
-                100
-            )
-        } catch (e: Exception) {
-            Log.e(TAG, "Error scheduling completion message: ${e.message}", e)
-        }
+        Handler(android.os.Looper.getMainLooper()).postDelayed(
+            { Log.d(TAG, "State reset completed") },
+            100
+        )
     }
 
     /**
@@ -378,26 +300,12 @@ class Ketch private constructor(
                 val existingDialog = fm.findFragmentByTag(KetchDialogFragment.TAG)
                 if (existingDialog != null) {
                     Log.d(TAG, "Found existing dialog during initialization - removing it")
-                    
-                    if (existingDialog is KetchDialogFragment) {
-                        existingDialog.dismissAllowingStateLoss()
-                    } else {
-                        // Non-KetchDialogFragment, still attempt to dismiss
-                        try {
-                            (existingDialog as? DialogFragment)?.dismissAllowingStateLoss()
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Error dismissing non-KetchDialogFragment: ${e.message}")
-                        }
+                    cleanupDialogFragment(forceRemove = true) { _ ->
+                        this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
                     }
-                    
-                    // Force remove it from the fragment manager
-                    fm.beginTransaction()
-                        .remove(existingDialog)
-                        .commitNowAllowingStateLoss()
-                    
-                    this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
                 } else {
-                    // No existing dialog found, nothing to clean up
+                    // No existing dialog found
+                    Log.d(TAG, "No existing dialog found during initialization")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error cleaning up existing dialogs: ${e.message}", e)
@@ -431,8 +339,7 @@ class Ketch private constructor(
             // force dismiss the dialog as it may be stuck
             if (!isActive) {
                 Log.d(TAG, "Detected orphaned dialog - force cleaning up")
-                (existingDialog as? KetchDialogFragment)?.dismissAllowingStateLoss()
-                forceCleanupDialogs()
+                cleanupDialogFragment(forceRemove = true)
             }
             
             return null
@@ -442,11 +349,7 @@ class Ketch private constructor(
         
         try {
             // Always create a new WebView instance to avoid stale state
-            if (currentWebView != null) {
-                Log.d(TAG, "Cleaning up previous WebView instance")
-                currentWebView?.destroy()
-                currentWebView = null
-            }
+            cleanupWebView()
             
             val webView = context.get()?.let { KetchWebView(it, shouldRetry) } ?: run {
                 isActive = false
@@ -576,22 +479,7 @@ class Ketch private constructor(
                 override fun onClose(status: HideExperienceStatus) {
                     Log.d(TAG, "onClose called with status: ${status.name}")
                     
-                    try {
-                        findDialogFragment()?.let { fragment ->
-                            if (fragment.isAdded && !fragment.isRemoving) {
-                                (fragment as? KetchDialogFragment)?.dismissAllowingStateLoss()
-                                Handler(android.os.Looper.getMainLooper()).postDelayed({
-                                    this@Ketch.listener?.onDismiss(status)
-                                    isActive = false
-                                }, 100)
-                                return@onClose
-                            }
-                        }
-                        
-                        this@Ketch.listener?.onDismiss(status)
-                        isActive = false
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error dismissing dialog: ${e.message}", e)
+                    cleanupDialogFragment { _ ->
                         this@Ketch.listener?.onDismiss(status)
                         isActive = false
                     }
@@ -795,18 +683,88 @@ class Ketch private constructor(
      * This should be called from onDestroy or when the app knows it won't use the SDK for a while
      */
     fun cleanup() {
-        dismissDialog()
-        
-        Handler(android.os.Looper.getMainLooper()).postDelayed({
-            try {
-                Log.d(TAG, "Cleaning up WebView resources")
+        // First dismiss the dialog
+        cleanupDialogFragment { _ ->
+            // Then clean up WebView resources with a short delay
+            Handler(android.os.Looper.getMainLooper()).postDelayed({
+                try {
+                    Log.d(TAG, "Cleaning up WebView resources")
+                    cleanupWebView()
+                    Runtime.getRuntime().gc()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error during cleanup: ${e.message}", e)
+                }
+                isActive = false
+            }, 200)
+        }
+    }
+
+    /**
+     * Centralized helper to clean up WebView resources
+     */
+    private fun cleanupWebView() {
+        try {
+            if (currentWebView != null) {
+                Log.d(TAG, "Cleaning up WebView instance")
                 currentWebView?.destroy()
                 currentWebView = null
-                Runtime.getRuntime().gc()
-            } catch (e: Exception) {
-                Log.e(TAG, "Error during cleanup: ${e.message}", e)
             }
-            isActive = false
-        }, 200)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during WebView cleanup: ${e.message}", e)
+            currentWebView = null
+        }
+    }
+    
+    /**
+     * Centralized helper to clean up dialog fragments
+     * 
+     * @param forceRemove Whether to forcefully remove the fragment from the FragmentManager
+     * @param onComplete Optional callback to execute after cleanup
+     */
+    private fun cleanupDialogFragment(forceRemove: Boolean = false, onComplete: ((HideExperienceStatus?) -> Unit) = {}) {
+        try {
+            val fragment = findDialogFragment()
+            if (fragment != null) {
+                // Try to dismiss the dialog first
+                if (fragment is KetchDialogFragment) {
+                    fragment.dismissAllowingStateLoss()
+                } else {
+                    // Fallback for non-KetchDialogFragment
+                    try {
+                        (fragment as? DialogFragment)?.dismissAllowingStateLoss()
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error dismissing non-KetchDialogFragment: ${e.message}")
+                    }
+                }
+                
+                // If requested, forcefully remove the fragment
+                if (forceRemove) {
+                    fragmentManager.get()?.let { fm ->
+                        try {
+                            fm.beginTransaction()
+                                .remove(fragment)
+                                .commitNowAllowingStateLoss()
+                            Log.d(TAG, "Forcefully removed fragment")
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error forcefully removing fragment: ${e.message}", e)
+                        }
+                    }
+                    
+                    // Execute completion callback immediately for force removals
+                    onComplete.invoke(null)
+                } else {
+                    // For normal dismissals, wait a bit for the animation
+                    Handler(android.os.Looper.getMainLooper()).postDelayed({
+                        onComplete.invoke(null)
+                    }, 100)
+                }
+            } else {
+                // No fragment found, execute completion callback immediately
+                onComplete.invoke(null)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during fragment cleanup: ${e.message}", e)
+            onComplete.invoke(null)
+        }
     }
 }
