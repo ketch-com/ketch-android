@@ -5,6 +5,9 @@ import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -49,14 +52,51 @@ internal class KetchDialogFragment() : DialogFragment() {
     }
 
     override fun onDestroyView() {
-
-        binding.root.removeView(webView)
-
-        // Cancel any coroutines in KetchWebView and fully tear down webview to prevent memory leaks
-        webView?.kill()
-
-        // Set webview reference to null to prevent memory leaks
-        webView = null
+        try {
+            Log.d(TAG, "onDestroyView: Beginning WebView cleanup")
+            
+            // Get a local reference to the WebView before nulling it out
+            val webViewToCleanup = webView
+            
+            // Set the class reference to null first to prevent any new operations from being triggered
+            webView = null
+            
+            // Perform cleanup on the local reference if it exists
+            webViewToCleanup?.let { wv ->
+                // Prevent any new touch events or interactions
+                wv.setOnTouchListener { _, _ -> true }
+                
+                try {
+                    // Prevent any JavaScript execution by removing event listeners
+                    wv.evaluateJavascript(
+                        "document.body.removeEventListener('touchstart', handleTapOutside);" +
+                        "document.body.removeEventListener('mousedown', handleTapOutside);",
+                        null
+                    )
+                } catch (e: Exception) {
+                    // Ignore JavaScript errors during cleanup
+                    Log.e(TAG, "Error disabling JS events: ${e.message}")
+                }
+                
+                // Wait a moment for any pending events to clear
+                Handler(Looper.getMainLooper()).post {
+                    try {
+                        // Just remove from view hierarchy
+                        (wv.parent as? ViewGroup)?.removeView(wv)
+                        binding.root.removeView(wv)
+                        
+                        Log.d(TAG, "onDestroyView: WebView removed from view hierarchy")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error in delayed WebView cleanup: ${e.message}", e)
+                    }
+                }
+            }
+            
+            Log.d(TAG, "onDestroyView: WebView cleanup initiated")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error cleaning up WebView: ${e.message}", e)
+        }
+        
         super.onDestroyView()
     }
 

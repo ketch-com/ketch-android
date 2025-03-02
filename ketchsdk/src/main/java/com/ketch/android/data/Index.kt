@@ -1,7 +1,7 @@
 package com.ketch.android.data
 
 /*
-* https://global.ketchcdn.com/web/v3//config/ketch_samples/android/boot.js?ketch_log=DEBUG
+* https://global.ketchcdn.com/web/v3/config/ketch_samples/android/boot.js?ketch_log=DEBUG
 *       &ketch_lang=en&ketch_jurisdiction=default&ketch_region=US
 *       &ketch_show=preferences&ketch_preferences_tabs=overviewTab,rightsTab,consentsTab,subscriptionsTab
  */
@@ -156,12 +156,21 @@ fun getIndexHtml(
             "        document.getElementsByTagName('head')[0].appendChild(e);\n" +
             "      }\n" +
             "      // We put the script inside body, otherwise document.body will be null\n" +
-            "      // Trigger taps outside the dialog\n" +
-            "      document.body.addEventListener('touchstart', function (e) {\n" +
+            "      // Improved tap outside detection with multiple event types and protection against race conditions\n" +
+            "      function handleTapOutside(e) {\n" +
+            "        // Ensure we only handle taps on the body element\n" +
             "        if (e.target === document.body) {\n" +
-            "          emitEvent('tapOutside', [getDialogSize()]);\n" +
+            "          console.log('Tap outside detected');\n" +
+            "          // Use setTimeout to avoid race conditions with WebView destruction\n" +
+            "          setTimeout(() => {\n" +
+            "            emitEvent('hideExperience', ['close']);\n" +
+            "          }, 0);\n" +
             "        }\n" +
-            "      });\n" +
+            "      }\n" +
+            "\n" +
+            "      // Handle both touchstart and mousedown for maximum compatibility\n" +
+            "      document.body.addEventListener('touchstart', handleTapOutside, { passive: true });\n" +
+            "      document.body.addEventListener('mousedown', handleTapOutside, { passive: true });\n" +
             "      initKetchTag({" +
             "ketch_log: \"${logLevel}\"," +
             if (language?.isNotBlank() == true) {
