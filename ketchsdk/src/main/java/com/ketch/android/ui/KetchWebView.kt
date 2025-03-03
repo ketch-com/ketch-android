@@ -76,14 +76,13 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
     }
 
     // Cancel any coroutines in KetchWebView and fully tear down webview to prevent memory leaks
-    fun kill() {
+    fun stop() {
         localContentWebViewClient.cancelCoroutines()
         stopLoading()
         clearHistory()
         clearCache(true)
         loadUrl("about:blank")
         removeAllViews()
-        destroy()
     }
 
     class LocalContentWebViewClient(private var shouldRetry: Boolean = false) : WebViewClientCompat() {
