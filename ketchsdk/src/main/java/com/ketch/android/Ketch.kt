@@ -298,9 +298,7 @@ class Ketch private constructor(
             }
             
             val webView = KetchWebView(ctx)
-            // Set retry flag if needed
             if (shouldRetry) {
-                // Handle retry logic if needed
                 Log.d(TAG, "WebView created with retry enabled")
             }
             

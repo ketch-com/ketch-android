@@ -45,7 +45,23 @@ internal class KetchDialogFragment() : DialogFragment() {
             inflater.inflate(R.layout.ketch_dialog_layout, container)
         )
         
-        addWebViewToLayout()
+        webView?.let { web ->
+            // Remove from any previous parent
+            (web.parent as? ViewGroup)?.removeView(web)
+            
+            // Add to our layout with appropriate properties
+            binding.root.addView(
+                web,
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            
+            // Ensure WebView is interactive
+            web.isClickable = true
+            web.isFocusable = true
+            web.isFocusableInTouchMode = true
+        }
+        
         return binding.root
     }
 
@@ -150,25 +166,6 @@ internal class KetchDialogFragment() : DialogFragment() {
             }
 
             window.attributes = params
-        }
-    }
-
-    private fun addWebViewToLayout() {
-        webView?.let { web ->
-            // Remove from any previous parent
-            (web.parent as? ViewGroup)?.removeView(web)
-            
-            // Add to our layout with appropriate properties
-            binding.root.addView(
-                web,
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-            
-            // Ensure WebView is interactive
-            web.isClickable = true
-            web.isFocusable = true
-            web.isFocusableInTouchMode = true
         }
     }
 

@@ -48,7 +48,6 @@ class KetchWebView @JvmOverloads constructor(
     private val localContentWebViewClient = LocalContentWebViewClient()
     internal var isPageLoaded = false
     internal var currentUrl: String? = null
-    private var onPageLoadedListener: OnPageLoadedListener? = null
 
     init {
         webViewClient = localContentWebViewClient
@@ -426,7 +425,7 @@ class KetchWebView @JvmOverloads constructor(
         }
     }
 
-    interface WebViewListener : OnPageLoadedListener {
+    interface WebViewListener {
         fun showConsent()
         fun showPreferences()
         fun onUSPrivacyUpdated(values: Map<String, Any?>)
@@ -442,6 +441,7 @@ class KetchWebView @JvmOverloads constructor(
         fun changeDialog(display: ContentDisplay)
         fun onClose(status: HideExperienceStatus)
         fun onWillShowExperience(experienceType: WillShowExperienceType)
+        fun onPageLoaded()
     }
 
     internal enum class ExperienceType {
@@ -452,11 +452,6 @@ class KetchWebView @JvmOverloads constructor(
             CONSENT -> "cd"
             PREFERENCES -> "preferences"
         }
-    }
-
-    // Interface for page load events
-    interface OnPageLoadedListener {
-        fun onPageLoaded()
     }
 
     companion object {
