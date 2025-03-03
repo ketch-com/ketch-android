@@ -216,7 +216,7 @@ class Ketch private constructor(
     }
 
     /**
-     * Force cleanup of any existing dialog fragments - use this if dialogs appear to be stuck
+     * Force cleanup of any existing dialog fragments, to be used when dialogs appear to be stuck
      */
     fun forceCleanupDialogs() {
         isActive = false

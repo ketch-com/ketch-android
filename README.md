@@ -67,38 +67,31 @@ Feel free to skip the listeners you don't really need.
    // ...
    private val listener = object : Ketch.Listener {
         override fun onShow() {
-            // Called when a consent or preferences dialog is displayed
-            Log.d("KetchApp", "Dialog shown")
+            Log.d("KetchApp", "Dialog shown") // Called when a consent or preferences dialog is displayed
         }
 
         override fun onDismiss() {
-            // Called when a dialog is dismissed
-            Log.d("KetchApp", "Dialog dismissed")
+            Log.d("KetchApp", "Dialog dismissed") // Called when a dialog is dismissed
         }
 
         override fun onEnvironmentUpdated(environment: String?) {
-            // Called when the environment is updated
-            Log.d("KetchApp", "Environment updated: $environment")
+            Log.d("KetchApp", "Environment updated: $environment") // Called when the environment is updated
         }
 
         override fun onRegionInfoUpdated(regionInfo: String?) {
-            // Called when region info is updated
-            Log.d("KetchApp", "Region info updated: $regionInfo")
+            Log.d("KetchApp", "Region info updated: $regionInfo") // Called when region info is updated
         }
 
         override fun onJurisdictionUpdated(jurisdiction: String?) {
-            // Called when jurisdiction is updated
-            Log.d("KetchApp", "Jurisdiction updated: $jurisdiction")
+            Log.d("KetchApp", "Jurisdiction updated: $jurisdiction") // Called when jurisdiction is updated
         }
 
         override fun onIdentitiesUpdated(identities: String?) {
-            // Called when identities are updated
-            Log.d("KetchApp", "Identities updated: $identities")
+            Log.d("KetchApp", "Identities updated: $identities") // Called when identities are updated
         }
 
         override fun onConsentUpdated(consent: Consent) {
-            // Called when consent preferences are updated
-            Log.d("KetchApp", "Consent updated")
+            Log.d("KetchApp", "Consent updated") // Called when consent preferences are updated
             
             // Here you can handle consent changes for your app features
             // Example: Enable/disable tracking based on consent
@@ -119,13 +112,11 @@ Feel free to skip the listeners you don't really need.
         }
 
         override fun onError(errMsg: String?) {
-            // Called when an error occurs
-            Log.e("KetchApp", "Error: $errMsg")
+            Log.e("KetchApp", "Error: $errMsg") // Called when an error occurs
         }
 
         override fun onUSPrivacyUpdated(values: Map<String, Any?>) {
-            // Called when US Privacy values are updated
-            Log.d("KetchApp", "US Privacy updated")
+            Log.d("KetchApp", "US Privacy updated") // Called when US Privacy values are updated
             
             // You can access the US Privacy string
             val privacyString = values["IABUSPrivacy_String"] as? String
@@ -133,20 +124,15 @@ Feel free to skip the listeners you don't really need.
         }
 
         override fun onTCFUpdated(values: Map<String, Any?>) {
-            // Called when TCF values are updated
-            Log.d("KetchApp", "TCF updated")
-            
-            // You can access the TC string
-            val tcString = values["IABTCF_TCString"] as? String
+            Log.d("KetchApp", "TCF updated") // Called when TCF values are updated
+            val tcString = values["IABTCF_TCString"] as? String // You can access the TC string
             Log.d("KetchApp", "TCF TC String: $tcString")
         }
 
         override fun onGPPUpdated(values: Map<String, Any?>) {
-            // Called when GPP values are updated
-            Log.d("KetchApp", "GPP updated")
+            Log.d("KetchApp", "GPP updated") // Called when GPP values are updated
             
-            // You can access the GPP string
-            val gppString = values["IABGPP_HDR_GppString"] as? String
+            val gppString = values["IABGPP_HDR_GppString"] as? String // You can access the GPP string
             Log.d("KetchApp", "GPP String: $gppString")
         }
     }

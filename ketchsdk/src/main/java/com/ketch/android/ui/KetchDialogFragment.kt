@@ -88,7 +88,6 @@ internal class KetchDialogFragment() : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         dialog?.window?.also { window ->
-            // Keep background transparent to allow interaction with WebView content
             window.clearFlags(FLAG_DIM_BEHIND)
             window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
             
@@ -108,8 +107,6 @@ internal class KetchDialogFragment() : DialogFragment() {
             // Add window animations for smoother transitions
             window.setWindowAnimations(android.R.style.Animation_Dialog)
         }
-        
-        // Don't set background on root view so content remains fully interactive
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
