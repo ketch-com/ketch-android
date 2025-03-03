@@ -1,10 +1,8 @@
 package com.ketch.android
 
-import android.content.Context
+import android.app.Application
 import android.util.Log
 import androidx.fragment.app.FragmentManager
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
 import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.HideExperienceStatus
@@ -12,25 +10,32 @@ import com.ketch.android.data.KetchConfig
 import com.ketch.android.data.WillShowExperienceType
 import com.ketch.android.ui.KetchDialogFragment
 import com.ketch.android.ui.KetchWebView
-import java.lang.ref.WeakReference
 
 /**
  * Main Ketch SDK class
  **/
 class Ketch private constructor(
-    private val context: WeakReference<Context>,
-    private val fragmentManager: WeakReference<FragmentManager>,
+    private val application: Application,
     private val orgCode: String,
     private val property: String,
     private val environment: String?,
     private val listener: Listener?,
     private val ketchUrl: String?,
-    private val logLevel: LogLevel
+    private val logLevel: LogLevel,
+    private val shouldRetry: Boolean,
+    private val synchronousPreferences: Boolean
 ) {
     private var identities: Map<String, String> = emptyMap()
     private var language: String? = null
     private var jurisdiction: String? = null
     private var region: String? = null
+
+    private var fragmentManager: FragmentManager? = null
+
+    private val webView: KetchWebView by lazy {
+        createWebView(shouldRetry, synchronousPreferences)
+    }
+
 
     /**
      * Retrieve a String value from the preferences.
@@ -65,36 +70,44 @@ class Ketch private constructor(
         getPreferences().getSavedValue(KetchSharedPreferences.IAB_GPP_HDR_GPP_STRING)
 
     /**
+     * Sets FragmentManager
+     */
+    fun setFragmentManager(fragmentManager: FragmentManager) {
+        this.fragmentManager = fragmentManager
+    }
+
+    /**
+     * Stops the current load.
+     */
+    fun stop() {
+        dismissDialog()
+        webView.stop()
+        this.fragmentManager = null
+    }
+
+    /**
      * Loads a web page and shows a popup if necessary
      *
      * @param bottomPadding: Pixels of padding to add to the bottom of the experience (if shown)
      */
     fun load(
-        shouldRetry: Boolean = false,
-        synchronousPreferences: Boolean = false,
         bottomPadding: Int = 0,
-    ): Boolean {
-        val webView = createWebView(shouldRetry, synchronousPreferences)
-        return if (webView != null) {
-            webView.load(
-                orgCode,
-                property,
-                language,
-                jurisdiction,
-                region,
-                environment,
-                identities,
-                null,
-                emptyList(),
-                null,
-                ketchUrl,
-                logLevel,
-                bottomPadding,
-            )
-            true
-        } else {
-            false
-        }
+    ) {
+        webView.load(
+            orgCode,
+            property,
+            language,
+            jurisdiction,
+            region,
+            environment,
+            identities,
+            null,
+            emptyList(),
+            null,
+            ketchUrl,
+            logLevel,
+            bottomPadding,
+        )
     }
 
     /**
@@ -103,31 +116,23 @@ class Ketch private constructor(
      * @param bottomPadding: Pixels of padding to add to the bottom of the experience
      */
     fun showConsent(
-        shouldRetry: Boolean = false,
-        synchronousPreferences: Boolean = false,
         bottomPadding: Int = 0,
-    ): Boolean {
-        val webView = createWebView(shouldRetry, synchronousPreferences)
-        return if (webView != null) {
-            webView.load(
-                orgCode,
-                property,
-                language,
-                jurisdiction,
-                region,
-                environment,
-                identities,
-                KetchWebView.ExperienceType.CONSENT,
-                emptyList(),
-                null,
-                ketchUrl,
-                logLevel,
-                bottomPadding
-            )
-            true
-        } else {
-            false
-        }
+    ) {
+        webView.load(
+            orgCode,
+            property,
+            language,
+            jurisdiction,
+            region,
+            environment,
+            identities,
+            KetchWebView.ExperienceType.CONSENT,
+            emptyList(),
+            null,
+            ketchUrl,
+            logLevel,
+            bottomPadding
+        )
     }
 
     /**
@@ -136,31 +141,23 @@ class Ketch private constructor(
      * @param bottomPadding: Pixels of padding to add to the bottom of the experience
      */
     fun showPreferences(
-        shouldRetry: Boolean = false,
-        synchronousPreferences: Boolean = false,
         bottomPadding: Int = 0,
-    ): Boolean {
-        val webView = createWebView(shouldRetry, synchronousPreferences)
-        return if (webView != null) {
-            webView.load(
-                orgCode,
-                property,
-                language,
-                jurisdiction,
-                region,
-                environment,
-                identities,
-                KetchWebView.ExperienceType.PREFERENCES,
-                emptyList(),
-                null,
-                ketchUrl,
-                logLevel,
-                bottomPadding
-            )
-            true
-        } else {
-            false
-        }
+    ) {
+        webView.load(
+            orgCode,
+            property,
+            language,
+            jurisdiction,
+            region,
+            environment,
+            identities,
+            KetchWebView.ExperienceType.PREFERENCES,
+            emptyList(),
+            null,
+            ketchUrl,
+            logLevel,
+            bottomPadding
+        )
     }
 
     /**
@@ -173,31 +170,23 @@ class Ketch private constructor(
     fun showPreferencesTab(
         tabs: List<PreferencesTab>,
         tab: PreferencesTab,
-        shouldRetry: Boolean = false,
-        synchronousPreferences: Boolean = false,
         bottomPadding: Int = 0,
-    ): Boolean {
-        val webView = createWebView(shouldRetry, synchronousPreferences)
-        return if (webView != null) {
-            webView.load(
-                orgCode,
-                property,
-                language,
-                jurisdiction,
-                region,
-                environment,
-                identities,
-                KetchWebView.ExperienceType.PREFERENCES,
-                tabs,
-                tab,
-                ketchUrl,
-                logLevel,
-                bottomPadding
-            )
-            true
-        } else {
-            false
-        }
+    ) {
+        webView.load(
+            orgCode,
+            property,
+            language,
+            jurisdiction,
+            region,
+            environment,
+            identities,
+            KetchWebView.ExperienceType.PREFERENCES,
+            tabs,
+            tab,
+            ketchUrl,
+            logLevel,
+            bottomPadding
+        )
     }
 
     /**
@@ -258,16 +247,17 @@ class Ketch private constructor(
 
     // Get the singleton KetchSharedPreferences object
     private fun getPreferences(): KetchSharedPreferences {
-        context.get()?.let {
-            // Initialize will create KetchSharedPreferences if it doesn't already exist
-            KetchSharedPreferences.initialize(it)
-        }
+        // Initialize will create KetchSharedPreferences if it doesn't already exist
+        KetchSharedPreferences.initialize(application)
         return KetchSharedPreferences
     }
 
-    private fun createWebView(shouldRetry: Boolean = false, synchronousPreferences: Boolean = false): KetchWebView? {
+    private fun createWebView(
+        shouldRetry: Boolean = false,
+        synchronousPreferences: Boolean = false
+    ): KetchWebView {
 
-        val webView = context.get()?.let { KetchWebView(it, shouldRetry) } ?: return null
+        val webView = KetchWebView(application, shouldRetry)
 
         // Enable debug mode
         if (logLevel === LogLevel.DEBUG) {
@@ -288,11 +278,6 @@ class Ketch private constructor(
             }
 
             override fun showPreferences() {
-                if (!isActivityActive()) {
-                    Log.d(TAG, "Not showing as activity is not active")
-                    return
-                }
-
                 if (findDialogFragment() != null) {
                     Log.d(TAG, "Not showing as dialog already exists")
                     return
@@ -300,7 +285,7 @@ class Ketch private constructor(
 
                 val dialog = KetchDialogFragment.newInstance()
 
-                fragmentManager.get()?.let {
+                fragmentManager?.let {
                     dialog.show(it, webView)
                     this@Ketch.listener?.onShow()
                 }
@@ -392,11 +377,6 @@ class Ketch private constructor(
             }
 
             private fun showConsentPopup() {
-                if (!isActivityActive()) {
-                    Log.d(TAG, "Not showing as activity is not active")
-                    return
-                }
-
                 if (findDialogFragment() != null) {
                     Log.d(TAG, "Not showing as dialog already exists")
                     return
@@ -408,11 +388,11 @@ class Ketch private constructor(
                     )
                     isCancelable = !disableContentInteractions
                 }
-                fragmentManager.get()?.let {
+                fragmentManager?.let {
                     dialog.show(it, webView)
                     this@Ketch.listener?.onShow()
+                    showConsent = false
                 }
-                showConsent = false
             }
 
             private fun getDisposableContentInteractions(display: ContentDisplay): Boolean =
@@ -428,12 +408,7 @@ class Ketch private constructor(
     }
 
     private fun findDialogFragment() =
-        fragmentManager.get()?.findFragmentByTag(KetchDialogFragment.TAG)
-
-    private fun isActivityActive(): Boolean {
-        return (context.get() as? LifecycleOwner)?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.STARTED)
-            ?: false
-    }
+        fragmentManager?.findFragmentByTag(KetchDialogFragment.TAG)
 
     enum class PreferencesTab {
         OVERVIEW,
@@ -523,23 +498,25 @@ class Ketch private constructor(
     companion object {
         val TAG = Ketch::class.java.simpleName
         fun create(
-            context: Context,
-            fragmentManager: FragmentManager,
+            application: Application,
             orgCode: String,
             property: String,
             environment: String?,
             listener: Listener?,
             ketchUrl: String?,
             logLevel: LogLevel,
+            shouldRetry: Boolean = false,
+            synchronousPreferences: Boolean = false
         ) = Ketch(
-            WeakReference(context),
-            WeakReference(fragmentManager),
+            application,
             orgCode,
             property,
             environment,
             listener,
             ketchUrl,
-            logLevel
+            logLevel,
+            shouldRetry,
+            synchronousPreferences
         )
     }
 }

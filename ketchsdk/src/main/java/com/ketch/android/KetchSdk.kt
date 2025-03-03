@@ -1,5 +1,6 @@
 package com.ketch.android
 
+import android.app.Application
 import android.content.Context
 import androidx.fragment.app.FragmentManager
 
@@ -21,8 +22,7 @@ object KetchSdk {
     /**
      * Creates the Ketch
      *
-     * @param context - an Activity Context to access application assets
-     * @param fragmentManager - The FragmentManager this KetchDialogFragment will be added to.
+     * @param application - Application Context
      * @param organization - your organization code
      * @param property - the property name
      * @param environment - the environment name.
@@ -31,24 +31,26 @@ object KetchSdk {
      * @param logLevel - the log level, can be TRACE, DEBUG, INFO, WARN, ERROR. Default is ERROR
      */
     fun create(
-        context: Context,
-        fragmentManager: FragmentManager,
+        application: Application,
         organization: String,
         property: String,
         environment: String? = null,
         listener: Ketch.Listener? = null,
         ketchUrl: String? = null,
-        logLevel: Ketch.LogLevel = Ketch.LogLevel.ERROR
+        logLevel: Ketch.LogLevel = Ketch.LogLevel.ERROR,
+        shouldRetry: Boolean = false,
+        synchronousPreferences: Boolean = false
     ): Ketch {
         return Ketch.create(
-            context = context,
-            fragmentManager = fragmentManager,
+            application = application,
             orgCode = organization,
             property = property,
             environment = environment,
             listener = listener,
             ketchUrl = ketchUrl,
-            logLevel = logLevel
+            logLevel = logLevel,
+            shouldRetry = shouldRetry,
+            synchronousPreferences = synchronousPreferences
         )
     }
 }
