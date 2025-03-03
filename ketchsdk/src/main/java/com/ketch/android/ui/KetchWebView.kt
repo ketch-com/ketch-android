@@ -6,6 +6,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
+import android.util.AttributeSet
 import android.util.Log
 import android.view.ViewGroup
 import android.webkit.ConsoleMessage
@@ -45,8 +46,9 @@ class KetchWebView @JvmOverloads constructor(
 
     var listener: WebViewListener? = null
     private val localContentWebViewClient = LocalContentWebViewClient()
-    private var isPageLoaded = false
-    private var currentUrl: String? = null
+    internal var isPageLoaded = false
+    internal var currentUrl: String? = null
+    private var onPageLoadedListener: OnPageLoadedListener? = null
 
     init {
         webViewClient = localContentWebViewClient
@@ -147,6 +149,8 @@ class KetchWebView @JvmOverloads constructor(
     }
 
     class LocalContentWebViewClient : WebViewClientCompat() {
+        private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+        private val isRetrying = AtomicBoolean(false)
 
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val intent = Intent(Intent.ACTION_VIEW, request.url)
@@ -185,23 +189,24 @@ class KetchWebView @JvmOverloads constructor(
             super.onPageStarted(view, url, favicon)
             Log.d(TAG, "onPageStarted: $url")
 
-            if (url == currentUrl) {
-                isPageLoaded = false
+            if (view is KetchWebView && url == view.currentUrl) {
+                view.isPageLoaded = false
             }
         }
 
         override fun onPageFinished(view: WebView?, url: String?) {
             super.onPageFinished(view, url)
 
-            if (url == currentUrl && !isPageLoaded) {
-                isPageLoaded = true
-                onPageLoadedListener?.onPageLoaded()
+            if (view is KetchWebView && url == view.currentUrl && !view.isPageLoaded) {
+                view.isPageLoaded = true
+                view.listener?.onPageLoaded()
             }
             Log.d(TAG, "onPageFinished: $url")
         }
 
         // Cancel all coroutines
         fun cancelCoroutines() {
+            coroutineScope.cancel()
             Log.d(TAG, "webViewClient coroutines cancelled")
         }
     }
@@ -421,7 +426,7 @@ class KetchWebView @JvmOverloads constructor(
         }
     }
 
-    interface WebViewListener {
+    interface WebViewListener : OnPageLoadedListener {
         fun showConsent()
         fun showPreferences()
         fun onUSPrivacyUpdated(values: Map<String, Any?>)
@@ -437,7 +442,6 @@ class KetchWebView @JvmOverloads constructor(
         fun changeDialog(display: ContentDisplay)
         fun onClose(status: HideExperienceStatus)
         fun onWillShowExperience(experienceType: WillShowExperienceType)
-        fun onPageLoaded()
     }
 
     internal enum class ExperienceType {
@@ -448,6 +452,11 @@ class KetchWebView @JvmOverloads constructor(
             CONSENT -> "cd"
             PREFERENCES -> "preferences"
         }
+    }
+
+    // Interface for page load events
+    interface OnPageLoadedListener {
+        fun onPageLoaded()
     }
 
     companion object {

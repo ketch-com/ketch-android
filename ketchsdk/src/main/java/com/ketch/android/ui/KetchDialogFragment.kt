@@ -25,6 +25,16 @@ internal class KetchDialogFragment() : DialogFragment() {
     private lateinit var binding: KetchDialogLayoutBinding
 
     private var webView: KetchWebView? = null
+    
+    // Define the position property with a default value
+    private val position: DialogPosition = DialogPosition.CENTER
+    
+    // Add DialogPosition enum
+    enum class DialogPosition(val gravity: Int) {
+        TOP(Gravity.TOP),
+        CENTER(Gravity.CENTER),
+        BOTTOM(Gravity.BOTTOM)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,

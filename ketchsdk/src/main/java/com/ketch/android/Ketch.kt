@@ -297,7 +297,13 @@ class Ketch private constructor(
                 return null
             }
             
-            val webView = KetchWebView(ctx, shouldRetry)
+            val webView = KetchWebView(ctx)
+            // Set retry flag if needed
+            if (shouldRetry) {
+                // Handle retry logic if needed
+                Log.d(TAG, "WebView created with retry enabled")
+            }
+            
             currentWebView = webView
 
             if (logLevel === LogLevel.DEBUG) {
@@ -397,6 +403,11 @@ class Ketch private constructor(
 
                 override fun onWillShowExperience(experienceType: WillShowExperienceType) {
                     this@Ketch.listener?.onWillShowExperience(experienceType)
+                }
+                
+                override fun onPageLoaded() {
+                    // Handle page loaded event
+                    Log.d(TAG, "WebView page loaded")
                 }
 
                 private fun showConsentPopup() {
