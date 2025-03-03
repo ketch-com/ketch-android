@@ -6,7 +6,9 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
+import android.util.AttributeSet
 import android.util.Log
+import android.view.ViewGroup
 import android.webkit.ConsoleMessage
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
@@ -36,22 +38,25 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 
-const val INITIAL_RELOAD_DELAY = 4000L
-
-@SuppressLint("SetJavaScriptEnabled", "ViewConstructor")
-class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(context) {
+class KetchWebView @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0
+) : WebView(context, attrs, defStyleAttr) {
 
     var listener: WebViewListener? = null
-    private val localContentWebViewClient = LocalContentWebViewClient(shouldRetry)
+    private val localContentWebViewClient = LocalContentWebViewClient()
+    internal var isPageLoaded = false
+    internal var currentUrl: String? = null
 
     init {
         webViewClient = localContentWebViewClient
-        settings.javaScriptEnabled = true
-        setBackgroundColor(context.getColor(android.R.color.transparent))
+        setupWebView()
+        
+        // Ensure the WebView background is transparent
+        setBackgroundColor(android.graphics.Color.TRANSPARENT)
 
-        // Explicitly set to false to address android webview security concern
-        setWebContentsDebuggingEnabled(false)
-
+        // Add JavaScript interface for communication with WebView
         addJavascriptInterface(
             PreferenceCenterJavascriptInterface(this),
             "androidListener"
@@ -71,31 +76,89 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         }
     }
 
+    private fun setupWebView() {
+        settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            setGeolocationEnabled(false)
+            mediaPlaybackRequiresUserGesture = false
+        }
+    }
+
+    override fun loadUrl(url: String) {
+        currentUrl = url
+        isPageLoaded = false
+        super.loadUrl(url)
+    }
+
     fun setDebugMode() {
         setWebContentsDebuggingEnabled(true)
     }
 
-    // Cancel any coroutines in KetchWebView and fully tear down webview to prevent memory leaks
-    fun kill() {
-        localContentWebViewClient.cancelCoroutines()
-        stopLoading()
-        clearHistory()
-        clearCache(true)
-        loadUrl("about:blank")
-        removeAllViews()
-        destroy()
+    // Properly clean up WebView resources to prevent memory leaks and renderer crashes
+    override fun destroy() {
+        try {
+            Log.d(TAG, "Beginning WebView cleanup")
+            
+            // Prevent further page loads
+            stopLoading()
+            
+            // Add a blank/empty handler for JS errors during cleanup
+            evaluateJavascript("window.onerror = function(message, url, line, column, error) { return true; };", null)
+            
+            // Remove JavaScript interface first to prevent any further callbacks
+            removeJavascriptInterface("androidListener")
+            
+            // Set listener to null to prevent callbacks during cleanup
+            listener = null
+            
+            // Cancel all coroutines next
+            localContentWebViewClient.cancelCoroutines()
+            
+            // Disable JavaScript to prevent further execution
+            settings.javaScriptEnabled = false
+            
+            // Stop any ongoing loads or processing
+            onPause()
+            
+            // Small pause to allow WebView internals to stabilize
+            try {
+                Thread.sleep(50)
+            } catch (e: InterruptedException) {
+                Log.e(TAG, "Sleep interrupted during WebView cleanup", e)
+            }
+            
+            // Clear WebView state
+            clearHistory()
+            clearCache(true)
+            clearFormData()
+            clearSslPreferences()
+            
+            // Remove all views
+            removeAllViews()
+            
+            // Set a low global layout limit to reduce memory pressure
+            // This is a common practice for WebView cleanup to ensure the view doesn't
+            // maintain large layout allocations while waiting for destruction
+            setLayoutParams(
+                ViewGroup.LayoutParams(1, 1)
+            )
+            
+            // Finally call the parent WebView's destroy method
+            super.destroy()
+            
+            // Suggest garbage collection to reclaim memory
+            Runtime.getRuntime().gc()
+            
+            Log.d(TAG, "WebView cleanup completed successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during WebView cleanup: ${e.message}", e)
+        }
     }
 
-    class LocalContentWebViewClient(private var shouldRetry: Boolean = false) : WebViewClientCompat() {
-
-        // Flag indicating if the webview has finished loading
-        // We use atomic boolean here because we are using it within a coroutine
-        private var isLoaded = AtomicBoolean(false)
-
-        // Reload delay, increases exponentially in onPageStarted
-        private var reloadDelay = INITIAL_RELOAD_DELAY
-
-        private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    class LocalContentWebViewClient : WebViewClientCompat() {
+        private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+        private val isRetrying = AtomicBoolean(false)
 
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val intent = Intent(Intent.ACTION_VIEW, request.url)
@@ -134,41 +197,23 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             super.onPageStarted(view, url, favicon)
             Log.d(TAG, "onPageStarted: $url")
 
-            // Reset loaded flag
-            isLoaded.set(false)
-
-            // Launch retry if flag set
-            if (shouldRetry) {
-                scope.launch(Dispatchers.Main) {
-                    delay(reloadDelay)
-
-                    // If not yet loaded stop current webview, reload, and increase future delay
-                    if (!isLoaded.get()) {
-                        Log.d(TAG, "Reloading webview after $reloadDelay ms")
-                        view?.stopLoading()
-                        view?.reload()
-                        reloadDelay *= 2 // Exponentially increase reload delay
-                    }
-                }
+            if (view is KetchWebView && url == view.currentUrl) {
+                view.isPageLoaded = false
             }
         }
 
         override fun onPageFinished(view: WebView?, url: String?) {
             super.onPageFinished(view, url)
 
-            // Set loaded flag
-            isLoaded.set(true)
-
-            // Only reset reload delay when second onPageFinished callback has fired
-            if (url === "data:text/html;charset=utf-8;base64,") {
-                reloadDelay = INITIAL_RELOAD_DELAY
+            if (view is KetchWebView && url == view.currentUrl && !view.isPageLoaded) {
+                view.isPageLoaded = true
             }
             Log.d(TAG, "onPageFinished: $url")
         }
 
         // Cancel all coroutines
         fun cancelCoroutines() {
-            scope.cancel()
+            coroutineScope.cancel()
             Log.d(TAG, "webViewClient coroutines cancelled")
         }
     }
@@ -319,14 +364,6 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         }
 
         @JavascriptInterface
-        fun tapOutside(dialogSize: String?) {
-            Log.d(TAG, "tapOutside: $dialogSize")
-            runOnMainThread {
-                ketchWebView.listener?.onTapOutside()
-            }
-        }
-
-        @JavascriptInterface
         fun geoip(ip: String?) {
         }
 
@@ -412,6 +449,10 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         fun changeDialog(display: ContentDisplay)
         fun onClose(status: HideExperienceStatus)
         fun onWillShowExperience(experienceType: WillShowExperienceType)
+        /**
+         * @deprecated This method is deprecated and will be removed in a future release
+         */
+        @Deprecated("This method is deprecated and will be removed in a future release")
         fun onTapOutside()
     }
 
