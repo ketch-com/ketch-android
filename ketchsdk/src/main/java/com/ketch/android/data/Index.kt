@@ -156,21 +156,12 @@ fun getIndexHtml(
             "        document.getElementsByTagName('head')[0].appendChild(e);\n" +
             "      }\n" +
             "      // We put the script inside body, otherwise document.body will be null\n" +
-            "      // Improved tap outside detection with multiple event types and protection against race conditions\n" +
-            "      function handleTapOutside(e) {\n" +
-            "        // Ensure we only handle taps on the body element\n" +
+            "      // Trigger taps outside the dialog\n" +
+            "      document.body.addEventListener('touchstart', function (e) {\n" +
             "        if (e.target === document.body) {\n" +
-            "          console.log('Tap outside detected');\n" +
-            "          // Use setTimeout to avoid race conditions with WebView destruction\n" +
-            "          setTimeout(() => {\n" +
-            "            emitEvent('hideExperience', ['close']);\n" +
-            "          }, 0);\n" +
+            "          emitEvent('hideExperience', ['close']);\n" +
             "        }\n" +
-            "      }\n" +
-            "\n" +
-            "      // Handle both touchstart and mousedown for maximum compatibility\n" +
-            "      document.body.addEventListener('touchstart', handleTapOutside, { passive: true });\n" +
-            "      document.body.addEventListener('mousedown', handleTapOutside, { passive: true });\n" +
+            "      });\n" +
             "      initKetchTag({" +
             "ketch_log: \"${logLevel}\"," +
             if (language?.isNotBlank() == true) {
