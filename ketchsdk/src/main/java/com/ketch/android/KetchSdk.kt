@@ -1,6 +1,8 @@
 package com.ketch.android
 
 import android.app.Application
+import android.content.Context
+import androidx.fragment.app.FragmentManager
 
 /**
  * Factory to create the Ketch object.
@@ -20,8 +22,7 @@ object KetchSdk {
     /**
      * Creates the Ketch
      *
-     * @param application - an Application Context to access application assets
-     * @param fragmentManager - The FragmentManager this KetchDialogFragment will be added to.
+     * @param application - Application Context
      * @param organization - your organization code
      * @param property - the property name
      * @param environment - the environment name.
@@ -36,7 +37,9 @@ object KetchSdk {
         environment: String? = null,
         listener: Ketch.Listener? = null,
         ketchUrl: String? = null,
-        logLevel: Ketch.LogLevel = Ketch.LogLevel.ERROR
+        logLevel: Ketch.LogLevel = Ketch.LogLevel.ERROR,
+        shouldRetry: Boolean = false,
+        synchronousPreferences: Boolean = false
     ): Ketch {
         return Ketch.create(
             application = application,
@@ -45,7 +48,9 @@ object KetchSdk {
             environment = environment,
             listener = listener,
             ketchUrl = ketchUrl,
-            logLevel = logLevel
+            logLevel = logLevel,
+            shouldRetry = shouldRetry,
+            synchronousPreferences = synchronousPreferences
         )
     }
 }

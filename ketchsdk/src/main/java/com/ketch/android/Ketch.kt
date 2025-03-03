@@ -7,6 +7,7 @@ import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.KetchConfig
+import com.ketch.android.data.WillShowExperienceType
 import com.ketch.android.ui.KetchDialogFragment
 import com.ketch.android.ui.KetchWebView
 
@@ -21,18 +22,20 @@ class Ketch private constructor(
     private val listener: Listener?,
     private val ketchUrl: String?,
     private val logLevel: LogLevel,
-    private val shouldRetry: Boolean = false
+    private val shouldRetry: Boolean,
+    private val synchronousPreferences: Boolean
 ) {
-    private var fragmentManager: FragmentManager? = null
-
     private var identities: Map<String, String> = emptyMap()
     private var language: String? = null
     private var jurisdiction: String? = null
     private var region: String? = null
 
+    private var fragmentManager: FragmentManager? = null
+
     private val webView: KetchWebView by lazy {
-        createWebView(shouldRetry)
+        createWebView(shouldRetry, synchronousPreferences)
     }
+
 
     /**
      * Retrieve a String value from the preferences.
@@ -41,14 +44,14 @@ class Ketch private constructor(
      *
      * @return Returns the preference value if it exists
      */
-    fun getSavedString(key: String) = getPreferences()?.getSavedValue(key)
+    fun getSavedString(key: String) = getPreferences().getSavedValue(key)
 
     /**
      * Retrieve IABTCF_TCString value from the preferences.
      *
      * @return Returns the preference value if it exists
      */
-    fun getTCFTCString() = getPreferences()?.getSavedValue(KetchSharedPreferences.IAB_TCF_TC_STRING)
+    fun getTCFTCString() = getPreferences().getSavedValue(KetchSharedPreferences.IAB_TCF_TC_STRING)
 
     /**
      * Retrieve IABUSPrivacy_String value from the preferences.
@@ -67,7 +70,7 @@ class Ketch private constructor(
         getPreferences().getSavedValue(KetchSharedPreferences.IAB_GPP_HDR_GPP_STRING)
 
     /**
-     * Should be called from Activity.onResume
+     * Sets FragmentManager
      */
     fun setFragmentManager(fragmentManager: FragmentManager) {
         this.fragmentManager = fragmentManager
@@ -75,7 +78,6 @@ class Ketch private constructor(
 
     /**
      * Stops the current load.
-     * Should be called from Activity.onPause
      */
     fun stop() {
         dismissDialog()
@@ -85,8 +87,12 @@ class Ketch private constructor(
 
     /**
      * Loads a web page and shows a popup if necessary
+     *
+     * @param bottomPadding: Pixels of padding to add to the bottom of the experience (if shown)
      */
-    fun load() {
+    fun load(
+        bottomPadding: Int = 0,
+    ) {
         webView.load(
             orgCode,
             property,
@@ -99,14 +105,19 @@ class Ketch private constructor(
             emptyList(),
             null,
             ketchUrl,
-            logLevel
+            logLevel,
+            bottomPadding,
         )
     }
 
     /**
      * Display the consent, adding the fragment dialog to the given FragmentManager.
+     *
+     * @param bottomPadding: Pixels of padding to add to the bottom of the experience
      */
-    fun showConsent() {
+    fun showConsent(
+        bottomPadding: Int = 0,
+    ) {
         webView.load(
             orgCode,
             property,
@@ -119,14 +130,19 @@ class Ketch private constructor(
             emptyList(),
             null,
             ketchUrl,
-            logLevel
+            logLevel,
+            bottomPadding
         )
     }
 
     /**
      * Display the preferences, adding the fragment dialog to the given FragmentManager.
+     *
+     * @param bottomPadding: Pixels of padding to add to the bottom of the experience
      */
-    fun showPreferences() {
+    fun showPreferences(
+        bottomPadding: Int = 0,
+    ) {
         webView.load(
             orgCode,
             property,
@@ -139,7 +155,8 @@ class Ketch private constructor(
             emptyList(),
             null,
             ketchUrl,
-            logLevel
+            logLevel,
+            bottomPadding
         )
     }
 
@@ -148,8 +165,13 @@ class Ketch private constructor(
      *
      * @param tabs: list of preferences tab
      * @param tab: the current tab
+     * @param bottomPadding: Pixels of padding to add to the bottom of the experience
      */
-    fun showPreferencesTab(tabs: List<PreferencesTab>, tab: PreferencesTab) {
+    fun showPreferencesTab(
+        tabs: List<PreferencesTab>,
+        tab: PreferencesTab,
+        bottomPadding: Int = 0,
+    ) {
         webView.load(
             orgCode,
             property,
@@ -162,7 +184,8 @@ class Ketch private constructor(
             tabs,
             tab,
             ketchUrl,
-            logLevel
+            logLevel,
+            bottomPadding
         )
     }
 
@@ -171,7 +194,7 @@ class Ketch private constructor(
      */
     fun dismissDialog() {
         findDialogFragment()?.let {
-            (it as? KetchDialogFragment)?.dismiss()
+            (it as? KetchDialogFragment)?.dismissAllowingStateLoss()
             this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
         }
     }
@@ -213,15 +236,26 @@ class Ketch private constructor(
     }
 
     init {
+
+        getPreferences()
+
         findDialogFragment()?.let { dialog ->
-            (dialog as KetchDialogFragment).dismiss()
+            (dialog as KetchDialogFragment).dismissAllowingStateLoss()
             this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
         }
     }
 
-    private fun getPreferences(): KetchSharedPreferences = KetchSharedPreferences(application)
+    // Get the singleton KetchSharedPreferences object
+    private fun getPreferences(): KetchSharedPreferences {
+        // Initialize will create KetchSharedPreferences if it doesn't already exist
+        KetchSharedPreferences.initialize(application)
+        return KetchSharedPreferences
+    }
 
-    private fun createWebView(shouldRetry: Boolean = false): KetchWebView {
+    private fun createWebView(
+        shouldRetry: Boolean = false,
+        synchronousPreferences: Boolean = false
+    ): KetchWebView {
 
         val webView = KetchWebView(application, shouldRetry)
 
@@ -258,17 +292,17 @@ class Ketch private constructor(
             }
 
             override fun onUSPrivacyUpdated(values: Map<String, Any?>) {
-                getPreferences().saveUSPrivacy(values)
+                getPreferences().saveValues(values, "USPrivacy", synchronousPreferences)
                 this@Ketch.listener?.onUSPrivacyUpdated(values)
             }
 
             override fun onTCFUpdated(values: Map<String, Any?>) {
-                getPreferences().saveTCFTC(values)
+                getPreferences().saveValues(values, "TCF", synchronousPreferences)
                 this@Ketch.listener?.onTCFUpdated(values)
             }
 
             override fun onGPPUpdated(values: Map<String, Any?>) {
-                getPreferences().saveGPP(values)
+                getPreferences().saveValues(values, "GPP", synchronousPreferences)
                 this@Ketch.listener?.onGPPUpdated(values)
             }
 
@@ -320,17 +354,22 @@ class Ketch private constructor(
             override fun onClose(status: HideExperienceStatus) {
                 // Dismiss dialog fragment
                 findDialogFragment()?.let {
-                    (it as? KetchDialogFragment)?.dismiss()
+                    (it as? KetchDialogFragment)?.dismissAllowingStateLoss()
                 }
 
                 // Execute onDismiss event listener
                 this@Ketch.listener?.onDismiss(status)
             }
 
+            override fun onWillShowExperience(experienceType: WillShowExperienceType) {
+                // Execute onWillShowExperience listener
+                this@Ketch.listener?.onWillShowExperience(experienceType)
+            }
+
             override fun onTapOutside() {
                 // Dismiss dialog fragment
                 findDialogFragment()?.let {
-                    (it as? KetchDialogFragment)?.dismiss()
+                    (it as? KetchDialogFragment)?.dismissAllowingStateLoss()
 
                     // Execute onDismiss event listener
                     this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
@@ -349,7 +388,6 @@ class Ketch private constructor(
                     )
                     isCancelable = !disableContentInteractions
                 }
-
                 fragmentManager?.let {
                     dialog.show(it, webView)
                     this@Ketch.listener?.onShow()
@@ -450,6 +488,11 @@ class Ketch private constructor(
          * Called when GPP is updated.
          */
         fun onGPPUpdated(values: Map<String, Any?>)
+
+        /**
+         * Called when an experience will show.
+         */
+        fun onWillShowExperience(type: WillShowExperienceType)
     }
 
     companion object {
@@ -462,6 +505,8 @@ class Ketch private constructor(
             listener: Listener?,
             ketchUrl: String?,
             logLevel: LogLevel,
+            shouldRetry: Boolean = false,
+            synchronousPreferences: Boolean = false
         ) = Ketch(
             application,
             orgCode,
@@ -469,7 +514,9 @@ class Ketch private constructor(
             environment,
             listener,
             ketchUrl,
-            logLevel
+            logLevel,
+            shouldRetry,
+            synchronousPreferences
         )
     }
 }

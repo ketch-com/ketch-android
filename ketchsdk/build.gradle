@@ -65,7 +65,6 @@ dependencies {
 
     implementation "androidx.core:core-ktx:${versions.ktx}"
     implementation "androidx.appcompat:appcompat:${versions.appcompat}"
-    implementation "com.google.android.material:material:${versions.material}"
     implementation "org.jetbrains.kotlin:kotlin-parcelize-runtime:${versions.parselize}"
     implementation "com.google.code.gson:gson:${versions.gson}"
     implementation "androidx.webkit:webkit:${versions.webkit}"

@@ -24,10 +24,12 @@ import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.KetchConfig
+import com.ketch.android.data.WillShowExperienceType
 import com.ketch.android.data.getIndexHtml
 import com.ketch.android.data.parseHideExperienceStatus
-import kotlinx.coroutines.CoroutineScope
+import com.ketch.android.data.parseWillShowExperienceType
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -40,11 +42,10 @@ const val INITIAL_RELOAD_DELAY = 4000L
 class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(context) {
 
     var listener: WebViewListener? = null
-
     private val localContentWebViewClient = LocalContentWebViewClient(shouldRetry)
 
     init {
-        webViewClient = LocalContentWebViewClient(shouldRetry)
+        webViewClient = localContentWebViewClient
         settings.javaScriptEnabled = true
         setBackgroundColor(context.getColor(android.R.color.transparent))
 
@@ -74,54 +75,17 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         setWebContentsDebuggingEnabled(true)
     }
 
-    internal fun load(
-        orgCode: String,
-        property: String,
-        language: String?,
-        jurisdiction: String?,
-        region: String?,
-        environment: String?,
-        identities: Map<String, String>,
-        forceShow: ExperienceType?,
-        preferencesTabs: List<Ketch.PreferencesTab>,
-        preferencesTab: Ketch.PreferencesTab?,
-        ketchUrl: String?,
-        logLevel: Ketch.LogLevel
-    ) {
-        clearCache(true)
-
-        val indexHtml = getIndexHtml(
-            orgCode = orgCode,
-            propertyName = property,
-            logLevel = logLevel.name,
-            ketchMobileSdkUrl = ketchUrl ?: "https://global.ketchcdn.com/web/v3",
-            language = language,
-            jurisdiction = jurisdiction,
-            identities = identities.map { identity ->
-                "${identity.key}: \"${identity.value}\""
-            }.joinToString(separator = ",\n", prefix = "\n", postfix = "\n"),
-            region = region,
-            environment = environment,
-            forceShow = forceShow?.getUrlParameter(),
-            preferencesTabs = preferencesTabs.takeIf { it.isNotEmpty() }
-                ?.map { it.getUrlParameter() }?.joinToString(","),
-            preferencesTab = preferencesTab?.getUrlParameter()
-        )
-
-        loadDataWithBaseURL("http://localhost", indexHtml, "text/html", "UTF-8", null)
-    }
-
     // Cancel any coroutines in KetchWebView and fully tear down webview to prevent memory leaks
-    internal fun stop() {
+    fun stop() {
         localContentWebViewClient.cancelCoroutines()
         stopLoading()
         clearHistory()
         clearCache(true)
         loadUrl("about:blank")
+        removeAllViews()
     }
 
-    class LocalContentWebViewClient(private var shouldRetry: Boolean = false) :
-        WebViewClientCompat() {
+    class LocalContentWebViewClient(private var shouldRetry: Boolean = false) : WebViewClientCompat() {
 
         // Flag indicating if the webview has finished loading
         // We use atomic boolean here because we are using it within a coroutine
@@ -208,6 +172,50 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         }
     }
 
+    internal fun load(
+        orgCode: String,
+        property: String,
+        language: String?,
+        jurisdiction: String?,
+        region: String?,
+        environment: String?,
+        identities: Map<String, String>,
+        forceShow: ExperienceType?,
+        preferencesTabs: List<Ketch.PreferencesTab>,
+        preferencesTab: Ketch.PreferencesTab?,
+        ketchUrl: String?,
+        logLevel: Ketch.LogLevel,
+        bottomPadding: Int?
+    ) {
+        clearCache(true)
+
+        // Convert padding value to string
+        var bottomPaddingPx = "0px"
+        if (bottomPadding != null) {
+            bottomPaddingPx = bottomPadding.toString() + "px"
+        }
+
+        val indexHtml = getIndexHtml(
+            orgCode = orgCode,
+            propertyName = property,
+            logLevel = logLevel.name,
+            ketchMobileSdkUrl = ketchUrl ?: "https://global.ketchcdn.com/web/v3",
+            language = language,
+            jurisdiction = jurisdiction,
+            identities = identities.map { identity ->
+                "${identity.key}: \"${identity.value}\""
+            }.joinToString(separator = ",\n", prefix = "\n", postfix = "\n"),
+            region = region,
+            environment = environment,
+            forceShow = forceShow?.getUrlParameter(),
+            preferencesTabs = preferencesTabs.takeIf { it.isNotEmpty() }?.map { it.getUrlParameter() }?.joinToString(","),
+            preferencesTab = preferencesTab?.getUrlParameter(),
+            bottomPadding = bottomPaddingPx
+        )
+
+        loadDataWithBaseURL("http://localhost", indexHtml, "text/html", "UTF-8", null)
+    }
+
     private class PreferenceCenterJavascriptInterface(private val ketchWebView: KetchWebView) {
         @JavascriptInterface
         fun hideExperience(status: String?) {
@@ -267,14 +275,16 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         }
 
         @JavascriptInterface
-        fun willShowExperience(willShowExperience: String?) {
-            Log.d(TAG, "willShowExperience: $willShowExperience")
+        fun willShowExperience(type: String?) {
+            val parsedType = parseWillShowExperienceType(type)
+            Log.d(TAG, "willShowExperience: $type = ${parsedType.name}")
             runOnMainThread {
-                if (willShowExperience == "experiences.consent") {
+                if (parsedType === WillShowExperienceType.ConsentExperience) {
                     ketchWebView.listener?.showConsent()
                 } else {
                     ketchWebView.listener?.showPreferences()
                 }
+                ketchWebView.listener?.onWillShowExperience(parsedType)
             }
         }
 
@@ -400,6 +410,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         fun onError(errMsg: String?)
         fun changeDialog(display: ContentDisplay)
         fun onClose(status: HideExperienceStatus)
+        fun onWillShowExperience(experienceType: WillShowExperienceType)
         fun onTapOutside()
     }
 
