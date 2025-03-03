@@ -79,6 +79,18 @@ internal class KetchDialogFragment() : DialogFragment() {
         updateDialogSize()
     }
 
+    override fun onStart() {
+        super.onStart()
+        dialog?.window?.let { window ->
+            window.setLayout(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            window.setGravity(position.gravity)
+            window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        }
+    }
+
     fun show(manager: FragmentManager, webView: KetchWebView) {
         if (!isAdded) {
             try {

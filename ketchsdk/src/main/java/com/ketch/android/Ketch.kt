@@ -473,7 +473,12 @@ class Ketch private constructor(
         CONSENTS,
         SUBSCRIPTIONS;
 
-        fun getUrlParameter() = "${name.lowercase()}Tab"
+        fun getUrlParameter(): String = when (this) {
+            OVERVIEW -> "overviewTab"
+            RIGHTS -> "rightsTab"
+            CONSENTS -> "consentsTab"
+            SUBSCRIPTIONS -> "subscriptionsTab"
+        }
     }
 
     enum class LogLevel {
@@ -577,10 +582,8 @@ class Ketch private constructor(
     fun cleanup() {
         isActive = false
         cleanupDialogFragment { _ ->
-            Handler(android.os.Looper.getMainLooper()).postDelayed({
-                cleanupWebView()
-                Runtime.getRuntime().gc()
-            }, 200)
+            cleanupWebView()
+            Runtime.getRuntime().gc()
         }
     }
 

@@ -37,26 +37,20 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 
-const val INITIAL_RELOAD_DELAY = 4000L
-
-@SuppressLint("SetJavaScriptEnabled", "ViewConstructor")
-class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(context) {
+class KetchWebView @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0
+) : WebView(context, attrs, defStyleAttr) {
 
     var listener: WebViewListener? = null
-    private val localContentWebViewClient = LocalContentWebViewClient(shouldRetry)
+    private val localContentWebViewClient = LocalContentWebViewClient()
+    private var isPageLoaded = false
+    private var currentUrl: String? = null
 
     init {
         webViewClient = localContentWebViewClient
-        settings.javaScriptEnabled = true
-        setBackgroundColor(context.getColor(android.R.color.transparent))
-
-        // Explicitly set to false to address android webview security concern
-        setWebContentsDebuggingEnabled(false)
-
-        addJavascriptInterface(
-            PreferenceCenterJavascriptInterface(this),
-            "androidListener"
-        )
+        setupWebView()
 
         //receive console messages from the WebView
         webChromeClient = object : WebChromeClient() {
@@ -70,6 +64,21 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
                 Log.d(TAG, "progress: $newProgress")
             }
         }
+    }
+
+    private fun setupWebView() {
+        settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            setGeolocationEnabled(false)
+            mediaPlaybackRequiresUserGesture = false
+        }
+    }
+
+    override fun loadUrl(url: String) {
+        currentUrl = url
+        isPageLoaded = false
+        super.loadUrl(url)
     }
 
     fun setDebugMode() {
@@ -137,16 +146,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         }
     }
 
-    class LocalContentWebViewClient(private var shouldRetry: Boolean = false) : WebViewClientCompat() {
-
-        // Flag indicating if the webview has finished loading
-        // We use atomic boolean here because we are using it within a coroutine
-        private var isLoaded = AtomicBoolean(false)
-
-        // Reload delay, increases exponentially in onPageStarted
-        private var reloadDelay = INITIAL_RELOAD_DELAY
-
-        private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    class LocalContentWebViewClient : WebViewClientCompat() {
 
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val intent = Intent(Intent.ACTION_VIEW, request.url)
@@ -185,41 +185,23 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             super.onPageStarted(view, url, favicon)
             Log.d(TAG, "onPageStarted: $url")
 
-            // Reset loaded flag
-            isLoaded.set(false)
-
-            // Launch retry if flag set
-            if (shouldRetry) {
-                scope.launch(Dispatchers.Main) {
-                    delay(reloadDelay)
-
-                    // If not yet loaded stop current webview, reload, and increase future delay
-                    if (!isLoaded.get()) {
-                        Log.d(TAG, "Reloading webview after $reloadDelay ms")
-                        view?.stopLoading()
-                        view?.reload()
-                        reloadDelay *= 2 // Exponentially increase reload delay
-                    }
-                }
+            if (url == currentUrl) {
+                isPageLoaded = false
             }
         }
 
         override fun onPageFinished(view: WebView?, url: String?) {
             super.onPageFinished(view, url)
 
-            // Set loaded flag
-            isLoaded.set(true)
-
-            // Only reset reload delay when second onPageFinished callback has fired
-            if (url === "data:text/html;charset=utf-8;base64,") {
-                reloadDelay = INITIAL_RELOAD_DELAY
+            if (url == currentUrl && !isPageLoaded) {
+                isPageLoaded = true
+                onPageLoadedListener?.onPageLoaded()
             }
             Log.d(TAG, "onPageFinished: $url")
         }
 
         // Cancel all coroutines
         fun cancelCoroutines() {
-            scope.cancel()
             Log.d(TAG, "webViewClient coroutines cancelled")
         }
     }
@@ -455,6 +437,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         fun changeDialog(display: ContentDisplay)
         fun onClose(status: HideExperienceStatus)
         fun onWillShowExperience(experienceType: WillShowExperienceType)
+        fun onPageLoaded()
     }
 
     internal enum class ExperienceType {
