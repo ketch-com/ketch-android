@@ -42,33 +42,27 @@ class Ketch private constructor(
      * Retrieve a String value from the preferences.
      *
      * @param key The name of the preference to retrieve.
-     *
      * @return Returns the preference value if it exists
      */
     fun getSavedString(key: String) = getPreferences().getSavedValue(key)
 
     /**
      * Retrieve IABTCF_TCString value from the preferences.
-     *
      * @return Returns the preference value if it exists
      */
     fun getTCFTCString() = getPreferences().getSavedValue(KetchSharedPreferences.IAB_TCF_TC_STRING)
 
     /**
      * Retrieve IABUSPrivacy_String value from the preferences.
-     *
      * @return Returns the preference value if it exists
      */
-    fun getUSPrivacyString() =
-        getPreferences().getSavedValue(KetchSharedPreferences.IAB_US_PRIVACY_STRING)
+    fun getUSPrivacyString() = getPreferences().getSavedValue(KetchSharedPreferences.IAB_US_PRIVACY_STRING)
 
     /**
      * Retrieve IABGPP_HDR_GppString value from the preferences.
-     *
      * @return Returns the preference value if it exists
      */
-    fun getGPPHDRGppString() =
-        getPreferences().getSavedValue(KetchSharedPreferences.IAB_GPP_HDR_GPP_STRING)
+    fun getGPPHDRGppString() = getPreferences().getSavedValue(KetchSharedPreferences.IAB_GPP_HDR_GPP_STRING)
 
     /**
      * Loads a web page and shows a popup if necessary
@@ -227,39 +221,27 @@ class Ketch private constructor(
 
     /**
      * Set identities
-     *
      * @param identities: Map<String, String>
      */
-    fun setIdentities(identities: Map<String, String>) {
-        this.identities = identities
-    }
+    fun setIdentities(identities: Map<String, String>) { this.identities = identities }
 
     /**
      * Set the language
-     *
      * @param language: a language name (EN, FR, etc.)
      */
-    fun setLanguage(language: String?) {
-        this.language = language
-    }
+    fun setLanguage(language: String?) { this.language = language }
 
     /**
      * Set the jurisdiction
-     *
      * @param jurisdiction: the jurisdiction value
      */
-    fun setJurisdiction(jurisdiction: String?) {
-        this.jurisdiction = jurisdiction
-    }
+    fun setJurisdiction(jurisdiction: String?) { this.jurisdiction = jurisdiction }
 
     /**
      * Set Region
-     *
      * @param region: the region name
      */
-    fun setRegion(region: String?) {
-        this.region = region
-    }
+    fun setRegion(region: String?) { this.region = region }
 
     init {
         getPreferences()
@@ -401,7 +383,7 @@ class Ketch private constructor(
                 override fun changeDialog(display: ContentDisplay) {
                     findDialogFragment()?.let {
                         (it as? KetchDialogFragment)?.apply {
-                            isCancelable = getDisposableContentInteractions(display)
+                            isCancelable = getDisposableContentInteractions()
                         }
                     }
                 }
@@ -444,16 +426,7 @@ class Ketch private constructor(
                     return false
                 }
 
-                private fun getDisposableContentInteractions(display: ContentDisplay): Boolean {
-                    return config?.let {
-                        when (display) {
-                            ContentDisplay.Modal, ContentDisplay.Banner -> {
-                                it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
-                            }
-                            // ContentDisplay is an enum, so this covers all cases
-                        }
-                    } ?: false
-                }
+                private fun getDisposableContentInteractions() = config?.theme?.modal?.container?.backdrop?.disableContentInteractions ?: false
             }
             return webView
         } catch (e: Exception) {
@@ -490,13 +463,9 @@ class Ketch private constructor(
         }
     }
 
-    private fun findDialogFragment(): androidx.fragment.app.Fragment? {
-        return fragmentManager.get()?.findFragmentByTag(KetchDialogFragment.TAG)
-    }
+    private fun findDialogFragment() = fragmentManager.get()?.findFragmentByTag(KetchDialogFragment.TAG)
 
-    private fun isActivityActive(): Boolean {
-        return (context.get() as? LifecycleOwner)?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.STARTED) ?: false
-    }
+    private fun isActivityActive() = (context.get() as? LifecycleOwner)?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.STARTED) ?: false
 
     enum class PreferencesTab {
         OVERVIEW,
@@ -504,12 +473,7 @@ class Ketch private constructor(
         CONSENTS,
         SUBSCRIPTIONS;
 
-        fun getUrlParameter(): String = when (this) {
-            OVERVIEW -> "overviewTab"
-            RIGHTS -> "rightsTab"
-            CONSENTS -> "consentsTab"
-            SUBSCRIPTIONS -> "subscriptionsTab"
-        }
+        fun getUrlParameter() = "${name.lowercase()}Tab"
     }
 
     enum class LogLevel {
@@ -623,14 +587,12 @@ class Ketch private constructor(
     /**
      * Centralized helper to clean up WebView resources
      */
-    private fun cleanupWebView() {
-        try {
-            currentWebView?.destroy()
-            currentWebView = null
-        } catch (e: Exception) {
-            Log.e(TAG, "Error during WebView cleanup: ${e.message}", e)
-            currentWebView = null
-        }
+    private fun cleanupWebView() = runCatching {
+        currentWebView?.destroy()
+    }.onFailure {
+        Log.e(TAG, "Error during WebView cleanup: ${it.message}", it)
+    }.also {
+        currentWebView = null
     }
     
     /**
