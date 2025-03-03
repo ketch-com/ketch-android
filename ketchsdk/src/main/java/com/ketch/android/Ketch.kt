@@ -210,32 +210,6 @@ class Ketch private constructor(
     }
 
     /**
-     * Force cleanup of any existing dialog fragments, to be used when dialogs appear to be stuck
-     */
-    fun forceCleanupDialogs() {
-        isActive = false
-        cleanupWebView()
-        cleanupDialogFragment(forceRemove = true)
-    }
-
-    /**
-     * Provides a complete reset of the SDK state.
-     * Call this method if the UI becomes unresponsive to restore normal operation.
-     */
-    fun resetState() {
-        Log.d(TAG, "Performing full SDK state reset")
-        
-        try {
-            cleanupDialogFragment(forceRemove = true)
-            cleanupWebView()
-            isActive = false
-            System.gc()
-        } catch (e: Exception) {
-            Log.e(TAG, "Error during state reset: ${e.message}", e)
-        }
-    }
-
-    /**
      * Set identities
      * @param identities: Map<String, String>
      */
@@ -625,18 +599,6 @@ class Ketch private constructor(
             ketchUrl,
             logLevel
         )
-    }
-
-    /**
-     * Clean up resources when the host app is being destroyed or paused for a long time
-     * This should be called from onDestroy or when the app knows it won't use the SDK for a while
-     */
-    fun cleanup() {
-        isActive = false
-        cleanupDialogFragment { _ ->
-            cleanupWebView()
-            Runtime.getRuntime().gc()
-        }
     }
 
     /**

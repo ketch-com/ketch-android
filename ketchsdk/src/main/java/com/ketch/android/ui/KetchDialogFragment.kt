@@ -45,6 +45,9 @@ internal class KetchDialogFragment() : DialogFragment() {
             inflater.inflate(R.layout.ketch_dialog_layout, container)
         )
         
+        // Ensure the root view is transparent
+        binding.root.setBackgroundColor(Color.TRANSPARENT)
+        
         webView?.let { web ->
             // Remove from any previous parent
             (web.parent as? ViewGroup)?.removeView(web)
@@ -56,10 +59,11 @@ internal class KetchDialogFragment() : DialogFragment() {
                 FrameLayout.LayoutParams.MATCH_PARENT
             )
             
-            // Ensure WebView is interactive
+            // Ensure WebView is interactive and transparent
             web.isClickable = true
             web.isFocusable = true
             web.isFocusableInTouchMode = true
+            web.setBackgroundColor(Color.TRANSPARENT)
         }
         
         return binding.root
@@ -113,7 +117,15 @@ internal class KetchDialogFragment() : DialogFragment() {
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
             window.setGravity(position.gravity)
+            
+            // Ensure complete transparency
             window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            window.clearFlags(FLAG_DIM_BEHIND)
+            
+            // Make sure the window has a transparent background
+            val attributes = window.attributes
+            attributes.dimAmount = 0f
+            window.attributes = attributes
         }
     }
 

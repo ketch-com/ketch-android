@@ -52,6 +52,9 @@ class KetchWebView @JvmOverloads constructor(
     init {
         webViewClient = localContentWebViewClient
         setupWebView()
+        
+        // Ensure the WebView background is transparent
+        setBackgroundColor(android.graphics.Color.TRANSPARENT)
 
         // Add JavaScript interface for communication with WebView
         addJavascriptInterface(
