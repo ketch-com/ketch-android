@@ -268,6 +268,7 @@ class Ketch private constructor(
 
             private var config: KetchConfig? = null
             private var showConsent: Boolean = false
+            private var dialog: KetchDialogFragment? = null
 
             override fun showConsent() {
                 if (config == null) {
@@ -278,15 +279,17 @@ class Ketch private constructor(
             }
 
             override fun showPreferences() {
-                if (findDialogFragment() != null) {
+                if (dialog != null) {
                     Log.d(TAG, "Not showing as dialog already exists")
                     return
                 }
 
-                val dialog = KetchDialogFragment.newInstance()
-
                 fragmentManager?.let {
-                    dialog.show(it, webView)
+                    dialog = KetchDialogFragment.newInstance() {
+                        dialog = null
+                    }.apply {
+                        show(it, webView)
+                    }
                     this@Ketch.listener?.onShow()
                 }
             }
@@ -344,18 +347,14 @@ class Ketch private constructor(
             }
 
             override fun changeDialog(display: ContentDisplay) {
-                findDialogFragment()?.let {
-                    (it as? KetchDialogFragment)?.apply {
-                        isCancelable = getDisposableContentInteractions(display)
-                    }
+                dialog?.let {
+                    it.isCancelable = getDisposableContentInteractions(display)
                 }
             }
 
             override fun onClose(status: HideExperienceStatus) {
                 // Dismiss dialog fragment
-                findDialogFragment()?.let {
-                    (it as? KetchDialogFragment)?.dismissAllowingStateLoss()
-                }
+                dismissDialog()
 
                 // Execute onDismiss event listener
                 this@Ketch.listener?.onDismiss(status)
@@ -368,28 +367,28 @@ class Ketch private constructor(
 
             override fun onTapOutside() {
                 // Dismiss dialog fragment
-                findDialogFragment()?.let {
-                    (it as? KetchDialogFragment)?.dismissAllowingStateLoss()
+                dialog?.dismissAllowingStateLoss()
 
-                    // Execute onDismiss event listener
-                    this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
-                }
+                // Execute onDismiss event listener
+                this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
             }
 
             private fun showConsentPopup() {
-                if (findDialogFragment() != null) {
+                if (dialog != null) {
                     Log.d(TAG, "Not showing as dialog already exists")
                     return
                 }
 
-                val dialog = KetchDialogFragment.newInstance().apply {
-                    val disableContentInteractions = getDisposableContentInteractions(
-                        config?.experiences?.consent?.display ?: ContentDisplay.Banner
-                    )
-                    isCancelable = !disableContentInteractions
-                }
                 fragmentManager?.let {
-                    dialog.show(it, webView)
+                    dialog = KetchDialogFragment.newInstance() {
+                        dialog = null
+                    }.apply {
+                        val disableContentInteractions = getDisposableContentInteractions(
+                            config?.experiences?.consent?.display ?: ContentDisplay.Banner
+                        )
+                        isCancelable = !disableContentInteractions
+                        show(it, webView)
+                    }
                     this@Ketch.listener?.onShow()
                     showConsent = false
                 }

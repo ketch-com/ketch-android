@@ -1,6 +1,7 @@
 package com.ketch.android.ui
 
 import android.app.Dialog
+import android.content.DialogInterface
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
@@ -17,7 +18,7 @@ import androidx.fragment.app.FragmentManager
 import com.ketch.android.R
 import com.ketch.android.databinding.KetchDialogLayoutBinding
 
-internal class KetchDialogFragment() : DialogFragment() {
+internal class KetchDialogFragment(private val dismissListener: () -> Unit) : DialogFragment() {
 
     private lateinit var binding: KetchDialogLayoutBinding
 
@@ -80,6 +81,11 @@ internal class KetchDialogFragment() : DialogFragment() {
         }
     }
 
+    override fun onDismiss(dialog: DialogInterface) {
+        dismissListener.invoke()
+        super.onDismiss(dialog)
+    }
+
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         dialog?.window?.also { window ->
@@ -106,8 +112,8 @@ internal class KetchDialogFragment() : DialogFragment() {
     companion object {
         internal val TAG = KetchDialogFragment::class.java.simpleName
 
-        fun newInstance(): KetchDialogFragment {
-            return KetchDialogFragment()
+        fun newInstance(dismissListener: () -> Unit): KetchDialogFragment {
+            return KetchDialogFragment(dismissListener)
         }
     }
 }
