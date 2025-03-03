@@ -34,7 +34,7 @@ class Ketch private constructor(
     private var jurisdiction: String? = null
     private var region: String? = null
     
-    // Add a WebView instance and dialog state flag
+    // WebView instance and state flags
     private var currentWebView: KetchWebView? = null
     private var isActive = false
 
@@ -80,27 +80,23 @@ class Ketch private constructor(
         synchronousPreferences: Boolean = false,
         bottomPadding: Int = 0,
     ): Boolean {
-        val webView = createWebView(shouldRetry, synchronousPreferences)
-        return if (webView != null) {
-            webView.load(
-                orgCode,
-                property,
-                language,
-                jurisdiction,
-                region,
-                environment,
-                identities,
-                null,
-                emptyList(),
-                null,
-                ketchUrl,
-                logLevel,
-                bottomPadding,
-            )
-            true
-        } else {
-            false
-        }
+        val webView = createWebView(shouldRetry, synchronousPreferences) ?: return false
+        webView.load(
+            orgCode,
+            property,
+            language,
+            jurisdiction,
+            region,
+            environment,
+            identities,
+            null,
+            emptyList(),
+            null,
+            ketchUrl,
+            logLevel,
+            bottomPadding,
+        )
+        return true
     }
 
     /**
@@ -113,27 +109,23 @@ class Ketch private constructor(
         synchronousPreferences: Boolean = false,
         bottomPadding: Int = 0,
     ): Boolean {
-        val webView = createWebView(shouldRetry, synchronousPreferences)
-        return if (webView != null) {
-            webView.load(
-                orgCode,
-                property,
-                language,
-                jurisdiction,
-                region,
-                environment,
-                identities,
-                KetchWebView.ExperienceType.CONSENT,
-                emptyList(),
-                null,
-                ketchUrl,
-                logLevel,
-                bottomPadding
-            )
-            true
-        } else {
-            false
-        }
+        val webView = createWebView(shouldRetry, synchronousPreferences) ?: return false
+        webView.load(
+            orgCode,
+            property,
+            language,
+            jurisdiction,
+            region,
+            environment,
+            identities,
+            KetchWebView.ExperienceType.CONSENT,
+            emptyList(),
+            null,
+            ketchUrl,
+            logLevel,
+            bottomPadding
+        )
+        return true
     }
 
     /**
@@ -146,27 +138,23 @@ class Ketch private constructor(
         synchronousPreferences: Boolean = false,
         bottomPadding: Int = 0,
     ): Boolean {
-        val webView = createWebView(shouldRetry, synchronousPreferences)
-        return if (webView != null) {
-            webView.load(
-                orgCode,
-                property,
-                language,
-                jurisdiction,
-                region,
-                environment,
-                identities,
-                KetchWebView.ExperienceType.PREFERENCES,
-                emptyList(),
-                null,
-                ketchUrl,
-                logLevel,
-                bottomPadding
-            )
-            true
-        } else {
-            false
-        }
+        val webView = createWebView(shouldRetry, synchronousPreferences) ?: return false
+        webView.load(
+            orgCode,
+            property,
+            language,
+            jurisdiction,
+            region,
+            environment,
+            identities,
+            KetchWebView.ExperienceType.PREFERENCES,
+            emptyList(),
+            null,
+            ketchUrl,
+            logLevel,
+            bottomPadding
+        )
+        return true
     }
 
     /**
@@ -183,27 +171,23 @@ class Ketch private constructor(
         synchronousPreferences: Boolean = false,
         bottomPadding: Int = 0,
     ): Boolean {
-        val webView = createWebView(shouldRetry, synchronousPreferences)
-        return if (webView != null) {
-            webView.load(
-                orgCode,
-                property,
-                language,
-                jurisdiction,
-                region,
-                environment,
-                identities,
-                KetchWebView.ExperienceType.PREFERENCES,
-                tabs,
-                tab,
-                ketchUrl,
-                logLevel,
-                bottomPadding
-            )
-            true
-        } else {
-            false
-        }
+        val webView = createWebView(shouldRetry, synchronousPreferences) ?: return false
+        webView.load(
+            orgCode,
+            property,
+            language,
+            jurisdiction,
+            region,
+            environment,
+            identities,
+            KetchWebView.ExperienceType.PREFERENCES,
+            tabs,
+            tab,
+            ketchUrl,
+            logLevel,
+            bottomPadding
+        )
+        return true
     }
 
     /**
@@ -282,13 +266,14 @@ class Ketch private constructor(
 
         fragmentManager.get()?.let { fm ->
             try {
-                val existingDialog = fm.findFragmentByTag(KetchDialogFragment.TAG)
-                if (existingDialog != null) {
+                val initialExistingDialog = fm.findFragmentByTag(KetchDialogFragment.TAG)
+                if (initialExistingDialog != null) {
                     cleanupDialogFragment(forceRemove = true) { _ ->
                         this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
                     }
                 } else {
-                    // No action needed when no dialog exists
+                    // No existing dialog to clean up
+                    null
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error cleaning up existing dialogs: ${e.message}", e)
@@ -312,12 +297,11 @@ class Ketch private constructor(
             return null
         }
         
-        val existingDialog = findDialogFragment()
-        if (existingDialog != null) {
+        val existingFragment = findDialogFragment()
+        if (existingFragment != null) {
             if (!isActive) {
                 cleanupDialogFragment(forceRemove = true)
             }
-            
             return null
         }
         
@@ -326,11 +310,12 @@ class Ketch private constructor(
         try {
             cleanupWebView()
             
-            val webView = context.get()?.let { KetchWebView(it, shouldRetry) } ?: run {
+            val ctx = context.get() ?: run {
                 isActive = false
                 return null
             }
             
+            val webView = KetchWebView(ctx, shouldRetry)
             currentWebView = webView
 
             if (logLevel === LogLevel.DEBUG) {
@@ -356,37 +341,11 @@ class Ketch private constructor(
                         return
                     }
 
-                    val existingDialog = findDialogFragment()
-                    if (existingDialog != null) {
-                        if (!isActive) {
-                            isActive = true
-                        }
-                        
-                        return
-                    }
+                    if (isFragmentAlreadyShowing()) return
 
-                    val dialog = KetchDialogFragment.newInstance()?.apply {
-                        val disableContentInteractions = getDisposableContentInteractions(
-                            config?.experiences?.consent?.display ?: ContentDisplay.Banner
-                        )
-                        isCancelable = !disableContentInteractions
-                    }
-                    
-                    fragmentManager.get()?.let {
-                        val existingFragment = it.findFragmentByTag(KetchDialogFragment.TAG)
-                        if (existingFragment != null) {
-                            try {
-                                it.beginTransaction().remove(existingFragment).commitNow()
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Error removing existing fragment: ${e.message}", e)
-                            }
-                        }
-                        
-                        dialog?.show(it, webView)
-                        this@Ketch.listener?.onShow()
-                    } ?: run {
-                        isActive = false
-                    }
+                    showDialogWithWebView(
+                        webView = webView
+                    )
                     
                     showConsent = false
                 }
@@ -410,10 +369,9 @@ class Ketch private constructor(
                     this.config = config
                     this@Ketch.listener?.onConfigUpdated(config)
 
-                    if (!showConsent) {
-                        return
+                    if (showConsent) {
+                        showConsentPopup()
                     }
-                    showConsentPopup()
                 }
 
                 override fun onEnvironmentUpdated(environment: String?) {
@@ -465,53 +423,34 @@ class Ketch private constructor(
                         return
                     }
 
-                    val existingDialog = findDialogFragment()
-                    if (existingDialog != null) {
+                    if (isFragmentAlreadyShowing()) return
+
+                    showDialogWithWebView(
+                        webView = webView
+                    )
+                    
+                    showConsent = false
+                }
+                
+                // Helper method to check if a fragment is already showing
+                private fun isFragmentAlreadyShowing(): Boolean {
+                    val currentFragment = findDialogFragment()
+                    if (currentFragment != null) {
                         if (!isActive) {
                             isActive = true
                         }
-                        
-                        return
+                        return true
                     }
-
-                    val dialog = KetchDialogFragment.newInstance()?.apply {
-                        val disableContentInteractions = getDisposableContentInteractions(
-                            config?.experiences?.consent?.display ?: ContentDisplay.Banner
-                        )
-                        isCancelable = !disableContentInteractions
-                    }
-                    
-                    fragmentManager.get()?.let {
-                        val existingFragment = it.findFragmentByTag(KetchDialogFragment.TAG)
-                        if (existingFragment != null) {
-                            try {
-                                it.beginTransaction().remove(existingFragment).commitNow()
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Error removing existing fragment: ${e.message}", e)
-                            }
-                        }
-                        
-                        dialog?.show(it, webView)
-                        this@Ketch.listener?.onShow()
-                    } ?: run {
-                        isActive = false
-                    }
-                    
-                    showConsent = false
+                    return false
                 }
 
                 private fun getDisposableContentInteractions(display: ContentDisplay): Boolean {
                     return config?.let {
                         when (display) {
-                            ContentDisplay.Modal -> {
+                            ContentDisplay.Modal, ContentDisplay.Banner -> {
                                 it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
                             }
-                            ContentDisplay.Banner -> {
-                                it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
-                            }
-                            else -> {
-                                false
-                            }
+                            // ContentDisplay is an enum, so this covers all cases
                         }
                     } ?: false
                 }
@@ -521,6 +460,33 @@ class Ketch private constructor(
             Log.e(TAG, "Error creating WebView: ${e.message}", e)
             isActive = false
             return null
+        }
+    }
+    
+    /**
+     * Helper method to show a dialog with the WebView
+     */
+    private fun showDialogWithWebView(
+        webView: KetchWebView
+    ) {
+        // Since we can't access the config property from the WebViewListener,
+        // we'll use a default value for disableContentInteractions
+        val disableContentInteractions = false
+        
+        val dialog = KetchDialogFragment.newInstance()?.apply {
+            isCancelable = !disableContentInteractions
+        }
+        
+        fragmentManager.get()?.let { manager ->
+            try {
+                dialog?.show(manager, webView)
+                this@Ketch.listener?.onShow()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error showing dialog: ${e.message}", e)
+                isActive = false
+            }
+        } ?: run {
+            isActive = false
         }
     }
 
@@ -645,15 +611,11 @@ class Ketch private constructor(
      * This should be called from onDestroy or when the app knows it won't use the SDK for a while
      */
     fun cleanup() {
+        isActive = false
         cleanupDialogFragment { _ ->
             Handler(android.os.Looper.getMainLooper()).postDelayed({
-                try {
-                    cleanupWebView()
-                    Runtime.getRuntime().gc()
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error during cleanup: ${e.message}", e)
-                }
-                isActive = false
+                cleanupWebView()
+                Runtime.getRuntime().gc()
             }, 200)
         }
     }
@@ -663,10 +625,8 @@ class Ketch private constructor(
      */
     private fun cleanupWebView() {
         try {
-            if (currentWebView != null) {
-                currentWebView?.destroy()
-                currentWebView = null
-            }
+            currentWebView?.destroy()
+            currentWebView = null
         } catch (e: Exception) {
             Log.e(TAG, "Error during WebView cleanup: ${e.message}", e)
             currentWebView = null
@@ -683,14 +643,10 @@ class Ketch private constructor(
         try {
             val fragment = findDialogFragment()
             if (fragment != null) {
-                if (fragment is KetchDialogFragment) {
-                    fragment.dismissAllowingStateLoss()
-                } else {
-                    try {
-                        (fragment as? DialogFragment)?.dismissAllowingStateLoss()
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error dismissing non-KetchDialogFragment: ${e.message}")
-                    }
+                // Dismiss the fragment if it's a DialogFragment
+                when (fragment) {
+                    is KetchDialogFragment -> fragment.dismissAllowingStateLoss()
+                    is DialogFragment -> fragment.dismissAllowingStateLoss()
                 }
                 
                 if (forceRemove) {
@@ -699,12 +655,13 @@ class Ketch private constructor(
                             fm.beginTransaction()
                                 .remove(fragment)
                                 .commitNowAllowingStateLoss()
+                            
+                            onComplete.invoke(null)
                         } catch (e: Exception) {
                             Log.e(TAG, "Error forcefully removing fragment: ${e.message}", e)
+                            onComplete.invoke(null)
                         }
-                    }
-                    
-                    onComplete.invoke(null)
+                    } ?: onComplete.invoke(null)
                 } else {
                     Handler(android.os.Looper.getMainLooper()).postDelayed({
                         onComplete.invoke(null)
