@@ -53,6 +53,12 @@ class KetchWebView @JvmOverloads constructor(
         webViewClient = localContentWebViewClient
         setupWebView()
 
+        // Add JavaScript interface for communication with WebView
+        addJavascriptInterface(
+            PreferenceCenterJavascriptInterface(this),
+            "androidListener"
+        )
+
         //receive console messages from the WebView
         webChromeClient = object : WebChromeClient() {
             override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
