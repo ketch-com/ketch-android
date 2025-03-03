@@ -207,7 +207,6 @@ class KetchWebView @JvmOverloads constructor(
 
             if (view is KetchWebView && url == view.currentUrl && !view.isPageLoaded) {
                 view.isPageLoaded = true
-                view.listener?.onPageLoaded()
             }
             Log.d(TAG, "onPageFinished: $url")
         }
@@ -450,7 +449,11 @@ class KetchWebView @JvmOverloads constructor(
         fun changeDialog(display: ContentDisplay)
         fun onClose(status: HideExperienceStatus)
         fun onWillShowExperience(experienceType: WillShowExperienceType)
-        fun onPageLoaded()
+        /**
+         * @deprecated This method is deprecated and will be removed in a future release
+         */
+        @Deprecated("This method is deprecated and will be removed in a future release")
+        fun onTapOutside()
     }
 
     internal enum class ExperienceType {

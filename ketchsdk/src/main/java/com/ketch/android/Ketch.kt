@@ -412,9 +412,18 @@ class Ketch private constructor(
                     this@Ketch.listener?.onWillShowExperience(experienceType)
                 }
                 
-                override fun onPageLoaded() {
-                    // Handle page loaded event
-                    Log.d(TAG, "WebView page loaded")
+                /**
+                 * @deprecated This method is deprecated and will be removed in a future release
+                 */
+                @Deprecated("This method is deprecated and will be removed in a future release")
+                override fun onTapOutside() {
+                    // Dismiss dialog fragment
+                    findDialogFragment()?.let {
+                        (it as? KetchDialogFragment)?.dismissAllowingStateLoss()
+                        
+                        // Execute onDismiss event listener
+                        this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
+                    }
                 }
 
                 private fun showConsentPopup() {
