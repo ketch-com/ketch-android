@@ -365,8 +365,13 @@ class Ketch private constructor(
                         return
                     }
 
-                    val dialog = KetchDialogFragment.newInstance()
-
+                    val dialog = KetchDialogFragment.newInstance()?.apply {
+                        val disableContentInteractions = getDisposableContentInteractions(
+                            config?.experiences?.consent?.display ?: ContentDisplay.Banner
+                        )
+                        isCancelable = !disableContentInteractions
+                    }
+                    
                     fragmentManager.get()?.let {
                         val existingFragment = it.findFragmentByTag(KetchDialogFragment.TAG)
                         if (existingFragment != null) {
@@ -377,11 +382,13 @@ class Ketch private constructor(
                             }
                         }
                         
-                        dialog.show(it, webView)
+                        dialog?.show(it, webView)
                         this@Ketch.listener?.onShow()
                     } ?: run {
                         isActive = false
                     }
+                    
+                    showConsent = false
                 }
 
                 override fun onUSPrivacyUpdated(values: Map<String, Any?>) {
@@ -467,7 +474,7 @@ class Ketch private constructor(
                         return
                     }
 
-                    val dialog = KetchDialogFragment.newInstance().apply {
+                    val dialog = KetchDialogFragment.newInstance()?.apply {
                         val disableContentInteractions = getDisposableContentInteractions(
                             config?.experiences?.consent?.display ?: ContentDisplay.Banner
                         )
@@ -484,7 +491,7 @@ class Ketch private constructor(
                             }
                         }
                         
-                        dialog.show(it, webView)
+                        dialog?.show(it, webView)
                         this@Ketch.listener?.onShow()
                     } ?: run {
                         isActive = false

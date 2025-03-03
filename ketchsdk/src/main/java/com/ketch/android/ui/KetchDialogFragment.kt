@@ -168,9 +168,22 @@ internal class KetchDialogFragment() : DialogFragment() {
 
     companion object {
         internal val TAG = KetchDialogFragment::class.java.simpleName
-
-        fun newInstance(): KetchDialogFragment {
-            return KetchDialogFragment()
+        private var isCurrentlyShowing = false
+        
+        fun newInstance(): KetchDialogFragment? {
+            // Only allow ONE instance at a time
+            return if (!isCurrentlyShowing) {
+                isCurrentlyShowing = true
+                KetchDialogFragment()
+            } else {
+                Log.w(TAG, "DialogFragment already showing, ignoring request")
+                null
+            }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        isCurrentlyShowing = false
     }
 }
