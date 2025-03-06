@@ -1,7 +1,7 @@
 package com.ketch.android.data
 
 /*
-* https://global.ketchcdn.com/web/v3/config/ketch_samples/android/boot.js?ketch_log=DEBUG
+* https://global.ketchcdn.com/web/v3//config/ketch_samples/android/boot.js?ketch_log=DEBUG
 *       &ketch_lang=en&ketch_jurisdiction=default&ketch_region=US
 *       &ketch_show=preferences&ketch_preferences_tabs=overviewTab,rightsTab,consentsTab,subscriptionsTab
  */
@@ -159,7 +159,7 @@ fun getIndexHtml(
             "      // Trigger taps outside the dialog\n" +
             "      document.body.addEventListener('touchstart', function (e) {\n" +
             "        if (e.target === document.body) {\n" +
-            "          emitEvent('hideExperience', ['close']);\n" +
+            "          emitEvent('tapOutside', [getDialogSize()]);\n" +
             "        }\n" +
             "      });\n" +
             "      initKetchTag({" +
