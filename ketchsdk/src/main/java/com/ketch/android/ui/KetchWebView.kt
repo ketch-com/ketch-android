@@ -55,6 +55,12 @@ class KetchWebView @JvmOverloads constructor(
         
         // Ensure the WebView background is transparent
         setBackgroundColor(android.graphics.Color.TRANSPARENT)
+        
+        // Configure hardware acceleration properly
+        setLayerType(LAYER_TYPE_HARDWARE, null)
+        
+        // Ensure that the WebView renders properly
+        setWillNotDraw(false)
 
         // Add JavaScript interface for communication with WebView
         addJavascriptInterface(
@@ -98,61 +104,104 @@ class KetchWebView @JvmOverloads constructor(
     // Properly clean up WebView resources to prevent memory leaks and renderer crashes
     override fun destroy() {
         try {
-            Log.d(TAG, "Beginning WebView cleanup")
+            Log.d(TAG, "Beginning WebView destroy")
+            
+            // CRITICAL: Reset touch listener FIRST to ensure touches pass through
+            // This must be the first operation to guarantee it happens even if other steps fail
+            setOnTouchListener(null)
+            
+            // Disable hardware acceleration which can cause blocking issues
+            try {
+                setLayerType(LAYER_TYPE_NONE, null)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error disabling hardware acceleration: ${e.message}")
+            }
             
             // Prevent further page loads
             stopLoading()
             
             // Add a blank/empty handler for JS errors during cleanup
-            evaluateJavascript("window.onerror = function(message, url, line, column, error) { return true; };", null)
+            try {
+                evaluateJavascript("window.onerror = function(message, url, line, column, error) { return true; };", null)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error setting JS error handler: ${e.message}")
+            }
             
             // Remove JavaScript interface first to prevent any further callbacks
-            removeJavascriptInterface("androidListener")
+            try {
+                removeJavascriptInterface("androidListener")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error removing JS interface: ${e.message}")
+            }
             
             // Set listener to null to prevent callbacks during cleanup
             listener = null
             
             // Cancel all coroutines next
-            localContentWebViewClient.cancelCoroutines()
+            try {
+                localContentWebViewClient.cancelCoroutines()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error cancelling coroutines: ${e.message}")
+            }
             
             // Disable JavaScript to prevent further execution
-            settings.javaScriptEnabled = false
+            try {
+                settings.javaScriptEnabled = false
+            } catch (e: Exception) {
+                Log.e(TAG, "Error disabling JavaScript: ${e.message}")
+            }
             
             // Stop any ongoing loads or processing
-            onPause()
-            
-            // Small pause to allow WebView internals to stabilize
             try {
-                Thread.sleep(50)
-            } catch (e: InterruptedException) {
-                Log.e(TAG, "Sleep interrupted during WebView cleanup", e)
+                onPause()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error pausing WebView: ${e.message}")
             }
             
             // Clear WebView state
-            clearHistory()
-            clearCache(true)
-            clearFormData()
-            clearSslPreferences()
+            try {
+                clearHistory()
+                clearCache(true)
+                clearFormData()
+                clearSslPreferences()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error clearing WebView state: ${e.message}")
+            }
             
             // Remove all views
-            removeAllViews()
+            try {
+                removeAllViews()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error removing views: ${e.message}")
+            }
             
             // Set a low global layout limit to reduce memory pressure
-            // This is a common practice for WebView cleanup to ensure the view doesn't
-            // maintain large layout allocations while waiting for destruction
-            setLayoutParams(
-                ViewGroup.LayoutParams(1, 1)
-            )
+            try {
+                setLayoutParams(
+                    ViewGroup.LayoutParams(1, 1)
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "Error setting layout params: ${e.message}")
+            }
             
             // Finally call the parent WebView's destroy method
-            super.destroy()
+            try {
+                super.destroy()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error in super.destroy(): ${e.message}")
+            }
             
-            // Suggest garbage collection to reclaim memory
-            Runtime.getRuntime().gc()
-            
-            Log.d(TAG, "WebView cleanup completed successfully")
+            Log.d(TAG, "WebView destroy completed successfully")
         } catch (e: Exception) {
-            Log.e(TAG, "Error during WebView cleanup: ${e.message}", e)
+            Log.e(TAG, "Error during WebView destroy: ${e.message}", e)
+        } finally {
+            // CRITICAL: Reset touch listener AGAIN in finally block to ensure it happens
+            // This is our last line of defense to prevent touch blocking
+            try {
+                setOnTouchListener(null)
+            } catch (e: Exception) {
+                Log.e(TAG, "Final attempt to reset touch listener failed: ${e.message}", e)
+            }
         }
     }
 
