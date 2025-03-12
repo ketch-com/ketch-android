@@ -196,7 +196,7 @@ If you're developing or modifying the SDK and want to test your changes with the
 
 ```gradle
 // Include the Ketch SDK from the local repository
-includeBuild('../../ketch-android') {
+includeBuild('../../../../ketch-android') {
     dependencySubstitution {
         substitute module('com.github.ketch-com:ketch-android') using project(':ketchsdk')
     }
