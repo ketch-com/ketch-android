@@ -33,11 +33,11 @@ class Ketch private constructor(
     private var jurisdiction: String? = null
     private var region: String? = null
     
-    // Flag to track if we're already showing an experience to prevent multiple overlapping experiences
+    // Flag to prevent multiple overlapping experiences
     @Volatile
     private var isShowingExperience = false
     
-    // Keep a reference to the active fragment for better cleanup
+    // Reference to the active fragment to do cleanup
     private var activeDialogFragment: WeakReference<KetchDialogFragment>? = null
     
     // Lock object for synchronization
@@ -243,7 +243,6 @@ class Ketch private constructor(
                 } catch (e: Exception) {
                     Log.e(TAG, "Error dismissing dialog: ${e.message}")
                 } finally {
-                    // Reset showing flag and reference regardless
                     isShowingExperience = false
                     activeDialogFragment = null
                     this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
@@ -395,6 +394,7 @@ class Ketch private constructor(
 
                 override fun onConfigUpdated(config: KetchConfig?) {
                     this.config = config
+
                     this@Ketch.listener?.onConfigUpdated(config)
 
                     if (!showConsent) {
