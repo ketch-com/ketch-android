@@ -56,7 +56,6 @@ internal class KetchDialogFragment : DialogFragment() {
     }
 
     override fun onDestroyView() {
-        // Clean up resources
         try {
             _binding?.root?.removeView(webView)
             webView?.kill()
@@ -71,7 +70,6 @@ internal class KetchDialogFragment : DialogFragment() {
     
     override fun onDetach() {
         super.onDetach()
-        // Notify parent this fragment is fully detached
         onDismissCallback?.invoke()
         onDismissCallback = null
     }
@@ -148,7 +146,6 @@ internal class KetchDialogFragment : DialogFragment() {
                 }
             }
             
-            // Now show this fragment
             val transaction = manager.beginTransaction()
             transaction.add(this, TAG)
             transaction.commitAllowingStateLoss()

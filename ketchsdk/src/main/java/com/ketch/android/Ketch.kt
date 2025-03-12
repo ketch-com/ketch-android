@@ -33,7 +33,7 @@ class Ketch private constructor(
     private var jurisdiction: String? = null
     private var region: String? = null
     
-    // Add a flag to track if we're already showing an experience to prevent multiple overlapping experiences
+    // Flag to track if we're already showing an experience to prevent multiple overlapping experiences
     @Volatile
     private var isShowingExperience = false
     
@@ -85,7 +85,6 @@ class Ketch private constructor(
         synchronousPreferences: Boolean = false,
         bottomPadding: Int = 0,
     ): Boolean {
-        // Check if we're already showing an experience
         if (isShowingExperience) {
             Log.d(TAG, "Not loading as an experience is already being shown")
             return false
@@ -124,7 +123,6 @@ class Ketch private constructor(
         synchronousPreferences: Boolean = false,
         bottomPadding: Int = 0,
     ): Boolean {
-        // Check if we're already showing an experience
         if (isShowingExperience) {
             Log.d(TAG, "Not showing consent as an experience is already being shown")
             return false
@@ -163,7 +161,6 @@ class Ketch private constructor(
         synchronousPreferences: Boolean = false,
         bottomPadding: Int = 0,
     ): Boolean {
-        // Check if we're already showing an experience
         if (isShowingExperience) {
             Log.d(TAG, "Not showing preferences as an experience is already being shown")
             return false
@@ -206,7 +203,6 @@ class Ketch private constructor(
         synchronousPreferences: Boolean = false,
         bottomPadding: Int = 0,
     ): Boolean {
-        // Check if we're already showing an experience
         if (isShowingExperience) {
             Log.d(TAG, "Not showing preferences tab as an experience is already being shown")
             return false
@@ -320,7 +316,6 @@ class Ketch private constructor(
 
     private fun createWebView(shouldRetry: Boolean = false, synchronousPreferences: Boolean = false): KetchWebView? {
         synchronized(lock) {
-            // First check if a fragment is already showing - if so, don't create a new WebView
             if (isShowingExperience || findDialogFragment() != null) {
                 Log.d(TAG, "Not creating WebView as experience is already being shown")
                 return null
@@ -347,7 +342,6 @@ class Ketch private constructor(
                 }
 
                 override fun showPreferences() {
-                    // Quick early return if already showing a dialog
                     synchronized(lock) {
                         if (isShowingExperience || findDialogFragment() != null) {
                             Log.d(TAG, "Not showing as dialog already exists")
@@ -400,10 +394,7 @@ class Ketch private constructor(
                 }
 
                 override fun onConfigUpdated(config: KetchConfig?) {
-                    // Set internal config field
                     this.config = config
-
-                    // Call config update listener
                     this@Ketch.listener?.onConfigUpdated(config)
 
                     if (!showConsent) {
@@ -467,7 +458,6 @@ class Ketch private constructor(
                 }
 
                 override fun onWillShowExperience(experienceType: WillShowExperienceType) {
-                    // Execute onWillShowExperience listener
                     this@Ketch.listener?.onWillShowExperience(experienceType)
                 }
 
