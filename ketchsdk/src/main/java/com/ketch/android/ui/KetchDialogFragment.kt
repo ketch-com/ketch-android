@@ -18,7 +18,6 @@ import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentManager
 import com.ketch.android.R
 import com.ketch.android.databinding.KetchDialogLayoutBinding
-import java.util.concurrent.atomic.AtomicBoolean
 
 internal class KetchDialogFragment : DialogFragment() {
 
@@ -26,10 +25,6 @@ internal class KetchDialogFragment : DialogFragment() {
     private val binding get() = _binding!!
 
     private var webView: KetchWebView? = null
-    
-    // Flag to track if we've already cleaned up resources
-    private val hasCleanedUp = AtomicBoolean(false)
-    // Callback to notify the parent when this fragment is dismissed
     private var onDismissCallback: (() -> Unit)? = null
 
     override fun onCreateView(
@@ -61,7 +56,15 @@ internal class KetchDialogFragment : DialogFragment() {
     }
 
     override fun onDestroyView() {
-        cleanupResources()
+        // Clean up resources
+        try {
+            _binding?.root?.removeView(webView)
+            webView?.kill()
+            webView = null
+        } catch (e: Exception) {
+            Log.e(TAG, "Error cleaning up resources: ${e.message}")
+        }
+        
         _binding = null
         super.onDestroyView()
     }
@@ -69,16 +72,11 @@ internal class KetchDialogFragment : DialogFragment() {
     override fun onDetach() {
         super.onDetach()
         // Notify parent this fragment is fully detached
-        notifyDismissComplete()
-    }
-    
-    override fun onDestroy() {
-        cleanupResources()
-        super.onDestroy()
+        onDismissCallback?.invoke()
+        onDismissCallback = null
     }
     
     override fun dismiss() {
-        cleanupResources()
         try {
             super.dismiss()
         } catch (e: Exception) {
@@ -87,45 +85,9 @@ internal class KetchDialogFragment : DialogFragment() {
                 dismissAllowingStateLoss()
             } catch (e2: Exception) {
                 Log.e(TAG, "Error during fallback dismissAllowingStateLoss: ${e2.message}")
-                notifyDismissComplete()
+                onDismissCallback?.invoke()
+                onDismissCallback = null
             }
-        }
-    }
-    
-    override fun dismissAllowingStateLoss() {
-        cleanupResources()
-        try {
-            super.dismissAllowingStateLoss()
-        } catch (e: Exception) {
-            Log.e(TAG, "Error during dismissAllowingStateLoss: ${e.message}")
-            notifyDismissComplete()
-        }
-    }
-    
-    // Notify parent this fragment is dismissed
-    private fun notifyDismissComplete() {
-        onDismissCallback?.invoke()
-        // Clear callback to prevent memory leaks
-        onDismissCallback = null
-    }
-    
-    private fun cleanupResources() {
-        // Only clean up once to avoid double resource cleanup
-        if (hasCleanedUp.getAndSet(true)) return
-        
-        try {
-            // If binding is initialized, remove webview from root
-            _binding?.let { binding ->
-                binding.root.removeView(webView)
-            }
-            
-            // Cancel any coroutines in KetchWebView and fully tear down webview to prevent memory leaks
-            webView?.kill()
-            
-            // Set webview reference to null to prevent memory leaks
-            webView = null
-        } catch (e: Exception) {
-            Log.e(TAG, "Error cleaning up resources: ${e.message}")
         }
     }
 
@@ -200,8 +162,8 @@ internal class KetchDialogFragment : DialogFragment() {
             
         } catch (e: Exception) {
             Log.e(TAG, "Error showing dialog: ${e.message}")
-            notifyDismissComplete()
-            cleanupResources()
+            onDismissCallback?.invoke()
+            onDismissCallback = null
         }
     }
 

@@ -347,11 +347,10 @@ class Ketch private constructor(
                 }
 
                 override fun showPreferences() {
-                    // Simple synchronization to prevent race conditions
+                    // Quick early return if already showing a dialog
                     synchronized(lock) {
-                        // Don't show if we're already showing an experience
                         if (isShowingExperience || findDialogFragment() != null) {
-                            Log.d(TAG, "Not showing as already showing an experience")
+                            Log.d(TAG, "Not showing as dialog already exists")
                             return
                         }
                         
@@ -363,7 +362,7 @@ class Ketch private constructor(
                             fragmentManager.get()?.let { fm ->
                                 if (!fm.isDestroyed) {
                                     dialog.show(fm, webView) {
-                                        // Reset state on dismissal
+                                        // Reset flag when dialog is dismissed
                                         isShowingExperience = false
                                     }
                                     this@Ketch.listener?.onShow()
