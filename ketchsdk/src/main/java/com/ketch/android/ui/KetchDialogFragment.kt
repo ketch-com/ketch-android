@@ -6,8 +6,6 @@ import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -31,18 +29,8 @@ internal class KetchDialogFragment : DialogFragment() {
     
     // Flag to track if we've already cleaned up resources
     private val hasCleanedUp = AtomicBoolean(false)
-    // Flag to track if the fragment has been added to the manager
-    private val isShowing = AtomicBoolean(false)
     // Callback to notify the parent when this fragment is dismissed
     private var onDismissCallback: (() -> Unit)? = null
-    // Main thread handler for delayed operations
-    private val mainHandler = Handler(Looper.getMainLooper())
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        // Set showing flag when fragment is attached
-        isShowing.set(true)
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -80,7 +68,6 @@ internal class KetchDialogFragment : DialogFragment() {
     
     override fun onDetach() {
         super.onDetach()
-        isShowing.set(false)
         // Notify parent this fragment is fully detached
         notifyDismissComplete()
     }
@@ -91,55 +78,26 @@ internal class KetchDialogFragment : DialogFragment() {
     }
     
     override fun dismiss() {
-        if (isShowing.get()) {
-            cleanupResources()
+        cleanupResources()
+        try {
+            super.dismiss()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during dismiss: ${e.message}")
             try {
-                super.dismiss()
-            } catch (e: Exception) {
-                Log.e(TAG, "Error during dismiss: ${e.message}")
-                try {
-                    dismissAllowingStateLoss()
-                } catch (e2: Exception) {
-                    Log.e(TAG, "Error during fallback dismissAllowingStateLoss: ${e2.message}")
-                    forceRemoveFragment()
-                }
+                dismissAllowingStateLoss()
+            } catch (e2: Exception) {
+                Log.e(TAG, "Error during fallback dismissAllowingStateLoss: ${e2.message}")
+                notifyDismissComplete()
             }
         }
     }
     
     override fun dismissAllowingStateLoss() {
-        if (isShowing.get()) {
-            cleanupResources()
-            try {
-                super.dismissAllowingStateLoss()
-            } catch (e: Exception) {
-                Log.e(TAG, "Error during dismissAllowingStateLoss: ${e.message}")
-                forceRemoveFragment()
-            }
-        }
-    }
-    
-    // Force remove this fragment from fragment manager as a last resort
-    private fun forceRemoveFragment() {
+        cleanupResources()
         try {
-            val fragmentManager = parentFragmentManager
-            if (!fragmentManager.isDestroyed) {
-                val transaction = fragmentManager.beginTransaction()
-                transaction.remove(this)
-                transaction.commitAllowingStateLoss()
-                
-                // Schedule a delayed callback to ensure cleanup happens
-                mainHandler.postDelayed({
-                    isShowing.set(false)
-                    notifyDismissComplete()
-                }, 500)
-            } else {
-                isShowing.set(false)
-                notifyDismissComplete()
-            }
+            super.dismissAllowingStateLoss()
         } catch (e: Exception) {
-            Log.e(TAG, "Error during force remove: ${e.message}")
-            isShowing.set(false)
+            Log.e(TAG, "Error during dismissAllowingStateLoss: ${e.message}")
             notifyDismissComplete()
         }
     }
@@ -210,22 +168,9 @@ internal class KetchDialogFragment : DialogFragment() {
     }
 
     fun show(manager: FragmentManager, webView: KetchWebView, onDismiss: () -> Unit) {
-        if (isShowing.getAndSet(true)) {
-            // Already showing, don't add again
-            return
-        }
-        
         try {
             this.webView = webView
             this.onDismissCallback = onDismiss
-            
-            // Check if fragment manager is valid and not destroyed
-            if (manager.isDestroyed) {
-                Log.e(TAG, "FragmentManager is destroyed, cannot show dialog")
-                isShowing.set(false)
-                notifyDismissComplete()
-                return
-            }
             
             // Check for any existing fragment with the same tag and remove it
             val existingFragment = manager.findFragmentByTag(TAG)
@@ -251,20 +196,10 @@ internal class KetchDialogFragment : DialogFragment() {
                 manager.executePendingTransactions()
             } catch (e: Exception) {
                 Log.e(TAG, "Error executing pending transactions: ${e.message}")
-                
-                // Schedule a check to verify if the fragment was actually added
-                mainHandler.postDelayed({
-                    if (!isAdded && isShowing.get()) {
-                        Log.d(TAG, "Fragment wasn't properly added, notifying dismissal")
-                        isShowing.set(false)
-                        notifyDismissComplete()
-                    }
-                }, 500)
             }
             
         } catch (e: Exception) {
             Log.e(TAG, "Error showing dialog: ${e.message}")
-            isShowing.set(false)
             notifyDismissComplete()
             cleanupResources()
         }

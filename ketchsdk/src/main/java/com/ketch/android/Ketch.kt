@@ -347,53 +347,38 @@ class Ketch private constructor(
                 }
 
                 override fun showPreferences() {
-                    // Synchronize on our lock object to prevent race conditions
+                    // Simple synchronization to prevent race conditions
                     synchronized(lock) {
-                        if (!isActivityActive()) {
-                            Log.d(TAG, "Not showing as activity is not active")
-                            return
-                        }
-
-                        // Ensure we aren't already showing a dialog
+                        // Don't show if we're already showing an experience
                         if (isShowingExperience || findDialogFragment() != null) {
-                            Log.d(TAG, "Not showing as dialog already exists")
+                            Log.d(TAG, "Not showing as already showing an experience")
                             return
                         }
-
+                        
                         // Set flag to indicate we're showing an experience
                         isShowingExperience = true
                         
                         try {
                             val dialog = KetchDialogFragment.newInstance()
-                            
-                            // Store reference to the dialog fragment
-                            activeDialogFragment = WeakReference(dialog)
-
                             fragmentManager.get()?.let { fm ->
                                 if (!fm.isDestroyed) {
-                                    // Pass dismissal callback to properly reset state
                                     dialog.show(fm, webView) {
-                                        // This callback will be invoked when the fragment is fully dismissed
+                                        // Reset state on dismissal
                                         isShowingExperience = false
-                                        activeDialogFragment = null
-                                        this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
                                     }
                                     this@Ketch.listener?.onShow()
                                 } else {
                                     isShowingExperience = false
-                                    activeDialogFragment = null
                                     Log.e(TAG, "FragmentManager is destroyed, cannot show dialog")
                                     this@Ketch.listener?.onError("FragmentManager is destroyed, cannot show dialog")
                                 }
                             } ?: run {
                                 isShowingExperience = false
-                                activeDialogFragment = null
                                 Log.e(TAG, "FragmentManager is null, cannot show dialog")
                                 this@Ketch.listener?.onError("FragmentManager is null, cannot show dialog")
                             }
                         } catch (e: Exception) {
                             isShowingExperience = false
-                            activeDialogFragment = null
                             Log.e(TAG, "Error showing dialog: ${e.message}")
                             this@Ketch.listener?.onError("Error showing dialog: ${e.message}")
                         }
@@ -461,26 +446,22 @@ class Ketch private constructor(
                 }
 
                 override fun onClose(status: HideExperienceStatus) {
-                    // Dismiss dialog fragment
+                    // Dismiss dialog fragment safely
                     synchronized(lock) {
                         val fragment = findDialogFragment()
                         if (fragment != null) {
                             try {
-                                // Pass the status to the dismissal callback
                                 (fragment as? KetchDialogFragment)?.dismissAllowingStateLoss()
-                                // Note: The callback in the fragment will handle resetting isShowingExperience and activeDialogFragment
                                 this@Ketch.listener?.onDismiss(status)
                             } catch (e: Exception) {
                                 Log.e(TAG, "Error dismissing dialog: ${e.message}")
                                 // Ensure state is reset even if dismissal fails
                                 isShowingExperience = false
-                                activeDialogFragment = null
                                 this@Ketch.listener?.onDismiss(status)
                             }
                         } else {
                             // Even if fragment isn't found, reset state
                             isShowingExperience = false
-                            activeDialogFragment = null
                             this@Ketch.listener?.onDismiss(status)
                         }
                     }
@@ -492,19 +473,17 @@ class Ketch private constructor(
                 }
 
                 override fun onTapOutside() {
-                    // Dismiss dialog fragment
+                    // Dismiss dialog fragment safely
                     synchronized(lock) {
                         val fragment = findDialogFragment()
                         if (fragment != null) {
                             try {
                                 (fragment as? KetchDialogFragment)?.dismissAllowingStateLoss()
-                                // Note: The callback in the fragment will handle resetting isShowingExperience and activeDialogFragment
                                 this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
                             } catch (e: Exception) {
                                 Log.e(TAG, "Error dismissing dialog on tap outside: ${e.message}")
                                 // Ensure state is reset even if dismissal fails
                                 isShowingExperience = false
-                                activeDialogFragment = null
                                 this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
                             }
                         }
@@ -512,20 +491,12 @@ class Ketch private constructor(
                 }
 
                 private fun showConsentPopup() {
-                    // Synchronize on our lock object to prevent race conditions
                     synchronized(lock) {
-                        if (!isActivityActive()) {
-                            Log.d(TAG, "Not showing as activity is not active")
-                            return
-                        }
-
-                        // Ensure we aren't already showing a dialog
                         if (isShowingExperience || findDialogFragment() != null) {
-                            Log.d(TAG, "Not showing as dialog already exists")
+                            Log.d(TAG, "Not showing as already showing an experience")
                             return
                         }
-
-                        // Set flag to indicate we're showing an experience
+                        
                         isShowingExperience = true
                         
                         try {
@@ -536,34 +507,25 @@ class Ketch private constructor(
                                 isCancelable = !disableContentInteractions
                             }
                             
-                            // Store reference to the dialog fragment
-                            activeDialogFragment = WeakReference(dialog)
-                            
                             fragmentManager.get()?.let { fm ->
                                 if (!fm.isDestroyed) {
-                                    // Pass dismissal callback to properly reset state
                                     dialog.show(fm, webView) {
-                                        // This callback will be invoked when the fragment is fully dismissed
+                                        // Reset state on dismissal
                                         isShowingExperience = false
-                                        activeDialogFragment = null
-                                        this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
                                     }
                                     this@Ketch.listener?.onShow()
                                 } else {
                                     isShowingExperience = false
-                                    activeDialogFragment = null
                                     Log.e(TAG, "FragmentManager is destroyed, cannot show dialog")
                                     this@Ketch.listener?.onError("FragmentManager is destroyed, cannot show dialog")
                                 }
                             } ?: run {
                                 isShowingExperience = false
-                                activeDialogFragment = null
                                 Log.e(TAG, "FragmentManager is null, cannot show dialog")
                                 this@Ketch.listener?.onError("FragmentManager is null, cannot show dialog")
                             }
                         } catch (e: Exception) {
                             isShowingExperience = false
-                            activeDialogFragment = null
                             Log.e(TAG, "Error showing dialog: ${e.message}")
                             this@Ketch.listener?.onError("Error showing dialog: ${e.message}")
                         }
