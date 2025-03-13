@@ -55,12 +55,87 @@ If you want you can use our [Sample](https://github.com/ketch-sdk/ketch-samples)
         private const val ENVIRONMENT = "production"
 ```
 
-### 5. Add listener and Ketch to your activity :
+### 5. Add listener and Ketch to your activity
+
+Feel free to skip the listeners you don't really need.
 
 ```kotlin
+   import android.util.Log
+   import com.ketch.android.Ketch
+   import com.ketch.android.KetchSdk
+   import com.ketch.android.Consent
+   // ...
    private val listener = object : Ketch.Listener {
-        ...
-   }
+        override fun onShow() {
+            Log.d("KetchApp", "Dialog shown") // Called when a consent or preferences dialog is displayed
+        }
+
+        override fun onDismiss() {
+            Log.d("KetchApp", "Dialog dismissed") // Called when a dialog is dismissed
+        }
+
+        override fun onEnvironmentUpdated(environment: String?) {
+            Log.d("KetchApp", "Environment updated: $environment") // Called when the environment is updated
+        }
+
+        override fun onRegionInfoUpdated(regionInfo: String?) {
+            Log.d("KetchApp", "Region info updated: $regionInfo") // Called when region info is updated
+        }
+
+        override fun onJurisdictionUpdated(jurisdiction: String?) {
+            Log.d("KetchApp", "Jurisdiction updated: $jurisdiction") // Called when jurisdiction is updated
+        }
+
+        override fun onIdentitiesUpdated(identities: String?) {
+            Log.d("KetchApp", "Identities updated: $identities") // Called when identities are updated
+        }
+
+        override fun onConsentUpdated(consent: Consent) {
+            Log.d("KetchApp", "Consent updated") // Called when consent preferences are updated
+            
+            // Here you can handle consent changes for your app features
+            // Example: Enable/disable tracking based on consent
+            val hasAnalyticsConsent = consent.purposes["analytics"] == true
+            val hasAdvertisingConsent = consent.purposes["advertising"] == true
+            
+            if (hasAnalyticsConsent) {
+                // Enable analytics tracking
+            } else {
+                // Disable analytics tracking
+            }
+            
+            if (hasAdvertisingConsent) {
+                // Enable advertising features
+            } else {
+                // Disable advertising features
+            }
+        }
+
+        override fun onError(errMsg: String?) {
+            Log.e("KetchApp", "Error: $errMsg") // Called when an error occurs
+        }
+
+        override fun onUSPrivacyUpdated(values: Map<String, Any?>) {
+            Log.d("KetchApp", "US Privacy updated") // Called when US Privacy values are updated
+            
+            // You can access the US Privacy string
+            val privacyString = values["IABUSPrivacy_String"] as? String
+            Log.d("KetchApp", "US Privacy String: $privacyString")
+        }
+
+        override fun onTCFUpdated(values: Map<String, Any?>) {
+            Log.d("KetchApp", "TCF updated") // Called when TCF values are updated
+            val tcString = values["IABTCF_TCString"] as? String // You can access the TC string
+            Log.d("KetchApp", "TCF TC String: $tcString")
+        }
+
+        override fun onGPPUpdated(values: Map<String, Any?>) {
+            Log.d("KetchApp", "GPP updated") // Called when GPP values are updated
+            
+            val gppString = values["IABGPP_HDR_GppString"] as? String // You can access the GPP string
+            Log.d("KetchApp", "GPP String: $gppString")
+        }
+    }
 ```
 
 ### 6. Create the Ketch Object:
@@ -106,6 +181,42 @@ If you want you can use our [Sample](https://github.com/ketch-sdk/ketch-samples)
         load()
     }
 ```
+
+## Local Development Setup
+
+If you're developing or modifying the SDK and want to test your changes with the sample app, you can use Gradle's composite builds feature to link them together.
+
+### Setting up the Sample App for Local Development
+
+1. Clone both repositories:
+   - Ketch Android SDK: `git clone https://github.com/ketch-com/ketch-android.git`
+   - Ketch Samples: `git clone https://github.com/ketch-sdk/ketch-samples.git`
+
+2. In the sample app's `settings.gradle` file, add the following:
+
+```gradle
+// Include the Ketch SDK from the local repository
+includeBuild('../../../../ketch-android') {
+    dependencySubstitution {
+        substitute module('com.github.ketch-com:ketch-android') using project(':ketchsdk')
+    }
+}
+```
+
+We use relative path here under assumption that both repositories are in the same parent directory.
+If using a different structure, adjust the path accordingly.
+
+### Troubleshooting
+
+Make sure you're rebuilding the project after making changes to the SDK.
+If the sample app isn't picking up the local SDK, try running `./gradlew clean` in both projects.
+
+### Reverting to Remote Dependencies
+
+To revert back to using the remote GitHub dependency:
+
+1. Remove or comment out the `includeBuild` section in the sample app's `settings.gradle` file
+2. Rebuild the sample app
 
 ## Developer's Documentations
 
