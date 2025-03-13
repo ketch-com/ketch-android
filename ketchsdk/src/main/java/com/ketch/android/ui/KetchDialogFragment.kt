@@ -1,10 +1,12 @@
 package com.ketch.android.ui
 
 import android.app.Dialog
+import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -17,26 +19,31 @@ import androidx.fragment.app.FragmentManager
 import com.ketch.android.R
 import com.ketch.android.databinding.KetchDialogLayoutBinding
 
-internal class KetchDialogFragment() : DialogFragment() {
+internal class KetchDialogFragment : DialogFragment() {
 
-    private lateinit var binding: KetchDialogLayoutBinding
+    private var _binding: KetchDialogLayoutBinding? = null
+    private val binding get() = _binding!!
 
     private var webView: KetchWebView? = null
+    private var onDismissCallback: (() -> Unit)? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding =
-            KetchDialogLayoutBinding.bind(inflater.inflate(R.layout.ketch_dialog_layout, container))
+        _binding = KetchDialogLayoutBinding.bind(inflater.inflate(R.layout.ketch_dialog_layout, container))
         webView?.let { web ->
-            (web.parent as? ViewGroup)?.removeView(web)
-            binding.root.addView(
-                web,
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
+            try {
+                (web.parent as? ViewGroup)?.removeView(web)
+                binding.root.addView(
+                    web,
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "Error adding WebView to view hierarchy: ${e.message}")
+            }
         }
         return binding.root
     }
@@ -49,15 +56,37 @@ internal class KetchDialogFragment() : DialogFragment() {
     }
 
     override fun onDestroyView() {
-
-        binding.root.removeView(webView)
-
-        // Cancel any coroutines in KetchWebView and fully tear down webview to prevent memory leaks
-        webView?.kill()
-
-        // Set webview reference to null to prevent memory leaks
-        webView = null
+        try {
+            _binding?.root?.removeView(webView)
+            webView?.kill()
+            webView = null
+        } catch (e: Exception) {
+            Log.e(TAG, "Error cleaning up resources: ${e.message}")
+        }
+        
+        _binding = null
         super.onDestroyView()
+    }
+    
+    override fun onDetach() {
+        super.onDetach()
+        onDismissCallback?.invoke()
+        onDismissCallback = null
+    }
+    
+    override fun dismiss() {
+        try {
+            super.dismiss()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during dismiss: ${e.message}")
+            try {
+                dismissAllowingStateLoss()
+            } catch (e2: Exception) {
+                Log.e(TAG, "Error during fallback dismissAllowingStateLoss: ${e2.message}")
+                onDismissCallback?.invoke()
+                onDismissCallback = null
+            }
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -98,9 +127,41 @@ internal class KetchDialogFragment() : DialogFragment() {
         }
     }
 
-    fun show(manager: FragmentManager, webView: KetchWebView) {
-        this.webView = webView
-        super.show(manager, TAG)
+    fun show(manager: FragmentManager, webView: KetchWebView, onDismiss: () -> Unit) {
+        try {
+            this.webView = webView
+            this.onDismissCallback = onDismiss
+            
+            // Check for any existing fragment with the same tag and remove it
+            val existingFragment = manager.findFragmentByTag(TAG)
+            if (existingFragment != null) {
+                try {
+                    Log.d(TAG, "Found existing fragment, removing it first")
+                    val transaction = manager.beginTransaction()
+                    transaction.remove(existingFragment)
+                    transaction.commitAllowingStateLoss()
+                    manager.executePendingTransactions()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error removing existing fragment: ${e.message}")
+                }
+            }
+            
+            val transaction = manager.beginTransaction()
+            transaction.add(this, TAG)
+            transaction.commitAllowingStateLoss()
+            
+            // Execute transaction immediately
+            try {
+                manager.executePendingTransactions()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error executing pending transactions: ${e.message}")
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error showing dialog: ${e.message}")
+            onDismissCallback?.invoke()
+            onDismissCallback = null
+        }
     }
 
     companion object {
