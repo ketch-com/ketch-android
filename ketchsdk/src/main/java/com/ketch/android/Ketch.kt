@@ -84,6 +84,7 @@ class Ketch private constructor(
         shouldRetry: Boolean = false,
         synchronousPreferences: Boolean = false,
         bottomPadding: Int = 0,
+        topPadding: Int = 0,
     ): Boolean {
         if (isShowingExperience) {
             Log.d(TAG, "Not loading as an experience is already being shown")
@@ -106,6 +107,7 @@ class Ketch private constructor(
                 ketchUrl,
                 logLevel,
                 bottomPadding,
+                topPadding
             )
             true
         } else {
@@ -122,6 +124,7 @@ class Ketch private constructor(
         shouldRetry: Boolean = false,
         synchronousPreferences: Boolean = false,
         bottomPadding: Int = 0,
+        topPadding: Int = 0,
     ): Boolean {
         if (isShowingExperience) {
             Log.d(TAG, "Not showing consent as an experience is already being shown")
@@ -143,7 +146,8 @@ class Ketch private constructor(
                 null,
                 ketchUrl,
                 logLevel,
-                bottomPadding
+                bottomPadding,
+                topPadding
             )
             true
         } else {
@@ -160,6 +164,7 @@ class Ketch private constructor(
         shouldRetry: Boolean = false,
         synchronousPreferences: Boolean = false,
         bottomPadding: Int = 0,
+        topPadding: Int = 0,
     ): Boolean {
         if (isShowingExperience) {
             Log.d(TAG, "Not showing preferences as an experience is already being shown")
@@ -181,7 +186,8 @@ class Ketch private constructor(
                 null,
                 ketchUrl,
                 logLevel,
-                bottomPadding
+                bottomPadding,
+                topPadding
             )
             true
         } else {
@@ -202,6 +208,7 @@ class Ketch private constructor(
         shouldRetry: Boolean = false,
         synchronousPreferences: Boolean = false,
         bottomPadding: Int = 0,
+        topPadding: Int = 0,
     ): Boolean {
         if (isShowingExperience) {
             Log.d(TAG, "Not showing preferences tab as an experience is already being shown")
@@ -223,7 +230,8 @@ class Ketch private constructor(
                 tab,
                 ketchUrl,
                 logLevel,
-                bottomPadding
+                bottomPadding,
+                topPadding
             )
             true
         } else {

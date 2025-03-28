@@ -18,7 +18,8 @@ fun getIndexHtml(
     forceShow: String? = null,
     preferencesTabs: String? = null,
     preferencesTab: String? = null,
-    bottomPadding: String = "0px"
+    bottomPadding: String = "0px",
+    topPadding: String = "0px"
 ) =
     "<html>\n" +
             "  <head>\n" +
@@ -28,6 +29,7 @@ fun getIndexHtml(
             "        width: 100dvw;\n" +
             "        min-height: -webkit-fill-available;\n" +
             "        --safe-area-inset-bottom: $bottomPadding;\n" +
+            "        --safe-area-inset-top: $topPadding;\n" +
             "      }\n" +
             "    </style>\n" +
             "    <meta\n" +
