@@ -296,6 +296,14 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         }
 
         @JavascriptInterface
+        fun hasShownExperience() {
+            Log.d(TAG, "hasShownExperience")
+            runOnMainThread {
+                ketchWebView.listener?.onHasShownExperience()
+            }
+        }
+
+        @JavascriptInterface
         fun showConsentExperience(showConsentExperience: String?) {
             Log.d(TAG, "showConsentExperience: $showConsentExperience")
         }
@@ -418,6 +426,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         fun changeDialog(display: ContentDisplay)
         fun onClose(status: HideExperienceStatus)
         fun onWillShowExperience(experienceType: WillShowExperienceType)
+        fun onHasShownExperience()
         fun onTapOutside()
     }
 

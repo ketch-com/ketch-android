@@ -469,6 +469,10 @@ class Ketch private constructor(
                     this@Ketch.listener?.onWillShowExperience(experienceType)
                 }
 
+                override fun onHasShownExperience() {
+                    this@Ketch.listener?.onHasShownExperience()
+                }
+
                 override fun onTapOutside() {
                     // Dismiss dialog fragment safely
                     synchronized(lock) {
@@ -640,9 +644,14 @@ class Ketch private constructor(
         fun onGPPUpdated(values: Map<String, Any?>)
 
         /**
-         * Called when an experience will show.
+         * Called when an experience will show, if there is one.
          */
         fun onWillShowExperience(type: WillShowExperienceType)
+
+        /**
+         * Called when an experience has shown
+         */
+        fun onHasShownExperience()
     }
 
     companion object {
