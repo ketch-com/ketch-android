@@ -84,6 +84,30 @@ afterEvaluate {
                 groupId = 'com.ketch.android'
                 artifactId = 'ketchsdk'
                 version = '3.0'
+
+                pom {
+                    name.set("Ketch Android SDK")
+                    description.set("Android SDK for the Ketch privacy platform.")
+                    url.set("https://github.com/ketch-com/ketch-android")
+                    licenses {
+                        license {
+                            name.set("The MIT License")
+                            url.set("https://opensource.org/licenses/MIT")
+                        }
+                    }
+                    developers {
+                        developer {
+                            id.set("ketch")
+                            name.set("Ketch")
+                            email.set("support@ketch.com")
+                        }
+                    }
+                    scm {
+                        connection.set("scm:git:git://github.com/ketch-com/ketch-android.git")
+                        developerConnection.set("scm:git:ssh://github.com/ketch-com/ketch-android.git")
+                        url.set("https://github.com/ketch-com/ketch-android")
+                    }
+                }
             }
         }
     }
