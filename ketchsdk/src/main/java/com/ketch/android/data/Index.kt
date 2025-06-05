@@ -150,11 +150,6 @@ fun getIndexHtml(
             "        e.type = 'text/javascript';\n" +
             "        e.src = `${ketchMobileSdkUrl}/config/${orgCode}/${propertyName}/boot.js`;\n" +
             "        e.defer = e.async = !0;\n" +
-            "        e.onerror = (error) => {\n" +
-            "           const errorMessage = 'Failed to load Ketch';\n" +
-            "           console.log(error);\n" +
-            "           emitEvent('error', [errorMessage]);\n" +
-            "        };\n" +
             "        document.getElementsByTagName('head')[0].appendChild(e);\n" +
             "      }\n" +
             "      // We put the script inside body, otherwise document.body will be null\n" +
