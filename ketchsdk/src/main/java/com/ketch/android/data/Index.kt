@@ -19,7 +19,8 @@ fun getIndexHtml(
     preferencesTabs: String? = null,
     preferencesTab: String? = null,
     bottomPadding: String = "0px",
-    topPadding: String = "0px"
+    topPadding: String = "0px",
+    cssStyleOverride: String? = null
 ) =
     "<html>\n" +
             "  <head>\n" +
@@ -32,6 +33,11 @@ fun getIndexHtml(
             "        --safe-area-inset-top: $topPadding;\n" +
             "      }\n" +
             "    </style>\n" +
+            (if (cssStyleOverride?.isNotBlank() == true) {
+                "<style>$cssStyleOverride</style"
+            } else {
+                ""
+            }) +
             "    <meta\n" +
             "      name=\"viewport\"\n" +
             "      content=\"width=device-width, height=device-height, initial-scale=1, viewport-fit=cover\"\n" +
