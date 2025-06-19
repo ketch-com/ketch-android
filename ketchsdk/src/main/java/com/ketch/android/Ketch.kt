@@ -84,7 +84,7 @@ class Ketch private constructor(
     fun load(
         shouldRetry: Boolean = false,
         synchronousPreferences: Boolean = false,
-        bottomPadding: Int = 0,
+        bottomPadding: Int = 30,
         topPadding: Int = 0,
     ): Boolean {
         if (isShowingExperience) {
@@ -125,7 +125,7 @@ class Ketch private constructor(
     fun showConsent(
         shouldRetry: Boolean = false,
         synchronousPreferences: Boolean = false,
-        bottomPadding: Int = 0,
+        bottomPadding: Int = 30,
         topPadding: Int = 0,
     ): Boolean {
         if (isShowingExperience) {
@@ -166,7 +166,7 @@ class Ketch private constructor(
     fun showPreferences(
         shouldRetry: Boolean = false,
         synchronousPreferences: Boolean = false,
-        bottomPadding: Int = 0,
+        bottomPadding: Int = 30,
         topPadding: Int = 0,
     ): Boolean {
         if (isShowingExperience) {
@@ -211,7 +211,7 @@ class Ketch private constructor(
         tab: PreferencesTab,
         shouldRetry: Boolean = false,
         synchronousPreferences: Boolean = false,
-        bottomPadding: Int = 0,
+        bottomPadding: Int = 30,
         topPadding: Int = 0,
     ): Boolean {
         if (isShowingExperience) {
