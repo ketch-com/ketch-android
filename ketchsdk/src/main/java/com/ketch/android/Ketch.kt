@@ -32,6 +32,7 @@ class Ketch private constructor(
     private var language: String? = null
     private var jurisdiction: String? = null
     private var region: String? = null
+    private var cssStyle: String? = null
     
     // Flag to prevent multiple overlapping experiences
     @Volatile
@@ -107,7 +108,8 @@ class Ketch private constructor(
                 ketchUrl,
                 logLevel,
                 bottomPadding,
-                topPadding
+                topPadding,
+                cssStyle
             )
             true
         } else {
@@ -147,7 +149,8 @@ class Ketch private constructor(
                 ketchUrl,
                 logLevel,
                 bottomPadding,
-                topPadding
+                topPadding,
+                cssStyle
             )
             true
         } else {
@@ -187,7 +190,8 @@ class Ketch private constructor(
                 ketchUrl,
                 logLevel,
                 bottomPadding,
-                topPadding
+                topPadding,
+                cssStyle
             )
             true
         } else {
@@ -231,7 +235,8 @@ class Ketch private constructor(
                 ketchUrl,
                 logLevel,
                 bottomPadding,
-                topPadding
+                topPadding,
+                cssStyle
             )
             true
         } else {
@@ -294,6 +299,33 @@ class Ketch private constructor(
     fun setRegion(region: String?) {
         this.region = region
     }
+
+    /**
+     * Set CSS Style
+     *
+     * @param cssStyle: the string with css style
+     */
+    fun setCssStyle(cssStyle: String?) {
+        this.cssStyle = validateCssStyle(cssStyle)
+    }
+
+    private fun validateCssStyle(cssStyle: String?): String? {
+        if (containsHTMLTags(cssStyle)) {
+            Log.w(TAG, "[Ketch] CSS override rejected: must not contain HTML tags!")
+            return null
+        }
+
+        if (!isWithin1kb(cssStyle)) {
+            Log.w(TAG, "[Ketch] CSS override rejected: CSS too long (>1kb limit)!")
+            return null
+        }
+
+        return cssStyle
+    }
+
+    private fun containsHTMLTags(css: String?): Boolean = css?.contains(Regex("<[a-zA-Z]"))==true
+
+    private fun isWithin1kb(css: String?): Boolean = (css?.toByteArray(Charsets.UTF_8)?.size ?: 0) <= 1024
 
     init {
         getPreferences()

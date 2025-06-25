@@ -187,7 +187,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         ketchUrl: String?,
         logLevel: Ketch.LogLevel,
         bottomPadding: Int?,
-        topPadding: Int?
+        topPadding: Int?,
+        cssStyle: String?
     ) {
         clearCache(true)
 
@@ -217,7 +218,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             preferencesTabs = preferencesTabs.takeIf { it.isNotEmpty() }?.map { it.getUrlParameter() }?.joinToString(","),
             preferencesTab = preferencesTab?.getUrlParameter(),
             bottomPadding = bottomPaddingPx,
-            topPadding = topPaddingPx
+            topPadding = topPaddingPx,
+            cssStyleOverride = cssStyle
         )
 
         loadDataWithBaseURL("http://localhost", indexHtml, "text/html", "UTF-8", null)
