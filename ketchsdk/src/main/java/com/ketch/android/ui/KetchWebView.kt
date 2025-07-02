@@ -7,8 +7,10 @@ import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.ViewGroup
 import android.webkit.ConsoleMessage
 import android.webkit.JavascriptInterface
+import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -28,13 +30,14 @@ import com.ketch.android.data.WillShowExperienceType
 import com.ketch.android.data.getIndexHtml
 import com.ketch.android.data.parseHideExperienceStatus
 import com.ketch.android.data.parseWillShowExperienceType
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
+
 
 const val INITIAL_RELOAD_DELAY = 4000L
 
@@ -81,8 +84,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         stopLoading()
         clearHistory()
         clearCache(true)
-        loadUrl("about:blank")
-        removeAllViews()
+        (parent as ViewGroup).removeView(this)
         destroy()
     }
 
@@ -106,6 +108,23 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         override fun onLoadResource(view: WebView?, url: String?) {
             super.onLoadResource(view, url)
             Log.d(TAG, "onLoadResource: $url")
+        }
+
+        override fun onRenderProcessGone(view: WebView?, detail: RenderProcessGoneDetail): Boolean {
+            if (detail.didCrash()) {
+                // Renderer crashed. Handle it (e.g., log, show error, restart WebView)
+                Log.e(TAG, "WebView renderer crashed: " + detail.rendererPriorityAtExit())
+            } else {
+                // Renderer was killed by the system (often due to OOM)
+                Log.w(TAG, "WebView renderer killed by system: " + detail.rendererPriorityAtExit())
+            }
+
+            (view as? KetchWebView)?.let { ketchWebView ->
+                ketchWebView.listener?.onClose(HideExperienceStatus.None)
+                ketchWebView.kill()
+            }
+
+            return true
         }
 
         @SuppressLint("RequiresFeature")
@@ -215,7 +234,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             region = region,
             environment = environment,
             forceShow = forceShow?.getUrlParameter(),
-            preferencesTabs = preferencesTabs.takeIf { it.isNotEmpty() }?.map { it.getUrlParameter() }?.joinToString(","),
+            preferencesTabs = preferencesTabs.takeIf { it.isNotEmpty() }?.map { it.getUrlParameter() }
+                ?.joinToString(","),
             preferencesTab = preferencesTab?.getUrlParameter(),
             bottomPadding = bottomPaddingPx,
             topPadding = topPaddingPx,

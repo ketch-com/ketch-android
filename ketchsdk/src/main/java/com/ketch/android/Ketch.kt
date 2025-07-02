@@ -33,14 +33,14 @@ class Ketch private constructor(
     private var jurisdiction: String? = null
     private var region: String? = null
     private var cssStyle: String? = null
-    
+
     // Flag to prevent multiple overlapping experiences
     @Volatile
     private var isShowingExperience = false
-    
+
     // Reference to the active fragment to do cleanup
     private var activeDialogFragment: WeakReference<KetchDialogFragment>? = null
-    
+
     // Lock object for synchronization
     private val lock = Any()
 
@@ -91,7 +91,7 @@ class Ketch private constructor(
             Log.d(TAG, "Not loading as an experience is already being shown")
             return false
         }
-        
+
         val webView = createWebView(shouldRetry, synchronousPreferences)
         return if (webView != null) {
             webView.load(
@@ -132,7 +132,7 @@ class Ketch private constructor(
             Log.d(TAG, "Not showing consent as an experience is already being shown")
             return false
         }
-        
+
         val webView = createWebView(shouldRetry, synchronousPreferences)
         return if (webView != null) {
             webView.load(
@@ -173,7 +173,7 @@ class Ketch private constructor(
             Log.d(TAG, "Not showing preferences as an experience is already being shown")
             return false
         }
-        
+
         val webView = createWebView(shouldRetry, synchronousPreferences)
         return if (webView != null) {
             webView.load(
@@ -218,7 +218,7 @@ class Ketch private constructor(
             Log.d(TAG, "Not showing preferences tab as an experience is already being shown")
             return false
         }
-        
+
         val webView = createWebView(shouldRetry, synchronousPreferences)
         return if (webView != null) {
             webView.load(
@@ -323,7 +323,7 @@ class Ketch private constructor(
         return cssStyle
     }
 
-    private fun containsHTMLTags(css: String?): Boolean = css?.contains(Regex("<[a-zA-Z]"))==true
+    private fun containsHTMLTags(css: String?): Boolean = css?.contains(Regex("<[a-zA-Z]")) == true
 
     private fun isWithin1kb(css: String?): Boolean = (css?.toByteArray(Charsets.UTF_8)?.size ?: 0) <= 1024
 
@@ -386,18 +386,17 @@ class Ketch private constructor(
                             Log.d(TAG, "Not showing as dialog already exists")
                             return
                         }
-                        
+
                         // Set flag to indicate we're showing an experience
                         isShowingExperience = true
-                        
+
                         try {
-                            val dialog = KetchDialogFragment.newInstance()
                             fragmentManager.get()?.let { fm ->
                                 if (!fm.isDestroyed) {
-                                    dialog.show(fm, webView) {
+                                    KetchDialogFragment.newInstance(ketchWebView = webView) {
                                         // Reset flag when dialog is dismissed
                                         isShowingExperience = false
-                                    }
+                                    }.show(manager = fm)
                                     this@Ketch.listener?.onShow()
                                 } else {
                                     isShowingExperience = false
@@ -529,23 +528,23 @@ class Ketch private constructor(
                             Log.d(TAG, "Not showing as already showing an experience")
                             return
                         }
-                        
+
                         isShowingExperience = true
-                        
+
                         try {
-                            val dialog = KetchDialogFragment.newInstance().apply {
+                            val dialog = KetchDialogFragment.newInstance(ketchWebView = webView) {
+                                // Reset state on dismissal
+                                isShowingExperience = false
+                            }.apply {
                                 val disableContentInteractions = getDisposableContentInteractions(
                                     config?.experiences?.consent?.display ?: ContentDisplay.Banner
                                 )
                                 isCancelable = !disableContentInteractions
                             }
-                            
+
                             fragmentManager.get()?.let { fm ->
                                 if (!fm.isDestroyed) {
-                                    dialog.show(fm, webView) {
-                                        // Reset state on dismissal
-                                        isShowingExperience = false
-                                    }
+                                    dialog.show(manager = fm)
                                     this@Ketch.listener?.onShow()
                                 } else {
                                     isShowingExperience = false
@@ -562,7 +561,7 @@ class Ketch private constructor(
                             Log.e(TAG, "Error showing dialog: ${e.message}")
                             this@Ketch.listener?.onError("Error showing dialog: ${e.message}")
                         }
-                        
+
                         showConsent = false
                     }
                 }
@@ -586,7 +585,7 @@ class Ketch private constructor(
         if (activeFragment != null && activeFragment.isAdded && !activeFragment.isDetached) {
             return activeFragment
         }
-        
+
         // Fall back to searching by tag
         return fragmentManager.get()?.findFragmentByTag(KetchDialogFragment.TAG)
     }
