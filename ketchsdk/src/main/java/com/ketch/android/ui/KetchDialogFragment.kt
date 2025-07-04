@@ -25,7 +25,7 @@ internal class KetchDialogFragment : DialogFragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View = webView ?: FrameLayout(requireContext())
+    ): View = webView ?: FrameLayout(requireContext()).apply { dismiss() }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =
         super.onCreateDialog(savedInstanceState).apply {
@@ -35,15 +35,10 @@ internal class KetchDialogFragment : DialogFragment() {
     override fun onDetach() {
         super.onDetach()
 
-        try {
-            webView?.kill()
-            webView = null
-        } catch (e: Exception) {
-            Log.e(TAG, "Error cleaning up resources: ${e.message}")
-        }
-
         onDismissCallback?.invoke()
         onDismissCallback = null
+
+        webView = null
     }
 
     override fun dismiss() {

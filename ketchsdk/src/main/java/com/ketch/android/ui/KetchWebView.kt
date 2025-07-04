@@ -84,7 +84,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         stopLoading()
         clearHistory()
         clearCache(true)
-        (parent as ViewGroup).removeView(this)
+        (parent as? ViewGroup)?.removeView(this)
         destroy()
     }
 
@@ -234,8 +234,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             region = region,
             environment = environment,
             forceShow = forceShow?.getUrlParameter(),
-            preferencesTabs = preferencesTabs.takeIf { it.isNotEmpty() }?.map { it.getUrlParameter() }
-                ?.joinToString(","),
+            preferencesTabs = preferencesTabs.takeIf { it.isNotEmpty() }?.joinToString(",") { it.getUrlParameter() },
             preferencesTab = preferencesTab?.getUrlParameter(),
             bottomPadding = bottomPaddingPx,
             topPadding = topPaddingPx,
@@ -245,6 +244,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         loadDataWithBaseURL("http://localhost", indexHtml, "text/html", "UTF-8", null)
     }
 
+    @Suppress("unused")
     private class PreferenceCenterJavascriptInterface(private val ketchWebView: KetchWebView) {
         @JavascriptInterface
         fun hideExperience(status: String?) {
@@ -414,15 +414,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             val gson = GsonBuilder()
                 .create()
 
-            val map = gson.fromJson(json, Array<Any>::class.java)
-                .filter {
-                    it is Map<*, *>
-                }
-                .map {
-                    it as? Map<String, String>
-                }.firstOrNull()
-
-            return map
+            return gson.fromJson(json, Array<Any>::class.java)
+                .firstOrNull { it is Map<*, *> } as? Map<String, String>
         }
 
         private fun runOnMainThread(action: () -> Unit) {

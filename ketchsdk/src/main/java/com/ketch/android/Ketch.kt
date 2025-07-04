@@ -4,8 +4,6 @@ import android.content.Context
 import android.util.Log
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
 import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.HideExperienceStatus
@@ -18,6 +16,7 @@ import java.lang.ref.WeakReference
 /**
  * Main Ketch SDK class
  **/
+@Suppress("unused")
 class Ketch private constructor(
     private val context: WeakReference<Context>,
     private val fragmentManager: WeakReference<FragmentManager>,
@@ -40,6 +39,9 @@ class Ketch private constructor(
 
     // Reference to the active fragment to do cleanup
     private var activeDialogFragment: WeakReference<KetchDialogFragment>? = null
+
+    // Reference to the active webView to prevent multiple webView instances existence
+    private var activeWebView: KetchWebView? = null
 
     // Lock object for synchronization
     private val lock = Any()
@@ -360,6 +362,9 @@ class Ketch private constructor(
                 return null
             }
 
+            activeWebView?.kill()
+            activeWebView = null
+
             val webView = context.get()?.let { KetchWebView(it, shouldRetry) } ?: return null
 
             // Enable debug mode
@@ -387,9 +392,6 @@ class Ketch private constructor(
                             return
                         }
 
-                        // Set flag to indicate we're showing an experience
-                        isShowingExperience = true
-
                         try {
                             fragmentManager.get()?.let { fm ->
                                 if (!fm.isDestroyed) {
@@ -397,6 +399,7 @@ class Ketch private constructor(
                                         // Reset flag when dialog is dismissed
                                         isShowingExperience = false
                                     }.show(manager = fm)
+                                    isShowingExperience = true
                                     this@Ketch.listener?.onShow()
                                 } else {
                                     isShowingExperience = false
@@ -529,8 +532,6 @@ class Ketch private constructor(
                             return
                         }
 
-                        isShowingExperience = true
-
                         try {
                             val dialog = KetchDialogFragment.newInstance(ketchWebView = webView) {
                                 // Reset state on dismissal
@@ -545,6 +546,7 @@ class Ketch private constructor(
                             fragmentManager.get()?.let { fm ->
                                 if (!fm.isDestroyed) {
                                     dialog.show(manager = fm)
+                                    isShowingExperience = true
                                     this@Ketch.listener?.onShow()
                                 } else {
                                     isShowingExperience = false
@@ -568,14 +570,21 @@ class Ketch private constructor(
 
                 private fun getDisposableContentInteractions(display: ContentDisplay): Boolean =
                     config?.let {
-                        if (display == ContentDisplay.Modal) {
-                            it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
-                        } else if (display == ContentDisplay.Banner) {
-                            it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
-                        } else false
+                        when (display) {
+                            ContentDisplay.Modal -> {
+                                it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
+                            }
+
+                            ContentDisplay.Banner -> {
+                                it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
+                            }
+                        }
                     } ?: false
             }
-            return webView
+
+            activeWebView = webView
+
+            return activeWebView
         }
     }
 
@@ -588,11 +597,6 @@ class Ketch private constructor(
 
         // Fall back to searching by tag
         return fragmentManager.get()?.findFragmentByTag(KetchDialogFragment.TAG)
-    }
-
-    private fun isActivityActive(): Boolean {
-        return (context.get() as? LifecycleOwner)?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.STARTED)
-            ?: false
     }
 
     enum class PreferencesTab {
