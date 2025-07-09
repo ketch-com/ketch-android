@@ -204,13 +204,6 @@ fun getIndexHtml(
             } +
             identities +
             "});" +
-            "\n" +
-            "if (\"${forceShow}\" === \"cd\") {" +
-            "   ketch(\"showConsent\");" +
-            "}" +
-            "if (\"${forceShow}\" === \"preferences\") {" +
-            "   ketch(\"showPreferences\");" +
-            "}" +
             "    </script>\n" +
             "  </body>\n" +
             "</html>"
