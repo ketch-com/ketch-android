@@ -34,7 +34,7 @@ fun getIndexHtml(
             "      }\n" +
             "    </style>\n" +
             (if (cssStyleOverride?.isNotBlank() == true) {
-                "<style>$cssStyleOverride</style"
+                "<style>$cssStyleOverride</style>"
             } else {
                 ""
             }) +
@@ -96,7 +96,7 @@ fun getIndexHtml(
             "        }\n" +
             "      }\n" +
             "\n" +
-            "      // This is required to detect the moment when Ketch Tag is loaded sucessfully and ready\n" +
+            "      // This is required to detect the moment when Ketch Tag is loaded successfully and ready\n" +
             "      // TODO: Remove this once lanyard.js will emit \"onConfigLoaded\" event, to avoid redundant \"config.json\" requests to server\n" +
             "      ketch('getFullConfig', function (config) {\n" +
             "        emitEvent('onConfigLoaded', [config]);\n" +
@@ -115,7 +115,7 @@ fun getIndexHtml(
             "        emitEvent('error', [errorMessage]);\n" +
             "      });\n" +
             "\n" +
-            "      // Capturing all the internal loggin for errors handled by Ketch Tag\n" +
+            "      // Capturing all the internal logging for errors handled by Ketch Tag\n" +
             "      // TODO: Remove this once lanyard.js will emit error events\n" +
             "      ((logger) => {\n" +
             "        var oldErr = logger.error;\n" +
@@ -202,15 +202,8 @@ fun getIndexHtml(
             } else {
                 ""
             } +
-            "${identities}" +
+            identities +
             "});" +
-            "\n" +
-            "if (\"${forceShow}\" === \"cd\") {" +
-            "   ketch(\"showConsent\");" +
-            "}" +
-            "if (\"${forceShow}\" === \"preferences\") {" +
-            "   ketch(\"showPreferences\");" +
-            "}" +
             "    </script>\n" +
             "  </body>\n" +
             "</html>"
