@@ -101,6 +101,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
 
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val intent = Intent(Intent.ACTION_VIEW, request.url)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             view.context.startActivity(intent)
             return true
         }
