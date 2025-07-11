@@ -7,7 +7,6 @@ apply plugin: 'org.jetbrains.dokka'
 android {
     namespace 'com.ketch.android'
     compileSdkVersion buildConfig.compileSdk
-    buildToolsVersion versions.buildTools
 
     defaultConfig {
         minSdkVersion buildConfig.minSdk
@@ -64,14 +63,14 @@ dependencies {
 
     implementation "androidx.core:core-ktx:${versions.ktx}"
     implementation "androidx.appcompat:appcompat:${versions.appcompat}"
-    implementation "org.jetbrains.kotlin:kotlin-parcelize-runtime:${versions.parselize}"
+    implementation "org.jetbrains.kotlin:kotlin-parcelize-runtime:${versions.kotlin}"
     implementation "com.google.code.gson:gson:${versions.gson}"
     implementation "androidx.webkit:webkit:${versions.webkit}"
     implementation "androidx.preference:preference:1.2.1"
 
     testImplementation "junit:junit:${versions.junit}"
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
 }
 
 
