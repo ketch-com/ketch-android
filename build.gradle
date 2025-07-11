@@ -5,23 +5,21 @@ apply plugin: "org.jetbrains.dokka"
 
 buildscript {
     ext.buildConfig = [
-            'minSdk'    : 26,
-            'targetSdk' : 34,
-            'compileSdk': 34,
-            'versionCode': 3,
-            'versionName': '3.0'
+            'minSdk'      : 26,
+            'targetSdk'   : 36,
+            'compileSdk'  : 36,
+            'versionCode' : 3,
+            'versionName' : '3.0'
     ]
     ext.versions = [
-            'javaVersion'  :  17,
-            'buildTools'   : '34.0.0',
-            'kotlin'       : '1.8.21',
-            'ktx'          : '1.12.0',
-            'appcompat'    : '1.6.1',
-            'parcelize'    : '1.8.21',
-            'dokka'        : '1.7.20',
-            'junit'        : '4.13.2',
-            'gson'         : '2.10',
-            'webkit'       : '1.10.0'
+            'javaVersion' :  17,
+            'kotlin'      : '2.1.20',
+            'ktx'         : '1.16.0',
+            'appcompat'   : '1.7.1',
+            'dokka'       : '2.0.0',
+            'junit'       : '4.13.2',
+            'gson'        : '2.13.1',
+            'webkit'      : '1.14.0'
     ]
     repositories {
         google()
@@ -29,10 +27,10 @@ buildscript {
         maven { url "https://plugins.gradle.org/m2/" }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.0.2'
+        classpath 'com.android.tools.build:gradle:8.11.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
         classpath "org.jetbrains.kotlin:kotlin-serialization:${versions.kotlin}"
-        classpath "de.mannodermaus.gradle.plugins:android-junit5:1.7.1.1"
+        classpath "de.mannodermaus.gradle.plugins:android-junit5:1.13.1.0"
         classpath "com.github.ben-manes:gradle-versions-plugin:0.44.0"
         classpath "org.jlleitschuh.gradle:ktlint-gradle:11.6.0"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
@@ -51,7 +49,7 @@ allprojects {
     }
 }
 
-task clean(type: Delete) {
+tasks.register('clean', Delete) {
     delete rootProject.buildDir
 }
 
@@ -72,7 +70,7 @@ dokkaHtmlMultiModule.configure {
     suppressInheritedMembers.set(true)
 }
 
-task packageDoc(type: Zip) {
+tasks.register('packageDoc', Zip) {
     archiveFileName = "sdk-doc.zip"
     destinationDirectory = file("$buildDir/doc")
     from "$buildDir/dokka/htmlMultiModule/"
