@@ -107,8 +107,35 @@ jobs:
           echo "🌐 Testing network connectivity..."
           ping -c 3 google.com || echo "Network connectivity limited"
           
+          echo "🔧 Testing basic functionality first..."
+          echo "📋 Running unit tests..."
+          ./gradlew :integration-tests:testDebugUnitTest --stacktrace || echo "Unit tests failed"
+          
+          echo "📦 Building debug APK..."
+          ./gradlew :integration-tests:assembleDebug --stacktrace || {
+            echo "❌ Failed to build debug APK"
+            exit 1
+          }
+          
+          echo "📦 Building test APK..."
+          ./gradlew :integration-tests:assembleDebugAndroidTest --stacktrace || {
+            echo "❌ Failed to build test APK"
+            exit 1
+          }
+          
+          echo "📱 Installing APKs..."
+          ./gradlew :integration-tests:installDebug --stacktrace || {
+            echo "❌ Failed to install debug APK"
+            exit 1
+          }
+          
+          ./gradlew :integration-tests:installDebugAndroidTest --stacktrace || {
+            echo "❌ Failed to install test APK"
+            exit 1
+          }
+          
           echo "🧪 Running integration tests with timeout..."
-          timeout 600 ./gradlew :integration-tests:connectedAndroidTest --stacktrace --info --debug 2>&1 | tee test_output.log || {
+          timeout 600 ./gradlew :integration-tests:connectedDebugAndroidTest --stacktrace --info 2>&1 | tee test_output.log || {
             echo "❌ Tests failed or timed out, checking for test results..."
             echo "=== Last 100 lines of test output ==="
             tail -100 test_output.log
@@ -117,7 +144,8 @@ jobs:
             find . -name "*.html" -path "*/reports/*" -exec echo "Found: {}" \; -exec ls -la {} \;
             echo "=== Checking emulator status ==="
             adb devices -l
-            adb shell dumpsys activity activities
+            adb shell pm list packages | grep ketch
+            echo "=== Done debugging ==="
             exit 1
           }
           
