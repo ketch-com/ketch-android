@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity() {
         // Test configuration - these should be replaced with actual test values
         private const val ORG_CODE = "ketch_samples"
         private const val PROPERTY = "android"
-        private const val ENVIRONMENT = "production"
+        private const val ENVIRONMENT = "development"
     }
 
     private val ketchListener = object : Ketch.Listener {
