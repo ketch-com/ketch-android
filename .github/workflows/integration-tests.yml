@@ -23,6 +23,13 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3.2.2
       
+    - name: Install Android SDK components
+      run: |
+        sdkmanager "platforms;android-29"
+        sdkmanager "build-tools;29.0.3"
+        sdkmanager "system-images;android-29;google_apis;x86_64"
+        sdkmanager "emulator"
+      
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
       
@@ -101,10 +108,16 @@ jobs:
           ping -c 3 google.com || echo "Network connectivity limited"
           
           echo "🧪 Running integration tests with timeout..."
-          timeout 600 ./gradlew :integration-tests:connectedAndroidTest --stacktrace --info || {
+          timeout 600 ./gradlew :integration-tests:connectedAndroidTest --stacktrace --info --debug 2>&1 | tee test_output.log || {
             echo "❌ Tests failed or timed out, checking for test results..."
-            find . -name "*.xml" -path "*/test-results/*" -exec cat {} \;
-            find . -name "*.html" -path "*/reports/*" -exec ls -la {} \;
+            echo "=== Last 100 lines of test output ==="
+            tail -100 test_output.log
+            echo "=== Looking for test result files ==="
+            find . -name "*.xml" -path "*/test-results/*" -exec echo "Found: {}" \; -exec cat {} \;
+            find . -name "*.html" -path "*/reports/*" -exec echo "Found: {}" \; -exec ls -la {} \;
+            echo "=== Checking emulator status ==="
+            adb devices -l
+            adb shell dumpsys activity activities
             exit 1
           }
           
