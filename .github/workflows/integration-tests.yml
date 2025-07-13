@@ -78,11 +78,25 @@ jobs:
         emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
         disable-animations: true
         script: |
-          # First try running the integration test script
-          if ./run-integration-tests.sh; then
-            echo "✅ Integration tests passed via script"
-          else
-            echo "❌ Integration tests failed via script, trying gradle command directly"
-            ./gradlew :integration-tests:connectedAndroidTest
-          fi
+          echo "🔍 Checking emulator status..."
+          adb devices -l
+          
+          echo "🔍 Waiting for emulator to be fully ready..."
+          adb wait-for-device
+          
+          echo "🔍 Checking if device is online..."
+          timeout 60 adb shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
+          
+          echo "🔍 Device properties:"
+          adb shell getprop ro.build.version.release
+          adb shell getprop ro.product.cpu.abi
+          
+          echo "🏗️ Building project first..."
+          ./gradlew clean :ketchsdk:build :integration-tests:build
+          
+          echo "📱 Installing debug APK..."
+          ./gradlew :integration-tests:installDebug
+          
+          echo "🧪 Running integration tests..."
+          ./gradlew :integration-tests:connectedAndroidTest --stacktrace --info
           
