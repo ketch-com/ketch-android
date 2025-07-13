@@ -86,13 +86,3 @@ jobs:
             ./gradlew :integration-tests:connectedAndroidTest
           fi
           
-    - name: Upload test reports
-      uses: actions/upload-artifact@v3
-      if: always()
-      with:
-        name: test-reports
-        path: |
-          **/build/reports/androidTests/
-          **/build/test-results/
-          **/build/outputs/androidTest-results/
-        retention-days: 30
