@@ -97,6 +97,14 @@ jobs:
           echo "📱 Installing debug APK..."
           ./gradlew :integration-tests:installDebug
           
-          echo "🧪 Running integration tests..."
-          ./gradlew :integration-tests:connectedAndroidTest --stacktrace --info
+          echo "🌐 Testing network connectivity..."
+          ping -c 3 google.com || echo "Network connectivity limited"
+          
+          echo "🧪 Running integration tests with timeout..."
+          timeout 600 ./gradlew :integration-tests:connectedAndroidTest --stacktrace --info || {
+            echo "❌ Tests failed or timed out, checking for test results..."
+            find . -name "*.xml" -path "*/test-results/*" -exec cat {} \;
+            find . -name "*.html" -path "*/reports/*" -exec ls -la {} \;
+            exit 1
+          }
           
