@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ketch SDK Integration Tests"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Status Section -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Status"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Initializing..."
+            android:background="@android:color/darker_gray"
+            android:padding="8dp"
+            android:textColor="@android:color/white"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Action Buttons -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Actions"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/loadButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Load"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/showConsentButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Show Consent"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/showPreferencesButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Show Preferences"
+            android:layout_marginBottom="8dp" />
+
+
+
+        <Button
+            android:id="@+id/setLanguageButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Set Language (EN)"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/setJurisdictionButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Set Jurisdiction (US)"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/setRegionButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Set Region (California)"
+            android:layout_marginBottom="16dp" />
+
+        <!-- SDK State Display -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="SDK State"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/environmentText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Environment: Not set"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/consentText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Consent: Not set"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/usPrivacyText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="US Privacy: Not set"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/tcfText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TCF: Not set"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/gppText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="GPP: Not set"
+            android:layout_marginBottom="4dp" />
+
+    </LinearLayout>
+
+</ScrollView> 
