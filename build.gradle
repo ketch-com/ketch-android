@@ -16,7 +16,7 @@ buildscript {
             'kotlin'      : '2.1.20',
             'ktx'         : '1.16.0',
             'appcompat'   : '1.7.1',
-            'dokka'       : '2.0.0',
+            'dokka'       : '1.9.20',
             'junit'       : '4.13.2',
             'gson'        : '2.13.1',
             'webkit'      : '1.14.0'
@@ -31,8 +31,8 @@ buildscript {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
         classpath "org.jetbrains.kotlin:kotlin-serialization:${versions.kotlin}"
         classpath "de.mannodermaus.gradle.plugins:android-junit5:1.13.1.0"
-        classpath "com.github.ben-manes:gradle-versions-plugin:0.44.0"
-        classpath "org.jlleitschuh.gradle:ktlint-gradle:11.6.0"
+        classpath "com.github.ben-manes:gradle-versions-plugin:0.52.0"
+        classpath "org.jlleitschuh.gradle:ktlint-gradle:13.0.0"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
         classpath "org.jetbrains.dokka:dokka-gradle-plugin:${versions.dokka}"
     }
