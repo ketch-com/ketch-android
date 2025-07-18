@@ -18,7 +18,7 @@ import java.lang.ref.WeakReference
  **/
 @Suppress("unused")
 class Ketch private constructor(
-    private val context: WeakReference<Context>,
+    context: Context,
     private val fragmentManager: WeakReference<FragmentManager>,
     private val orgCode: String,
     private val property: String,
@@ -27,6 +27,9 @@ class Ketch private constructor(
     private val ketchUrl: String?,
     private val logLevel: LogLevel
 ) {
+    // Use application context to avoid memory leaks
+    private val context: Context = context.applicationContext
+
     private var identities: Map<String, String> = emptyMap()
     private var language: String? = null
     private var jurisdiction: String? = null
@@ -347,13 +350,9 @@ class Ketch private constructor(
     }
 
     // Get the singleton KetchSharedPreferences object
-    private fun getPreferences(): KetchSharedPreferences {
-        context.get()?.let {
-            // Initialize will create KetchSharedPreferences if it doesn't already exist
-            KetchSharedPreferences.initialize(it)
-        }
-        return KetchSharedPreferences
-    }
+    private fun getPreferences(): KetchSharedPreferences =
+        // Initialize will create KetchSharedPreferences if it doesn't already exist
+        KetchSharedPreferences.apply { initialize(context) }
 
     private fun createWebView(shouldRetry: Boolean = false, synchronousPreferences: Boolean = false): KetchWebView? {
         synchronized(lock) {
@@ -365,7 +364,7 @@ class Ketch private constructor(
             activeWebView?.kill()
             activeWebView = null
 
-            val webView = context.get()?.let { KetchWebView(it, shouldRetry) } ?: return null
+            val webView = KetchWebView(context, shouldRetry)
 
             // Enable debug mode
             if (logLevel === LogLevel.DEBUG) {
@@ -701,7 +700,7 @@ class Ketch private constructor(
             ketchUrl: String?,
             logLevel: LogLevel,
         ) = Ketch(
-            WeakReference(context),
+            context,
             WeakReference(fragmentManager),
             orgCode,
             property,
