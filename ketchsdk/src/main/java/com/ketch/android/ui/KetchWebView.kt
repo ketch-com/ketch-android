@@ -1,9 +1,9 @@
 package com.ketch.android.ui
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 const val INITIAL_RELOAD_DELAY = 4000L
 
-@SuppressLint("SetJavaScriptEnabled", "ViewConstructor")
+@Suppress("SetJavaScriptEnabled", "ViewConstructor")
 class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(context) {
 
     var listener: WebViewListener? = null
@@ -50,7 +50,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
     init {
         webViewClient = localContentWebViewClient
         settings.javaScriptEnabled = true
-        setBackgroundColor(context.getColor(android.R.color.transparent))
+        setBackgroundColor(Color.TRANSPARENT)
 
         // Explicitly set to false to address android webview security concern
         setWebContentsDebuggingEnabled(false)
@@ -128,7 +128,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             return true
         }
 
-        @SuppressLint("RequiresFeature")
+        @Suppress("RequiresFeature")
         override fun onReceivedError(
             view: WebView,
             request: WebResourceRequest,
@@ -415,6 +415,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             val gson = GsonBuilder()
                 .create()
 
+            @Suppress("unchecked_cast")
             return gson.fromJson(json, Array<Any>::class.java)
                 .firstOrNull { it is Map<*, *> } as? Map<String, String>
         }
