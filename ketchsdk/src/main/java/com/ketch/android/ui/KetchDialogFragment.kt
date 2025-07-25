@@ -72,32 +72,18 @@ internal class KetchDialogFragment : DialogFragment() {
     }
 
     fun show(manager: FragmentManager) {
-        try {
-            // Check for any existing fragment with the same tag and remove it
-            val existingFragment = manager.findFragmentByTag(TAG)
-            if (existingFragment != null) {
-                try {
-                    Log.d(TAG, "Found existing fragment, removing it first")
-                    val transaction = manager.beginTransaction()
-                    transaction.remove(existingFragment)
-                    transaction.commitAllowingStateLoss()
-                    manager.executePendingTransactions()
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error removing existing fragment: ${e.message}")
-                }
-            }
-
-            val transaction = manager.beginTransaction()
-            transaction.add(this, TAG)
-            transaction.commitAllowingStateLoss()
-
-            // Execute transaction immediately
+        // Check for any existing fragment with the same tag and remove it
+        (manager.findFragmentByTag(TAG) as? KetchDialogFragment)?.let { existingFragment ->
             try {
-                manager.executePendingTransactions()
+                Log.d(TAG, "Found existing fragment, dismissing it first")
+                existingFragment.dismiss()
             } catch (e: Exception) {
-                Log.e(TAG, "Error executing pending transactions: ${e.message}")
+                Log.e(TAG, "Error dismissing existing fragment: ${e.message}")
             }
+        }
 
+        try {
+            this.show(manager, TAG)
         } catch (e: Exception) {
             Log.e(TAG, "Error showing dialog: ${e.message}")
             onDismissCallback?.invoke()
