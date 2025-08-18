@@ -14,6 +14,7 @@ import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
+import android.webkit.WebSettings
 import android.webkit.WebView
 import androidx.webkit.WebResourceErrorCompat
 import androidx.webkit.WebViewClientCompat
@@ -48,9 +49,17 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
     private val localContentWebViewClient = LocalContentWebViewClient(shouldRetry)
 
     init {
-        webViewClient = localContentWebViewClient
-        settings.javaScriptEnabled = true
         setBackgroundColor(Color.TRANSPARENT)
+        webViewClient = localContentWebViewClient
+
+        settings.apply {
+            javaScriptEnabled = true
+            cacheMode = WebSettings.LOAD_NO_CACHE
+        }
+
+        // Prevent from randomly appearing scrollbars while content is loading
+        isVerticalScrollBarEnabled = false
+        isHorizontalScrollBarEnabled = false
 
         // Explicitly set to false to address android webview security concern
         setWebContentsDebuggingEnabled(false)
@@ -80,11 +89,10 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
 
     // Cancel any coroutines in KetchWebView and fully tear down webview to prevent memory leaks
     fun kill() {
+        (parent as? ViewGroup)?.removeView(this)
         localContentWebViewClient.cancelCoroutines()
         stopLoading()
         clearHistory()
-        clearCache(true)
-        (parent as? ViewGroup)?.removeView(this)
         destroy()
     }
 
