@@ -495,6 +495,9 @@ class Ketch private constructor(
                             isShowingExperience = false
                             this@Ketch.listener?.onDismiss(status)
                         }
+
+                        // Release active webview
+                        activeWebView = null
                     }
                 }
 
@@ -521,6 +524,9 @@ class Ketch private constructor(
                                 this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
                             }
                         }
+
+                        // Release active webview
+                        activeWebView = null
                     }
                 }
 
