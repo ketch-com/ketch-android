@@ -465,6 +465,9 @@ class Ketch private constructor(
                 }
 
                 override fun onError(errMsg: String?) {
+                    // Release active webview
+                    activeWebView = null
+
                     this@Ketch.listener?.onError(errMsg)
                 }
 
@@ -477,6 +480,9 @@ class Ketch private constructor(
                 }
 
                 override fun onClose(status: HideExperienceStatus) {
+                    // Release active webview
+                    activeWebView = null
+
                     // Dismiss dialog fragment safely
                     synchronized(lock) {
                         val fragment = findDialogFragment()
@@ -507,6 +513,9 @@ class Ketch private constructor(
                 }
 
                 override fun onTapOutside() {
+                    // Release active webview
+                    activeWebView = null
+
                     // Dismiss dialog fragment safely
                     synchronized(lock) {
                         val fragment = findDialogFragment()
