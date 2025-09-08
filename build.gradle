@@ -14,7 +14,7 @@ buildscript {
     ext.versions = [
             'javaVersion' :  17,
             'kotlin'      : '2.1.20',
-            'ktx'         : '1.16.0',
+            'ktx'         : '1.17.0',
             'appcompat'   : '1.7.1',
             'dokka'       : '1.9.20',
             'junit'       : '4.13.2',
@@ -27,10 +27,10 @@ buildscript {
         maven { url "https://plugins.gradle.org/m2/" }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.11.1'
+        classpath 'com.android.tools.build:gradle:8.13.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
         classpath "org.jetbrains.kotlin:kotlin-serialization:${versions.kotlin}"
-        classpath "de.mannodermaus.gradle.plugins:android-junit5:1.13.1.0"
+        classpath "de.mannodermaus.gradle.plugins:android-junit5:1.13.4.0"
         classpath "com.github.ben-manes:gradle-versions-plugin:0.52.0"
         classpath "org.jlleitschuh.gradle:ktlint-gradle:13.0.0"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
