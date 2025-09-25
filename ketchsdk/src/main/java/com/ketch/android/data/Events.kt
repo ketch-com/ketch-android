@@ -11,7 +11,7 @@ enum class HideExperienceStatus(val value: String?) {
 
     companion object {
         fun fromValue(value: String?): HideExperienceStatus {
-            return values().find { it.value == value } ?: None
+            return entries.find { it.value == value } ?: None
         }
     }
 }
@@ -29,7 +29,7 @@ enum class WillShowExperienceType(val value: String?) {
 
     companion object {
         fun fromValue(value: String?): WillShowExperienceType {
-            return values().find { it.value == value } ?: None
+            return entries.find { it.value == value } ?: None
         }
     }
 }

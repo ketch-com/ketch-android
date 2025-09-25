@@ -397,6 +397,9 @@ class Ketch private constructor(
                                     KetchDialogFragment.newInstance(ketchWebView = webView) {
                                         // Reset flag when dialog is dismissed
                                         isShowingExperience = false
+
+                                        // Release active webview
+                                        activeWebView = null
                                     }.show(manager = fm)
                                     isShowingExperience = true
                                     this@Ketch.listener?.onShow()
@@ -495,6 +498,9 @@ class Ketch private constructor(
                             isShowingExperience = false
                             this@Ketch.listener?.onDismiss(status)
                         }
+
+                        // Release active webview
+                        activeWebView = null
                     }
                 }
 
@@ -521,6 +527,9 @@ class Ketch private constructor(
                                 this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
                             }
                         }
+
+                        // Release active webview
+                        activeWebView = null
                     }
                 }
 
@@ -535,6 +544,9 @@ class Ketch private constructor(
                             val dialog = KetchDialogFragment.newInstance(ketchWebView = webView) {
                                 // Reset state on dismissal
                                 isShowingExperience = false
+
+                                // Release active webview
+                                activeWebView = null
                             }.apply {
                                 val disableContentInteractions = getDisposableContentInteractions(
                                     config?.experiences?.consent?.display ?: ContentDisplay.Banner
