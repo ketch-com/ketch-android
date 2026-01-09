@@ -72,6 +72,6 @@ dokkaHtmlMultiModule.configure {
 
 tasks.register('packageDoc', Zip) {
     archiveFileName = "sdk-doc.zip"
-    destinationDirectory = file("$layout.buildDirectory/doc")
-    from "$layout.buildDirectory/dokka/htmlMultiModule/"
+    destinationDirectory = layout.buildDirectory.dir("doc")
+    from layout.buildDirectory.dir("dokka/htmlMultiModule/")
 }
