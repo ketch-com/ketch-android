@@ -27,12 +27,12 @@ buildscript {
         maven { url "https://plugins.gradle.org/m2/" }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.13.0'
+        classpath 'com.android.tools.build:gradle:8.13.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
         classpath "org.jetbrains.kotlin:kotlin-serialization:${versions.kotlin}"
-        classpath "de.mannodermaus.gradle.plugins:android-junit5:1.13.4.0"
+        classpath "de.mannodermaus.gradle.plugins:android-junit5:2.0.0"
         classpath "com.github.ben-manes:gradle-versions-plugin:0.52.0"
-        classpath "org.jlleitschuh.gradle:ktlint-gradle:13.0.0"
+        classpath "org.jlleitschuh.gradle:ktlint-gradle:14.0.1"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
         classpath "org.jetbrains.dokka:dokka-gradle-plugin:${versions.dokka}"
     }
@@ -50,7 +50,7 @@ allprojects {
 }
 
 tasks.register('clean', Delete) {
-    delete rootProject.buildDir
+    delete rootProject.layout.buildDirectory
 }
 
 ext {
@@ -72,6 +72,6 @@ dokkaHtmlMultiModule.configure {
 
 tasks.register('packageDoc', Zip) {
     archiveFileName = "sdk-doc.zip"
-    destinationDirectory = file("$buildDir/doc")
-    from "$buildDir/dokka/htmlMultiModule/"
+    destinationDirectory = file("$layout.buildDirectory/doc")
+    from "$layout.buildDirectory/dokka/htmlMultiModule/"
 }
