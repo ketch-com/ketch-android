@@ -18,8 +18,8 @@ buildscript {
             'appcompat'   : '1.7.1',
             'dokka'       : '1.9.20',
             'junit'       : '4.13.2',
-            'gson'        : '2.13.1',
-            'webkit'      : '1.14.0'
+            'gson'        : '2.13.2',
+            'webkit'      : '1.15.0'
     ]
     repositories {
         google()
@@ -27,10 +27,10 @@ buildscript {
         maven { url "https://plugins.gradle.org/m2/" }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.13.2'
+        classpath 'com.android.tools.build:gradle:9.0.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
         classpath "org.jetbrains.kotlin:kotlin-serialization:${versions.kotlin}"
-        classpath "de.mannodermaus.gradle.plugins:android-junit5:2.0.0"
+        classpath "de.mannodermaus.gradle.plugins:android-junit5:2.0.1"
         classpath "com.github.ben-manes:gradle-versions-plugin:0.52.0"
         classpath "org.jlleitschuh.gradle:ktlint-gradle:14.0.1"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
