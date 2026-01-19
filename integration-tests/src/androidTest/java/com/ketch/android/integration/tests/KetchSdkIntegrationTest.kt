@@ -8,7 +8,6 @@ import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.*
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
 import org.hamcrest.Matchers.not
 import org.junit.Before
 import org.junit.Test
@@ -414,6 +413,7 @@ class KetchSdkIntegrationTest {
         
         // Phase 1: Load SDK and show banner
         var initialConsentReceived = false
+        var initialConsentRequested = false
         var bannerShown = false
         var bannerValidated = false
         val phase1Latch = CountDownLatch(3) // load + banner show + validation
@@ -421,6 +421,7 @@ class KetchSdkIntegrationTest {
         // Phase 2: Click "Opt Out" (primary button) and validate results
         var optOutDismissReceived = false
         var optOutDismissStatus: HideExperienceStatus? = null
+        var optOutConsentRequested = false
         var optOutConsentReceived = false
         var optOutConsent: Consent? = null
         val phase2Latch = CountDownLatch(2) // dismiss + consent update
@@ -433,6 +434,7 @@ class KetchSdkIntegrationTest {
         // Phase 4: Click "Opt In" (tertiary button) and validate results
         var optInDismissReceived = false
         var optInDismissStatus: HideExperienceStatus? = null
+        var optInConsentRequested = false
         var optInConsentReceived = false
         var optInConsent: Consent? = null
         val phase4Latch = CountDownLatch(2) // dismiss + consent update
@@ -443,20 +445,24 @@ class KetchSdkIntegrationTest {
             
             activity.setTestMode(object : MainActivity.TestEventListener {
                 override fun onConsentUpdated(consent: Consent) {
-                    if (!initialConsentReceived) {
-                        // This is the initial consent update from load
-                        initialConsentReceived = true
-                        phase1Latch.countDown()
-                    } else if (!optOutConsentReceived) {
-                        // This is the opt-out consent update
-                        optOutConsentReceived = true
-                        optOutConsent = consent
-                        phase2Latch.countDown()
-                    } else if (!optInConsentReceived) {
-                        // This is the opt-in consent update
-                        optInConsentReceived = true
-                        optInConsent = consent
-                        phase4Latch.countDown()
+                    when {
+                        initialConsentRequested && !initialConsentReceived -> {
+                            // This is the initial consent update from load
+                            initialConsentReceived = true
+                            phase1Latch.countDown()
+                        }
+                        optOutConsentRequested && !optOutConsentReceived -> {
+                            // This is the opt-out consent update
+                            optOutConsentReceived = true
+                            optOutConsent = consent
+                            phase2Latch.countDown()
+                        }
+                        optInConsentRequested && !optInConsentReceived -> {
+                            // This is the opt-in consent update
+                            optInConsentReceived = true
+                            optInConsent = consent
+                            phase4Latch.countDown()
+                        }
                     }
                 }
                 
@@ -506,7 +512,8 @@ class KetchSdkIntegrationTest {
         
         // Phase 1: Load SDK and show banner
         onView(withId(R.id.loadButton)).perform(click())
-        
+        initialConsentRequested = true
+
         val phase1Complete = phase1Latch.await(30, TimeUnit.SECONDS)
         assertTrue("Phase 1 should complete (load + banner show + validation)", phase1Complete)
         assertTrue("Banner should be shown", bannerShown)
@@ -522,6 +529,7 @@ class KetchSdkIntegrationTest {
                     fail("Failed to click 'Opt Out' button (ketch-banner-button-primary)")
                 }
             }
+            optOutConsentRequested = true
         }
         
         val optOutClicked = optOutLatch.await(10, TimeUnit.SECONDS)
@@ -536,13 +544,13 @@ class KetchSdkIntegrationTest {
         
         // Validate that opt-out consent was received and contains purposes
         assertNotNull("Opt Out consent purposes should not be null", optOutConsent?.purposes)
-        assertTrue("Opt Out consent should have at least one purpose", optOutConsent!!.purposes?.isNotEmpty() == true)
+        assertTrue("Opt Out consent should have at least one purpose", optOutConsent?.purposes?.isNotEmpty() == true)
         
-        val optOutFalseCount = optOutConsent.purposes?.values?.count { !it } ?: 0
-        val optOutTrueCount = optOutConsent.purposes?.values?.count { it } ?: 0
+        val optOutFalseCount = optOutConsent?.purposes?.values?.count { !it } ?: 0
+        val optOutTrueCount = optOutConsent?.purposes?.values?.count { it } ?: 0
         
         // Validate opt out - but skip essential services which may always be true
-        optOutConsent.purposes?.forEach { (purposeCode, value) ->
+        optOutConsent?.purposes?.forEach { (purposeCode, value) ->
             if (purposeCode.contains("essential") || purposeCode.contains("necessary")) {
                 // Skip essential purposes as they may always be true
             } else {
@@ -552,7 +560,7 @@ class KetchSdkIntegrationTest {
         
         // Phase 3: Show banner again
         onView(withId(R.id.showConsentButton)).perform(click())
-        
+
         val phase3Complete = phase3Latch.await(30, TimeUnit.SECONDS)
         assertTrue("Phase 3 should complete (banner show again + validation)", phase3Complete)
         assertTrue("Banner should be shown again", bannerShownAgain)
@@ -568,6 +576,7 @@ class KetchSdkIntegrationTest {
                     fail("Failed to click 'Opt In' button (ketch-banner-button-tertiary)")
                 }
             }
+            optInConsentRequested = true
         }
         
         val optInClicked = optInLatch.await(10, TimeUnit.SECONDS)
@@ -582,16 +591,16 @@ class KetchSdkIntegrationTest {
         
         // Validate that opt-in consent was received and contains purposes
         assertNotNull("Opt In consent purposes should not be null", optInConsent?.purposes)
-        assertTrue("Opt In consent should have at least one purpose", optInConsent!!.purposes?.isNotEmpty() == true)
+        assertTrue("Opt In consent should have at least one purpose", optInConsent?.purposes?.isNotEmpty() == true)
         
-        val optInTrueCount = optInConsent.purposes?.values?.count { it } ?: 0
-        val optInFalseCount = optInConsent.purposes?.values?.count { !it } ?: 0
+        val optInTrueCount = optInConsent?.purposes?.values?.count { it } ?: 0
+        val optInFalseCount = optInConsent?.purposes?.values?.count { !it } ?: 0
         
         // Validate opt in - but allow certain purposes to have specific behaviors
         var normalPurposesAllTrue = true
         var specialPurposeCount = 0
         
-        optInConsent.purposes?.forEach { (purposeCode, value) ->
+        optInConsent?.purposes?.forEach { (purposeCode, value) ->
             if (purposeCode.contains("essential") || purposeCode.contains("necessary") ||
                 purposeCode.contains("analytics") || purposeCode.contains("tracking") ||
                 purposeCode.contains("data_broking") || purposeCode.contains("email_marketing") ||
@@ -605,7 +614,7 @@ class KetchSdkIntegrationTest {
         }
         
         // At minimum, validate that we have some purposes and the consent state changed
-        assertTrue("Should have at least some purposes defined", (optInConsent.purposes?.size ?: 0) > 0)
+        assertTrue("Should have at least some purposes defined", (optInConsent?.purposes?.size ?: 0) > 0)
         
         // Final validation summary
         // Test completed successfully if we reach this point
