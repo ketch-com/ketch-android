@@ -27,7 +27,12 @@ class Ketch private constructor(
     private val ketchUrl: String?,
     private val logLevel: LogLevel
 ) {
-    // Use application context to avoid memory leaks
+    // Weak reference to the original (Activity) context for WebView creation.
+    // WebView requires an Activity context for native UI popups (e.g., <select> dropdowns).
+    // Using applicationContext causes BadTokenException when the WebView tries to show a Dialog.
+    private val activityContext: WeakReference<Context> = WeakReference(context)
+
+    // Use application context for non-UI operations to avoid memory leaks
     private val context: Context = context.applicationContext
 
     private var identities: Map<String, String> = emptyMap()
@@ -261,6 +266,7 @@ class Ketch private constructor(
                 } catch (e: Exception) {
                     Log.e(TAG, "Error dismissing dialog: ${e.message}")
                 } finally {
+                    cleanupWebView()
                     isShowingExperience = false
                     activeDialogFragment = null
                     this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
@@ -354,6 +360,13 @@ class Ketch private constructor(
         // Initialize will create KetchSharedPreferences if it doesn't already exist
         KetchSharedPreferences.apply { initialize(context) }
 
+    // Tear down the active WebView to release the Activity context it holds,
+    // preventing memory leaks when Ketch outlives the Activity.
+    private fun cleanupWebView() {
+        activeWebView?.kill()
+        activeWebView = null
+    }
+
     private fun createWebView(shouldRetry: Boolean = false, synchronousPreferences: Boolean = false): KetchWebView? {
         synchronized(lock) {
             if (isShowingExperience || findDialogFragment() != null) {
@@ -364,7 +377,12 @@ class Ketch private constructor(
             activeWebView?.kill()
             activeWebView = null
 
-            val webView = KetchWebView(context, shouldRetry)
+            // Use Activity context for WebView so native popups (e.g., <select> dropdowns)
+            // can obtain a valid window token. Falls back to applicationContext if the
+            // Activity has been garbage collected, though this is unlikely since the
+            // FragmentManager would also be invalid at that point.
+            val webViewContext = activityContext.get() ?: context
+            val webView = KetchWebView(webViewContext, shouldRetry)
 
             // Enable debug mode
             if (logLevel === LogLevel.DEBUG) {
@@ -395,7 +413,8 @@ class Ketch private constructor(
                             fragmentManager.get()?.let { fm ->
                                 if (!fm.isDestroyed) {
                                     KetchDialogFragment.newInstance(ketchWebView = webView) {
-                                        // Reset flag when dialog is dismissed
+                                        // Clean up WebView and reset flag when dialog is dismissed
+                                        cleanupWebView()
                                         isShowingExperience = false
 
                                         // Release active webview
@@ -489,12 +508,14 @@ class Ketch private constructor(
                                 this@Ketch.listener?.onDismiss(status)
                             } catch (e: Exception) {
                                 Log.e(TAG, "Error dismissing dialog: ${e.message}")
-                                // Ensure state is reset even if dismissal fails
+                                // Ensure state and WebView are cleaned up even if dismissal fails
+                                cleanupWebView()
                                 isShowingExperience = false
                                 this@Ketch.listener?.onDismiss(status)
                             }
                         } else {
-                            // Even if fragment isn't found, reset state
+                            // Even if fragment isn't found, clean up and reset state
+                            cleanupWebView()
                             isShowingExperience = false
                             this@Ketch.listener?.onDismiss(status)
                         }
@@ -522,7 +543,8 @@ class Ketch private constructor(
                                 this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
                             } catch (e: Exception) {
                                 Log.e(TAG, "Error dismissing dialog on tap outside: ${e.message}")
-                                // Ensure state is reset even if dismissal fails
+                                // Ensure state and WebView are cleaned up even if dismissal fails
+                                cleanupWebView()
                                 isShowingExperience = false
                                 this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
                             }
@@ -542,7 +564,8 @@ class Ketch private constructor(
 
                         try {
                             val dialog = KetchDialogFragment.newInstance(ketchWebView = webView) {
-                                // Reset state on dismissal
+                                // Clean up WebView and reset state on dismissal
+                                cleanupWebView()
                                 isShowingExperience = false
 
                                 // Release active webview
