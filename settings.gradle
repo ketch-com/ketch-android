@@ -1,3 +1,5 @@
 rootProject.name = "KetchSDK"
 include ':ketchsdk'
 include ':integration-tests'
+include ':sample-app-standard'
+include ':sample-app-compose'
