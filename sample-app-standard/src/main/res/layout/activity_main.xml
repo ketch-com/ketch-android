@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background"
+    tools:context=".MainActivity">
+
+    <!-- Header bar -->
+    <LinearLayout
+        android:id="@+id/headerBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="20dp"
+        android:paddingBottom="12dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Ketch Android"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:fontFamily="sans-serif-medium" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="☀️"
+            android:textSize="16sp"
+            android:layout_marginEnd="4dp" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/darkModeSwitch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:trackTint="@color/toggle_track"
+            app:thumbTint="@color/toggle_thumb" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🌙"
+            android:textSize="16sp"
+            android:layout_marginStart="4dp" />
+
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:clipToPadding="false">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- Section header -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Experience Functions"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/ketch_purple"
+                android:drawableStart="@android:drawable/arrow_down_float"
+                android:drawablePadding="4dp"
+                android:drawableTint="@color/ketch_purple"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Cards row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="24dp"
+                android:baselineAligned="false">
+
+                <!-- Privacy Preference Unknown card -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:background="@drawable/card_background"
+                    android:padding="16dp"
+                    android:layout_marginEnd="8dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Privacy Preference Unknown"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:text="Trigger the consent banner. This triggers automatically for new users."
+                        android:textSize="13sp"
+                        android:textColor="@color/text_secondary"
+                        android:layout_marginBottom="12dp" />
+
+                    <Button
+                        android:id="@+id/showConsentButton"
+                        style="@style/Widget.KetchSample.Button.Execute"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:text="Execute" />
+
+                </LinearLayout>
+
+                <!-- Preferences Opened card -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:background="@drawable/card_background"
+                    android:padding="16dp"
+                    android:layout_marginStart="8dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Preferences Opened"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:text="Open the Ketch Privacy Center to manage consent preferences."
+                        android:textSize="13sp"
+                        android:textColor="@color/text_secondary"
+                        android:layout_marginBottom="12dp" />
+
+                    <Button
+                        android:id="@+id/showPreferencesButton"
+                        style="@style/Widget.KetchSample.Button.Execute"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:text="Execute" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- Event Log section -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Event Log"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/ketch_purple"
+                android:drawableStart="@android:drawable/arrow_down_float"
+                android:drawablePadding="4dp"
+                android:drawableTint="@color/ketch_purple"
+                android:layout_marginBottom="12dp" />
+
+            <ScrollView
+                android:id="@+id/eventLogScroll"
+                android:layout_width="match_parent"
+                android:layout_height="220dp"
+                android:background="@drawable/log_background"
+                android:fillViewport="true">
+
+                <TextView
+                    android:id="@+id/eventLogText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Waiting for events..."
+                    android:padding="12dp"
+                    android:textSize="11sp"
+                    android:fontFamily="monospace"
+                    android:textColor="@color/log_text"
+                    android:gravity="bottom" />
+
+            </ScrollView>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</LinearLayout>

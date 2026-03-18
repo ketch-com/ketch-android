@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Ketch brand purple -->
+    <color name="ketch_purple">#FF6B4EE6</color>
+    <color name="ketch_purple_dark">#FF5438C5</color>
+
+    <!-- Light mode palette -->
+    <color name="background">#FFF5F5F7</color>
+    <color name="surface">#FFFFFFFF</color>
+    <color name="card_stroke">#FFE0D9F5</color>
+    <color name="text_primary">#FF1A1A2E</color>
+    <color name="text_secondary">#FF6E6E80</color>
+    <color name="text_on_accent">#FFFFFFFF</color>
+    <color name="code_background">#FFF0ECF9</color>
+    <color name="log_background">#FFF0ECF9</color>
+    <color name="log_text">#FF3D3D50</color>
+    <color name="divider">#FFE8E5F0</color>
+    <color name="status_bar">#FFF5F5F7</color>
+    <color name="toggle_track">#FFE0D9F5</color>
+    <color name="toggle_thumb">#FF6B4EE6</color>
+</resources>
