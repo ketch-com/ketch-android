@@ -4,7 +4,7 @@ The Ketch Mobile SDK allows to manage and collect a visitor's consent preference
 
 ## Requirements
 
-Minimum Android API version supported is 28
+The minimum Android API version supported is 26.
 
 The use of the Mobile SDK requires an [Ketch organization account](https://app.ketch.com/settings/organization)
 with the [application property](https://app.ketch.com/deployment/applications) configured.
