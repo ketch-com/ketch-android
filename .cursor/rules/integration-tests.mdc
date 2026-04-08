@@ -1,0 +1,54 @@
+---
+description: Integration test structure, test inventory, and how to run and extend tests
+globs: integration-tests/**
+alwaysApply: false
+---
+
+# Integration Tests
+
+Instrumented tests that verify the SDK against a live Ketch backend on a real device or emulator. See `sdk-summary` rule for SDK API details.
+
+## Structure
+
+- **Test app**: `integration-tests/src/main/java/.../MainActivity.kt` — AppCompatActivity with `KetchSdk.create()`, UI buttons, and `TestEventListener` support
+- **Tests**: `integration-tests/src/androidTest/java/.../KetchSdkIntegrationTest.kt` — JUnit4 + AndroidX Test + Espresso
+
+## Running
+
+```bash
+./gradlew :integration-tests:connectedAndroidTest
+```
+
+Requires a connected device or running emulator. Tests use `ketch_samples` / `android` / `production`.
+
+## Test Inventory
+
+| Test | Verifies |
+|------|----------|
+| `testAppLaunchesSuccessfully` | UI visible, status text present |
+| `testKetchInitializationDisplaysCorrectStatus` | "Ketch initialized" in status |
+| `testLoadSdkTriggersConsentUpdatedListener` | `onConsentUpdated` fires after `load()` |
+| `testLoadSdkUpdatesEnvironment` | `onEnvironmentUpdated` fires |
+| `testLoadSdkTriggersConfigUpdate` | `onConfigUpdated` fires |
+| `testShowConsentDisplaysDialog` | Banner appears, DOM has `ketch-consent-banner` |
+| `testShowPreferencesDisplaysDialog` | Preferences appear, DOM has `ketch-preferences` |
+| `testAllButtonsAreDisplayed` | All 6 UI buttons visible |
+| `testSdkStateDisplaysInitialValues` | Initial state text values |
+| `testLoadWithExistingConsentDoesNotShowBanner` | `onDismiss(WillNotShow)` when already consented |
+| `testLoadWithUniqueIdentityShowsBanner` | New identity triggers banner |
+| `testConsentBannerUserInteraction` | Opt Out → Opt In flow with consent updates |
+
+## Test Helpers in MainActivity
+
+- `setTestMode(listener)` / `clearTestMode()` — attach test event listener
+- `validateWebViewContent(elementId, callback)` — uses reflection to access `activeWebView`, checks DOM via `evaluateJavascript`
+- `checkForConsentBanner(callback)` / `checkForPreferencesCenter(callback)` — convenience wrappers
+- `clickButtonById(buttonId, callback)` — JS click inside WebView
+- `updateIdentitiesWithUniqueValue()` — sets a random UUID identity
+
+## Adding a New Test
+
+1. Add a test method in `KetchSdkIntegrationTest.kt` with `@Test`
+2. Use `ActivityScenario` (already launched in `@Before`) to access the activity
+3. Use `CountDownLatch` with `TestEventListener` to wait for async SDK events
+4. Assert within the listener callback, then `countDown()` the latch
