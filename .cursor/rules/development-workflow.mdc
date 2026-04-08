@@ -1,0 +1,61 @@
+---
+description: Development workflow, build commands, testing, and contribution practices for ketch-android
+alwaysApply: true
+---
+
+# Development Workflow
+
+## Build Commands
+
+```bash
+# Build SDK
+./gradlew :ketchsdk:assembleDebug
+
+# Build and install sample app
+./gradlew :sample-app-standard:installDebug
+
+# Build and install integration test app
+./gradlew :integration-tests:installDebug
+
+# Run instrumented tests (requires emulator/device)
+./gradlew :integration-tests:connectedAndroidTest
+
+# Run unit tests
+./gradlew :ketchsdk:test
+
+# Full lint check
+./gradlew :ketchsdk:lint
+
+# Generate docs
+./gradlew dokkaHtmlMultiModule
+```
+
+## After Any Code Change
+
+1. Build the SDK: `./gradlew :ketchsdk:assembleDebug`
+2. Build sample app: `./gradlew :sample-app-standard:assembleDebug`
+3. Build integration tests: `./gradlew :integration-tests:assembleDebug`
+4. Run integration tests: `./gradlew :integration-tests:connectedAndroidTest`
+5. Verify the sample app launches and functions correctly on a device/emulator
+
+## Coding Conventions
+
+- Kotlin with JVM toolchain 17
+- SDK source in `ketchsdk/src/main/java/com/ketch/android/`
+- Internal classes use `internal` visibility — only `KetchSdk`, `Ketch`, `Ketch.Listener`, and data classes are public API
+- Use `WeakReference` for Activity context and FragmentManager to prevent leaks
+- Synchronized blocks protect `isShowingExperience` and fragment state
+- Test org/property for development: `ketch_samples` / `android` / `production`
+
+## Versioning
+
+- SDK version: `versionName` in root `build.gradle` `ext.buildConfig`
+- CI version: `0.3.{GITHUB_RUN_NUMBER}`
+- Published artifact: `com.ketch.android:ketchsdk:3.0`
+
+## Rule Maintenance
+
+When creating or updating `.cursor/rules/*.mdc` files:
+- Check all existing rules first to avoid duplicating content
+- Cross-reference other rules instead of repeating information (e.g. "see `integration-tests` rule")
+- Each rule owns a single concern: `sdk-summary` = API/architecture, `development-workflow` = build/test/contribute, `integration-tests` = test details, `sample-apps` = demo apps

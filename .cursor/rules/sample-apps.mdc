@@ -1,0 +1,52 @@
+---
+description: Sample app structure, design, and how to run and modify them
+globs: sample-app-standard/**
+alwaysApply: false
+---
+
+# Sample Apps
+
+## sample-app-standard
+
+Minimal non-Compose demo app showing SDK integration. See `sdk-summary` rule for API details and `development-workflow` rule for build commands.
+
+### Running
+
+```bash
+./gradlew :sample-app-standard:installDebug
+adb shell am start -n com.ketch.android.sample.standard/.MainActivity
+```
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `MainActivity.kt` | SDK init, full `Ketch.Listener`, two Execute buttons, dark mode toggle |
+| `res/layout/activity_main.xml` | Two cards (consent + preferences), event log ScrollView |
+| `res/values/colors.xml` | Light mode palette (Ketch purple `#6B4EE6`) |
+| `res/values-night/colors.xml` | Dark mode palette |
+| `res/values/themes.xml` | `Theme.MaterialComponents.DayNight.NoActionBar`, edge-to-edge |
+| `README.md` | Setup instructions for customers |
+
+### Configuration
+
+Customer-specific values in `MainActivity.kt` companion object:
+
+```kotlin
+private const val ORG_CODE = "your_organization_code"
+private const val PROPERTY = "your_property"
+private const val ENVIRONMENT = "production"
+```
+
+Identity in `initializeKetch()`:
+
+```kotlin
+ketch.setIdentities(mapOf("your_key" to "your_value"))
+```
+
+### Design
+
+Matches the [Ketch Testing Site](https://ketch-com.github.io/testing-sites/) color scheme:
+- Purple accent (`#6B4EE6`), cards with rounded borders, section headers
+- Light/dark mode via `AppCompatDelegate.setDefaultNightMode()` with sun/moon toggle
+- Edge-to-edge rendering via `WindowCompat.setDecorFitsSystemWindows(window, false)` with manual insets
