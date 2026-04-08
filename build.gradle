@@ -48,6 +48,41 @@ allprojects {
         maven { url "https://dl.cloudsmith.io/public/indooratlas/mvn-public/maven" }
         maven { url "https://software.mobile.pendo.io/artifactory/android-release" }
     }
+
+    configurations.all {
+        resolutionStrategy {
+            force 'io.netty:netty-codec-http2:4.1.132.Final'
+            force 'io.netty:netty-codec-http:4.1.132.Final'
+            force 'io.netty:netty-codec:4.1.132.Final'
+            force 'io.netty:netty-handler:4.1.132.Final'
+            force 'io.netty:netty-common:4.1.132.Final'
+            force 'io.netty:netty-buffer:4.1.132.Final'
+            force 'io.netty:netty-transport:4.1.132.Final'
+            force 'io.netty:netty-resolver:4.1.132.Final'
+            force 'io.netty:netty-transport-native-unix-common:4.1.132.Final'
+            force 'io.netty:netty-handler-proxy:4.1.132.Final'
+            force 'io.netty:netty-codec-socks:4.1.132.Final'
+
+            force 'com.fasterxml.jackson.core:jackson-core:2.18.6'
+            force 'com.fasterxml.jackson.core:jackson-databind:2.18.6'
+            force 'com.fasterxml.jackson.core:jackson-annotations:2.18.6'
+            force 'com.fasterxml.jackson.module:jackson-module-kotlin:2.18.6'
+            force 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.18.6'
+            force 'com.fasterxml.woodstox:woodstox-core:6.7.0'
+
+            force 'ch.qos.logback:logback-core:1.5.25'
+            force 'ch.qos.logback:logback-classic:1.5.25'
+
+            force 'org.apache.commons:commons-lang3:3.18.0'
+            force 'org.apache.httpcomponents:httpclient:4.5.14'
+            force 'org.bitbucket.b_c:jose4j:0.9.6'
+            force 'org.jdom:jdom2:2.0.6.1'
+
+            force 'com.google.protobuf:protobuf-java:3.25.5'
+            force 'com.google.protobuf:protobuf-kotlin:3.25.5'
+            force 'com.google.protobuf:protobuf-java-util:3.25.5'
+        }
+    }
 }
 
 tasks.register('clean', Delete) {
