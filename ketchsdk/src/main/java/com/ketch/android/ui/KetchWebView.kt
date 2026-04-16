@@ -214,6 +214,9 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         preferencesTab: Ketch.PreferencesTab?,
         ketchUrl: String?,
         logLevel: Ketch.LogLevel,
+        age: Int?,
+        ageLower: Int?,
+        ageUpper: Int?,
         bottomPadding: Int?,
         topPadding: Int?,
         cssStyle: String?
@@ -245,6 +248,9 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             forceShow = forceShow?.getUrlParameter(),
             preferencesTabs = preferencesTabs.takeIf { it.isNotEmpty() }?.joinToString(",") { it.getUrlParameter() },
             preferencesTab = preferencesTab?.getUrlParameter(),
+            age = age,
+            ageLower = ageLower,
+            ageUpper = ageUpper,
             bottomPadding = bottomPaddingPx,
             topPadding = topPaddingPx,
             cssStyleOverride = cssStyle

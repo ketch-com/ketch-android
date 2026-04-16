@@ -40,6 +40,9 @@ class Ketch private constructor(
     private var jurisdiction: String? = null
     private var region: String? = null
     private var cssStyle: String? = null
+    private var age: Int? = null
+    private var ageLower: Int? = null
+    private var ageUpper: Int? = null
 
     // Flag to prevent multiple overlapping experiences
     @Volatile
@@ -117,6 +120,9 @@ class Ketch private constructor(
                 null,
                 ketchUrl,
                 logLevel,
+                age,
+                ageLower,
+                ageUpper,
                 bottomPadding,
                 topPadding,
                 cssStyle
@@ -158,6 +164,9 @@ class Ketch private constructor(
                 null,
                 ketchUrl,
                 logLevel,
+                age,
+                ageLower,
+                ageUpper,
                 bottomPadding,
                 topPadding,
                 cssStyle
@@ -199,6 +208,9 @@ class Ketch private constructor(
                 null,
                 ketchUrl,
                 logLevel,
+                age,
+                ageLower,
+                ageUpper,
                 bottomPadding,
                 topPadding,
                 cssStyle
@@ -244,6 +256,9 @@ class Ketch private constructor(
                 tab,
                 ketchUrl,
                 logLevel,
+                age,
+                ageLower,
+                ageUpper,
                 bottomPadding,
                 topPadding,
                 cssStyle
@@ -318,6 +333,36 @@ class Ketch private constructor(
      */
     fun setCssStyle(cssStyle: String?) {
         this.cssStyle = validateCssStyle(cssStyle)
+    }
+
+    /**
+     * Set the exact age of the user.
+     * Used for age band resolution to determine the appropriate legal basis for each purpose.
+     *
+     * @param age: the user's exact age
+     */
+    fun setAge(age: Int?) {
+        this.age = age
+    }
+
+    /**
+     * Set the lower bound of the user's age range.
+     * Used for age band resolution when an exact age is not known.
+     *
+     * @param ageLower: the lower bound of the user's age range
+     */
+    fun setAgeLower(ageLower: Int?) {
+        this.ageLower = ageLower
+    }
+
+    /**
+     * Set the upper bound of the user's age range.
+     * Used for age band resolution when an exact age is not known.
+     *
+     * @param ageUpper: the upper bound of the user's age range
+     */
+    fun setAgeUpper(ageUpper: Int?) {
+        this.ageUpper = ageUpper
     }
 
     private fun validateCssStyle(cssStyle: String?): String? {
