@@ -18,6 +18,9 @@ fun getIndexHtml(
     forceShow: String? = null,
     preferencesTabs: String? = null,
     preferencesTab: String? = null,
+    age: Int? = null,
+    ageLower: Int? = null,
+    ageUpper: Int? = null,
     bottomPadding: String = "0px",
     topPadding: String = "0px",
     cssStyleOverride: String? = null
@@ -199,6 +202,21 @@ fun getIndexHtml(
             } +
             if (environment?.isNotBlank() == true) {
                 "ketch_env: \"${environment}\","
+            } else {
+                ""
+            } +
+            if (age != null && age >= 0) {
+                "ketch_age: \"${age}\","
+            } else {
+                ""
+            } +
+            if (ageLower != null && ageLower >= 0) {
+                "ketch_age_lower: \"${ageLower}\","
+            } else {
+                ""
+            } +
+            if (ageUpper != null && ageUpper >= 0) {
+                "ketch_age_upper: \"${ageUpper}\","
             } else {
                 ""
             } +
