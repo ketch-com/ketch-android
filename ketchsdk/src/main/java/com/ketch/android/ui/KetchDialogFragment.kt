@@ -32,12 +32,21 @@ internal class KetchDialogFragment : DialogFragment() {
             requestWindowFeature(Window.FEATURE_NO_TITLE)
         }
 
+    override fun onDestroyView() {
+        if (activity?.isChangingConfigurations != true) {
+            releaseWebViewReferences()
+        }
+        super.onDestroyView()
+    }
+
     override fun onDetach() {
         super.onDetach()
+        releaseWebViewReferences()
+    }
 
+    private fun releaseWebViewReferences() {
         onDismissCallback?.invoke()
         onDismissCallback = null
-
         webView = null
     }
 
@@ -50,7 +59,7 @@ internal class KetchDialogFragment : DialogFragment() {
                 dismissAllowingStateLoss()
             } catch (e2: Exception) {
                 Log.e(TAG, "Error during fallback dismissAllowingStateLoss: ${e2.message}")
-                onDismissCallback?.invoke()
+                releaseWebViewReferences()
             }
         }
     }
@@ -86,7 +95,7 @@ internal class KetchDialogFragment : DialogFragment() {
             this.show(manager, TAG)
         } catch (e: Exception) {
             Log.e(TAG, "Error showing dialog: ${e.message}")
-            onDismissCallback?.invoke()
+            releaseWebViewReferences()
         }
     }
 
