@@ -182,6 +182,47 @@ Feel free to skip the listeners you don't really need.
     }
 ```
 
+## Headless API (web/v3, pre-WebView)
+
+Use native HTTP for ATT-critical flows **before** loading the WebView—location, config, and consent with `protocols` from the CDN. Contract: [mobile-headless-api.md](https://github.com/ketch-com/ketch-tag/blob/main/docs/design/mobile-headless-api.md).
+
+Pass `dataCenter` when creating the SDK (`KetchDataCenter.US`, `EU`, or `UAT`). Instance methods use the SDK's data center; static `KetchSdk` methods accept an optional `dataCenter` parameter.
+
+```kotlin
+val ketch = KetchSdk.create(
+    activity = this,
+    fragmentManager = supportFragmentManager,
+    organization = ORG_CODE,
+    property = PROPERTY,
+    environment = ENVIRONMENT,
+    listener = listener,
+    dataCenter = KetchDataCenter.US,
+)
+
+// Recommended cold-start order
+ketch.fetchLocation { result -> /* jurisdiction hint */ }
+ketch.fetchBootstrapConfiguration { result -> /* boot.json */ }
+ketch.fetchFullConfiguration(
+    FullConfigurationRequest(
+        organizationCode = ORG_CODE,
+        propertyCode = PROPERTY,
+        environmentCode = ENVIRONMENT,
+        jurisdictionCode = "us-ca",
+        languageCode = "en-US",
+        hash = hashFromBootstrap,
+    )
+) { result -> /* full config */ }
+
+ketch.fetchConsent(consentConfig) { result ->
+    // Consent includes purposes and protocols (GPP, TCF, US Privacy, …)
+}
+ketch.setConsent(consentUpdate) { result ->
+    // Server-computed protocols in response; request omits protocols
+}
+```
+
+`getConsent()` on the WebView listener path is unchanged. Headless calls do not require `load()`.
+
 ## Local Development Setup
 
 If you're developing or modifying the SDK and want to test your changes with the sample app, you can use Gradle's composite builds feature to link them together.
