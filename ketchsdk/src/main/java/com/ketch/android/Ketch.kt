@@ -4,10 +4,17 @@ import android.content.Context
 import android.util.Log
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
+import com.ketch.android.api.HeadlessApiClient
+import com.ketch.android.api.KetchDataCenter
 import com.ketch.android.data.Consent
+import com.ketch.android.data.ConsentConfig
+import com.ketch.android.data.ConsentUpdate
 import com.ketch.android.data.ContentDisplay
+import com.ketch.android.data.FullConfigurationRequest
+import com.ketch.android.data.HeadlessConfiguration
 import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.KetchConfig
+import com.ketch.android.data.LocationResponse
 import com.ketch.android.data.WillShowExperienceType
 import com.ketch.android.ui.KetchDialogFragment
 import com.ketch.android.ui.KetchWebView
@@ -25,8 +32,11 @@ class Ketch private constructor(
     private val environment: String?,
     private val listener: Listener?,
     private val ketchUrl: String?,
-    private val logLevel: LogLevel
+    private val dataCenter: KetchDataCenter,
+    private val logLevel: LogLevel,
+    private val headlessApiClient: HeadlessApiClient,
 ) {
+    private val effectiveKetchUrl: String = ketchUrl ?: dataCenter.baseUrl
     // Weak reference to the original (Activity) context for WebView creation.
     // WebView requires an Activity context for native UI popups (e.g., <select> dropdowns).
     // Using applicationContext causes BadTokenException when the WebView tries to show a Dialog.
@@ -118,7 +128,7 @@ class Ketch private constructor(
                 null,
                 emptyList(),
                 null,
-                ketchUrl,
+                effectiveKetchUrl,
                 logLevel,
                 age,
                 ageLower,
@@ -132,6 +142,70 @@ class Ketch private constructor(
             false
         }
     }
+
+    /** CDN region used for headless and WebView API calls. */
+    fun getDataCenter(): KetchDataCenter = dataCenter
+
+    /** GeoIP / jurisdiction hint (`GET /ip`). */
+    fun fetchLocation(callback: (Result<LocationResponse>) -> Unit) {
+        headlessApiClient.fetchLocation(callback)
+    }
+
+    suspend fun fetchLocation(): LocationResponse = headlessApiClient.fetchLocation()
+
+    /** Minimal config (`GET .../boot.json`). */
+    fun fetchBootstrapConfiguration(
+        callback: (Result<HeadlessConfiguration>) -> Unit,
+    ) {
+        headlessApiClient.fetchBootstrapConfiguration(orgCode, property, callback)
+    }
+
+    suspend fun fetchBootstrapConfiguration(): HeadlessConfiguration =
+        headlessApiClient.fetchBootstrapConfiguration(orgCode, property)
+
+    /** Full config with optional env / jurisdiction / language and hash query param. */
+    fun fetchFullConfiguration(
+        request: FullConfigurationRequest,
+        callback: (Result<HeadlessConfiguration>) -> Unit,
+    ) {
+        headlessApiClient.fetchFullConfiguration(request, callback)
+    }
+
+    suspend fun fetchFullConfiguration(request: FullConfigurationRequest): HeadlessConfiguration =
+        headlessApiClient.fetchFullConfiguration(request)
+
+    /** Server consent including `protocols` (`POST .../consent/{org}/get`). */
+    fun fetchConsent(
+        config: ConsentConfig,
+        callback: (Result<Consent>) -> Unit,
+    ) {
+        headlessApiClient.fetchConsent(config, callback)
+    }
+
+    suspend fun fetchConsent(config: ConsentConfig): Consent =
+        headlessApiClient.fetchConsent(config)
+
+    /** Protocol strings only (same endpoint as fetchConsent). */
+    fun fetchProtocols(
+        config: ConsentConfig,
+        callback: (Result<Consent>) -> Unit,
+    ) {
+        headlessApiClient.fetchProtocols(config, callback)
+    }
+
+    suspend fun fetchProtocols(config: ConsentConfig): Consent =
+        headlessApiClient.fetchProtocols(config)
+
+    /** Updates consent; returns server response with computed `protocols`. */
+    fun setConsent(
+        update: ConsentUpdate,
+        callback: (Result<Consent>) -> Unit,
+    ) {
+        headlessApiClient.setConsent(update.withoutProtocols(), callback)
+    }
+
+    suspend fun setConsent(update: ConsentUpdate): Consent =
+        headlessApiClient.setConsent(update.withoutProtocols())
 
     /**
      * Display the consent, adding the fragment dialog to the given FragmentManager.
@@ -162,7 +236,7 @@ class Ketch private constructor(
                 KetchWebView.ExperienceType.CONSENT,
                 emptyList(),
                 null,
-                ketchUrl,
+                effectiveKetchUrl,
                 logLevel,
                 age,
                 ageLower,
@@ -206,7 +280,7 @@ class Ketch private constructor(
                 KetchWebView.ExperienceType.PREFERENCES,
                 emptyList(),
                 null,
-                ketchUrl,
+                effectiveKetchUrl,
                 logLevel,
                 age,
                 ageLower,
@@ -254,7 +328,7 @@ class Ketch private constructor(
                 KetchWebView.ExperienceType.PREFERENCES,
                 tabs,
                 tab,
-                ketchUrl,
+                effectiveKetchUrl,
                 logLevel,
                 age,
                 ageLower,
@@ -766,6 +840,7 @@ class Ketch private constructor(
             environment: String?,
             listener: Listener?,
             ketchUrl: String?,
+            dataCenter: KetchDataCenter = KetchDataCenter.US,
             logLevel: LogLevel,
         ) = Ketch(
             context,
@@ -775,7 +850,12 @@ class Ketch private constructor(
             environment,
             listener,
             ketchUrl,
-            logLevel
+            dataCenter,
+            logLevel,
+            HeadlessApiClient(dataCenter),
         )
     }
 }
+
+private fun ConsentUpdate.withoutProtocols(): ConsentUpdate =
+    copy(protocols = null)

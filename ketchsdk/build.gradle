@@ -65,6 +65,8 @@ dependencies {
     implementation "androidx.appcompat:appcompat:${versions.appcompat}"
     implementation "org.jetbrains.kotlin:kotlin-parcelize-runtime:${versions.kotlin}"
     implementation "com.google.code.gson:gson:${versions.gson}"
+    implementation "com.squareup.okhttp3:okhttp:${versions.okhttp}"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:${versions.coroutines}"
     implementation "androidx.webkit:webkit:${versions.webkit}"
     implementation "androidx.preference:preference:1.2.1"
 

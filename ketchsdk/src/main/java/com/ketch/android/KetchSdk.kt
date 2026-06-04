@@ -2,6 +2,14 @@ package com.ketch.android
 
 import android.content.Context
 import androidx.fragment.app.FragmentManager
+import com.ketch.android.api.HeadlessApiClient
+import com.ketch.android.api.KetchDataCenter
+import com.ketch.android.data.Consent
+import com.ketch.android.data.ConsentConfig
+import com.ketch.android.data.ConsentUpdate
+import com.ketch.android.data.FullConfigurationRequest
+import com.ketch.android.data.HeadlessConfiguration
+import com.ketch.android.data.LocationResponse
 
 /**
  * Factory to create the Ketch object.
@@ -13,8 +21,8 @@ import androidx.fragment.app.FragmentManager
  *               PROPERTY,
  *               ENVIRONMENT,
  *               listener,
- *               TEST_URL,
- *               Ketch.LogLevel.DEBUG
+ *               dataCenter = KetchDataCenter.US,
+ *               logLevel = Ketch.LogLevel.DEBUG
  *           )
  **/
 object KetchSdk {
@@ -27,7 +35,8 @@ object KetchSdk {
      * @param property - the property name
      * @param environment - the environment name.
      * @param listener - Ketch.Listener. Optional
-     * @param ketchUrl - Overrides the ketch url. Optional
+     * @param ketchUrl - Overrides the ketch url. Optional; defaults to [dataCenter] base URL.
+     * @param dataCenter - CDN region for headless and WebView API calls. Default US.
      * @param logLevel - the log level, can be TRACE, DEBUG, INFO, WARN, ERROR. Default is ERROR
      */
     fun create(
@@ -38,7 +47,8 @@ object KetchSdk {
         environment: String? = null,
         listener: Ketch.Listener? = null,
         ketchUrl: String? = null,
-        logLevel: Ketch.LogLevel = Ketch.LogLevel.ERROR
+        dataCenter: KetchDataCenter = KetchDataCenter.US,
+        logLevel: Ketch.LogLevel = Ketch.LogLevel.ERROR,
     ): Ketch {
         return Ketch.create(
             context = context,
@@ -48,7 +58,67 @@ object KetchSdk {
             environment = environment,
             listener = listener,
             ketchUrl = ketchUrl,
-            logLevel = logLevel
+            dataCenter = dataCenter,
+            logLevel = logLevel,
+        )
+    }
+
+    // MARK: - Headless API (static, web/v3)
+
+    /** GeoIP / jurisdiction hint (`GET /ip`). */
+    fun fetchLocation(
+        dataCenter: KetchDataCenter = KetchDataCenter.US,
+        callback: (Result<LocationResponse>) -> Unit,
+    ) {
+        HeadlessApiClient(dataCenter).fetchLocation(callback)
+    }
+
+    /** Minimal config (`GET .../boot.json`). */
+    fun fetchBootstrapConfiguration(
+        organization: String,
+        property: String,
+        dataCenter: KetchDataCenter = KetchDataCenter.US,
+        callback: (Result<HeadlessConfiguration>) -> Unit,
+    ) {
+        HeadlessApiClient(dataCenter).fetchBootstrapConfiguration(organization, property, callback)
+    }
+
+    /** Full config with optional env / jurisdiction / language and hash query param. */
+    fun fetchFullConfiguration(
+        request: FullConfigurationRequest,
+        dataCenter: KetchDataCenter = KetchDataCenter.US,
+        callback: (Result<HeadlessConfiguration>) -> Unit,
+    ) {
+        HeadlessApiClient(dataCenter).fetchFullConfiguration(request, callback)
+    }
+
+    /** Server consent including `protocols` (`POST .../consent/{org}/get`). */
+    fun fetchConsent(
+        config: ConsentConfig,
+        dataCenter: KetchDataCenter = KetchDataCenter.US,
+        callback: (Result<Consent>) -> Unit,
+    ) {
+        HeadlessApiClient(dataCenter).fetchConsent(config, callback)
+    }
+
+    /** Protocol strings only (same endpoint as fetchConsent). */
+    fun fetchProtocols(
+        config: ConsentConfig,
+        dataCenter: KetchDataCenter = KetchDataCenter.US,
+        callback: (Result<Consent>) -> Unit,
+    ) {
+        HeadlessApiClient(dataCenter).fetchProtocols(config, callback)
+    }
+
+    /** Updates consent; returns server response with computed `protocols`. */
+    fun setConsent(
+        update: ConsentUpdate,
+        dataCenter: KetchDataCenter = KetchDataCenter.US,
+        callback: (Result<Consent>) -> Unit,
+    ) {
+        HeadlessApiClient(dataCenter).setConsent(
+            update.copy(protocols = null),
+            callback,
         )
     }
 }
