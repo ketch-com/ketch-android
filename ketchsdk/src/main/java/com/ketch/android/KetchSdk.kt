@@ -13,9 +13,13 @@ import com.ketch.android.data.GetProfileResponse
 import com.ketch.android.data.HeadlessConfiguration
 import com.ketch.android.data.InvokeRightRequest
 import com.ketch.android.data.LocationResponse
+import com.ketch.android.data.PreferenceQRRequest
 import com.ketch.android.data.PutProfileRequest
+import com.ketch.android.data.SubscriptionConfiguration
+import com.ketch.android.data.SubscriptionConfigurationRequest
 import com.ketch.android.data.SubscriptionsRequest
 import com.ketch.android.data.SubscriptionsResponse
+import com.ketch.android.data.WebReportRequest
 
 /**
  * Factory to create the Ketch object.
@@ -166,5 +170,27 @@ object KetchSdk {
         callback: (Result<Unit>) -> Unit,
     ) {
         HeadlessApiClient(dataCenter).setSubscriptions(request, callback)
+    }
+
+    fun fetchSubscriptionsConfiguration(
+        request: SubscriptionConfigurationRequest,
+        dataCenter: KetchDataCenter = KetchDataCenter.US,
+        callback: (Result<SubscriptionConfiguration>) -> Unit,
+    ) {
+        HeadlessApiClient(dataCenter).fetchSubscriptionsConfiguration(request, callback)
+    }
+
+    fun preferenceQRUrl(
+        request: PreferenceQRRequest,
+        dataCenter: KetchDataCenter = KetchDataCenter.US,
+    ): String = HeadlessApiClient(dataCenter).preferenceQRUrl(request)
+
+    fun webReport(
+        channel: String,
+        request: WebReportRequest,
+        dataCenter: KetchDataCenter = KetchDataCenter.US,
+        callback: (Result<Unit>) -> Unit,
+    ) {
+        HeadlessApiClient(dataCenter).webReport(channel, request, callback)
     }
 }

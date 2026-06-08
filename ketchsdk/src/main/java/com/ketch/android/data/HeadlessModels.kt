@@ -200,6 +200,42 @@ data class PutProfileRequest(
     val regionCode: String? = null,
 )
 
+/** ketch-types `GetSubscriptionConfigurationRequest` */
+data class SubscriptionConfigurationRequest(
+    val organizationCode: String,
+    val propertyCode: String,
+    val languageCode: String,
+    val experienceCode: String,
+)
+
+/** Subset of ketch-types `SubscriptionConfiguration` */
+data class SubscriptionConfiguration(
+    val identities: Map<String, String>? = null,
+    val controls: List<Map<String, Any>>? = null,
+    val topics: List<Map<String, Any>>? = null,
+)
+
+/** ketch-types `GetPreferenceQRRequest` */
+data class PreferenceQRRequest(
+    val organizationCode: String,
+    val propertyCode: String,
+    val environmentCode: String? = null,
+    val imageSize: Int? = null,
+    val path: String? = null,
+    val backgroundColor: String? = null,
+    val foregroundColor: String? = null,
+    val parameters: Map<String, String> = emptyMap(),
+)
+
+/** ketch-types `WebReportRequest` */
+data class WebReportRequest(
+    val type: String,
+    val age: Int,
+    val url: String,
+    @SerializedName("user_agent") val userAgent: String,
+    val body: Map<String, String>,
+)
+
 /** ketch-types `GetSubscriptionsRequest` / `SetSubscriptionsRequest` */
 data class SubscriptionsRequest(
     val organizationCode: String,

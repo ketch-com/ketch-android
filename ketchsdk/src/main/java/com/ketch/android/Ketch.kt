@@ -15,9 +15,13 @@ import com.ketch.android.data.GetProfileRequest
 import com.ketch.android.data.GetProfileResponse
 import com.ketch.android.data.HeadlessConfiguration
 import com.ketch.android.data.InvokeRightRequest
+import com.ketch.android.data.PreferenceQRRequest
 import com.ketch.android.data.PutProfileRequest
+import com.ketch.android.data.SubscriptionConfiguration
+import com.ketch.android.data.SubscriptionConfigurationRequest
 import com.ketch.android.data.SubscriptionsRequest
 import com.ketch.android.data.SubscriptionsResponse
+import com.ketch.android.data.WebReportRequest
 import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.KetchConfig
 import com.ketch.android.data.LocationResponse
@@ -265,6 +269,31 @@ class Ketch private constructor(
 
     suspend fun setSubscriptions(request: SubscriptionsRequest) =
         headlessApiClient.setSubscriptions(request)
+
+    fun fetchSubscriptionsConfiguration(
+        request: SubscriptionConfigurationRequest,
+        callback: (Result<SubscriptionConfiguration>) -> Unit,
+    ) {
+        headlessApiClient.fetchSubscriptionsConfiguration(request, callback)
+    }
+
+    suspend fun fetchSubscriptionsConfiguration(
+        request: SubscriptionConfigurationRequest,
+    ): SubscriptionConfiguration = headlessApiClient.fetchSubscriptionsConfiguration(request)
+
+    fun preferenceQRUrl(request: PreferenceQRRequest): String =
+        headlessApiClient.preferenceQRUrl(request)
+
+    fun webReport(
+        channel: String,
+        request: WebReportRequest,
+        callback: (Result<Unit>) -> Unit,
+    ) {
+        headlessApiClient.webReport(channel, request, callback)
+    }
+
+    suspend fun webReport(channel: String, request: WebReportRequest) =
+        headlessApiClient.webReport(channel, request)
 
     /**
      * Display the consent, adding the fragment dialog to the given FragmentManager.

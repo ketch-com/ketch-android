@@ -40,6 +40,26 @@ class HeadlessApiClientTest {
     }
 
     @Test
+    fun preferenceQRUrl_matchesContractFixture() {
+        val url = client.preferenceQRUrl(
+            com.ketch.android.data.PreferenceQRRequest(
+                organizationCode = "switchbitcorp",
+                propertyCode = "switchbit",
+                environmentCode = "production",
+                imageSize = 1024,
+                path = "/policy.html",
+                backgroundColor = "white",
+                foregroundColor = "black",
+                parameters = mapOf("foo" to "bar"),
+            ),
+        )
+        assertEquals(
+            "https://global.ketchcdn.com/web/v3/qr/switchbitcorp/switchbit/preferences.png?env=production&size=1024&path=%2Fpolicy.html&bgcolor=white&fgcolor=black&foo=bar",
+            url,
+        )
+    }
+
+    @Test
     fun buildUrl_rightsProfileSubscriptions() {
         assertEquals(
             "https://global.ketchcdn.com/web/v3/rights/switchbitcorp/invoke",

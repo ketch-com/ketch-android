@@ -11,9 +11,13 @@ import com.ketch.android.data.HeadlessConfiguration
 import com.ketch.android.data.HeadlessException
 import com.ketch.android.data.InvokeRightRequest
 import com.ketch.android.data.LocationResponse
+import com.ketch.android.data.PreferenceQRRequest
 import com.ketch.android.data.PutProfileRequest
+import com.ketch.android.data.SubscriptionConfiguration
+import com.ketch.android.data.SubscriptionConfigurationRequest
 import com.ketch.android.data.SubscriptionsRequest
 import com.ketch.android.data.SubscriptionsResponse
+import com.ketch.android.data.WebReportRequest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -177,6 +181,47 @@ class HeadlessApiClient(
     suspend fun setSubscriptions(request: SubscriptionsRequest): Unit = withContext(Dispatchers.IO) {
         postVoid("/subscriptions/${request.organizationCode}/update", request)
     }
+
+    fun fetchSubscriptionsConfiguration(
+        request: SubscriptionConfigurationRequest,
+        callback: (Result<SubscriptionConfiguration>) -> Unit,
+    ) {
+        launchAsync(callback) { fetchSubscriptionsConfiguration(request) }
+    }
+
+    suspend fun fetchSubscriptionsConfiguration(
+        request: SubscriptionConfigurationRequest,
+    ): SubscriptionConfiguration = withContext(Dispatchers.IO) {
+        val path = "/config/${request.organizationCode}/${request.propertyCode}/${request.languageCode}/${request.experienceCode}/subscriptions.json"
+        get(path, SubscriptionConfiguration::class.java)
+    }
+
+    fun preferenceQRUrl(request: PreferenceQRRequest): String {
+        val query = linkedMapOf<String, String>()
+        request.environmentCode?.let { query["env"] = it }
+        request.imageSize?.let { query["size"] = it.toString() }
+        request.path?.let { query["path"] = it }
+        request.backgroundColor?.let { query["bgcolor"] = it }
+        request.foregroundColor?.let { query["fgcolor"] = it }
+        query.putAll(request.parameters)
+        return buildUrl(
+            "/qr/${request.organizationCode}/${request.propertyCode}/preferences.png",
+            query,
+        )
+    }
+
+    fun webReport(
+        channel: String,
+        request: WebReportRequest,
+        callback: (Result<Unit>) -> Unit,
+    ) {
+        launchAsync(callback) { webReport(channel, request) }
+    }
+
+    suspend fun webReport(channel: String, request: WebReportRequest): Unit =
+        withContext(Dispatchers.IO) {
+            postVoid("/report/$channel", request)
+        }
 
     /** Builds an absolute CDN URL for unit tests and debugging. */
     fun buildUrl(path: String, query: Map<String, String> = emptyMap()): String {

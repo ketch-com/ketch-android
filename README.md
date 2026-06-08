@@ -219,6 +219,25 @@ ketch.fetchConsent(consentConfig) { result ->
 ketch.setConsent(consentUpdate) { result ->
     // Server-computed protocols in response; request omits protocols
 }
+
+// Rights, profile, subscriptions
+ketch.invokeRight(invokeRightRequest) { }
+ketch.getProfile(profileRequest) { }
+ketch.putProfile(putProfileRequest) { }
+ketch.getSubscriptions(subscriptionsRequest) { }
+ketch.setSubscriptions(subscriptionsRequest) { }
+
+// Subscriptions config, QR URL, telemetry
+ketch.fetchSubscriptionsConfiguration(subConfigRequest) { }
+val qrUrl = ketch.preferenceQRUrl(
+    PreferenceQRRequest(
+        organizationCode = ORG_CODE,
+        propertyCode = PROPERTY,
+        environmentCode = ENVIRONMENT,
+        imageSize = 1024,
+    )
+)
+ketch.webReport("mychannel", reportRequest) { }
 ```
 
 `getConsent()` on the WebView listener path is unchanged. Headless calls do not require `load()`.
