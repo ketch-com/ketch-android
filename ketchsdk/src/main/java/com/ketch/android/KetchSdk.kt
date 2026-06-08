@@ -8,8 +8,14 @@ import com.ketch.android.data.Consent
 import com.ketch.android.data.ConsentConfig
 import com.ketch.android.data.ConsentUpdate
 import com.ketch.android.data.FullConfigurationRequest
+import com.ketch.android.data.GetProfileRequest
+import com.ketch.android.data.GetProfileResponse
 import com.ketch.android.data.HeadlessConfiguration
+import com.ketch.android.data.InvokeRightRequest
 import com.ketch.android.data.LocationResponse
+import com.ketch.android.data.PutProfileRequest
+import com.ketch.android.data.SubscriptionsRequest
+import com.ketch.android.data.SubscriptionsResponse
 
 /**
  * Factory to create the Ketch object.
@@ -120,5 +126,45 @@ object KetchSdk {
             update.copy(protocols = null),
             callback,
         )
+    }
+
+    fun invokeRight(
+        request: InvokeRightRequest,
+        dataCenter: KetchDataCenter = KetchDataCenter.US,
+        callback: (Result<Unit>) -> Unit,
+    ) {
+        HeadlessApiClient(dataCenter).invokeRight(request, callback)
+    }
+
+    fun getProfile(
+        request: GetProfileRequest,
+        dataCenter: KetchDataCenter = KetchDataCenter.US,
+        callback: (Result<GetProfileResponse>) -> Unit,
+    ) {
+        HeadlessApiClient(dataCenter).getProfile(request, callback)
+    }
+
+    fun putProfile(
+        request: PutProfileRequest,
+        dataCenter: KetchDataCenter = KetchDataCenter.US,
+        callback: (Result<Unit>) -> Unit,
+    ) {
+        HeadlessApiClient(dataCenter).putProfile(request, callback)
+    }
+
+    fun getSubscriptions(
+        request: SubscriptionsRequest,
+        dataCenter: KetchDataCenter = KetchDataCenter.US,
+        callback: (Result<SubscriptionsResponse>) -> Unit,
+    ) {
+        HeadlessApiClient(dataCenter).getSubscriptions(request, callback)
+    }
+
+    fun setSubscriptions(
+        request: SubscriptionsRequest,
+        dataCenter: KetchDataCenter = KetchDataCenter.US,
+        callback: (Result<Unit>) -> Unit,
+    ) {
+        HeadlessApiClient(dataCenter).setSubscriptions(request, callback)
     }
 }

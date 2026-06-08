@@ -11,7 +11,13 @@ import com.ketch.android.data.ConsentConfig
 import com.ketch.android.data.ConsentUpdate
 import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.FullConfigurationRequest
+import com.ketch.android.data.GetProfileRequest
+import com.ketch.android.data.GetProfileResponse
 import com.ketch.android.data.HeadlessConfiguration
+import com.ketch.android.data.InvokeRightRequest
+import com.ketch.android.data.PutProfileRequest
+import com.ketch.android.data.SubscriptionsRequest
+import com.ketch.android.data.SubscriptionsResponse
 import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.KetchConfig
 import com.ketch.android.data.LocationResponse
@@ -206,6 +212,59 @@ class Ketch private constructor(
 
     suspend fun setConsent(update: ConsentUpdate): Consent =
         headlessApiClient.setConsent(update.withoutProtocols())
+
+    /** Invokes a data subject right (`POST .../rights/{org}/invoke`). */
+    fun invokeRight(
+        request: InvokeRightRequest,
+        callback: (Result<Unit>) -> Unit,
+    ) {
+        headlessApiClient.invokeRight(request, callback)
+    }
+
+    suspend fun invokeRight(request: InvokeRightRequest) = headlessApiClient.invokeRight(request)
+
+    /** Gets profile preferences (`POST .../profile/{org}/get`). */
+    fun getProfile(
+        request: GetProfileRequest,
+        callback: (Result<GetProfileResponse>) -> Unit,
+    ) {
+        headlessApiClient.getProfile(request, callback)
+    }
+
+    suspend fun getProfile(request: GetProfileRequest): GetProfileResponse =
+        headlessApiClient.getProfile(request)
+
+    /** Updates profile preferences (`POST .../profile/{org}/put`). */
+    fun putProfile(
+        request: PutProfileRequest,
+        callback: (Result<Unit>) -> Unit,
+    ) {
+        headlessApiClient.putProfile(request, callback)
+    }
+
+    suspend fun putProfile(request: PutProfileRequest) = headlessApiClient.putProfile(request)
+
+    /** Gets subscription topics/controls (`POST .../subscriptions/{org}/get`). */
+    fun getSubscriptions(
+        request: SubscriptionsRequest,
+        callback: (Result<SubscriptionsResponse>) -> Unit,
+    ) {
+        headlessApiClient.getSubscriptions(request, callback)
+    }
+
+    suspend fun getSubscriptions(request: SubscriptionsRequest): SubscriptionsResponse =
+        headlessApiClient.getSubscriptions(request)
+
+    /** Updates subscription topics/controls (`POST .../subscriptions/{org}/update`). */
+    fun setSubscriptions(
+        request: SubscriptionsRequest,
+        callback: (Result<Unit>) -> Unit,
+    ) {
+        headlessApiClient.setSubscriptions(request, callback)
+    }
+
+    suspend fun setSubscriptions(request: SubscriptionsRequest) =
+        headlessApiClient.setSubscriptions(request)
 
     /**
      * Display the consent, adding the fragment dialog to the given FragmentManager.

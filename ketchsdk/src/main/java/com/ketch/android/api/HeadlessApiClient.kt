@@ -5,9 +5,15 @@ import com.ketch.android.data.Consent
 import com.ketch.android.data.ConsentConfig
 import com.ketch.android.data.ConsentUpdate
 import com.ketch.android.data.FullConfigurationRequest
+import com.ketch.android.data.GetProfileRequest
+import com.ketch.android.data.GetProfileResponse
 import com.ketch.android.data.HeadlessConfiguration
 import com.ketch.android.data.HeadlessException
+import com.ketch.android.data.InvokeRightRequest
 import com.ketch.android.data.LocationResponse
+import com.ketch.android.data.PutProfileRequest
+import com.ketch.android.data.SubscriptionsRequest
+import com.ketch.android.data.SubscriptionsResponse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -116,6 +122,62 @@ class HeadlessApiClient(
         postSetConsent(path, SetConsentPayload.from(update), update)
     }
 
+    fun invokeRight(
+        request: InvokeRightRequest,
+        callback: (Result<Unit>) -> Unit,
+    ) {
+        launchAsync(callback) { invokeRight(request) }
+    }
+
+    suspend fun invokeRight(request: InvokeRightRequest): Unit = withContext(Dispatchers.IO) {
+        postVoid("/rights/${request.organizationCode}/invoke", request)
+    }
+
+    fun getProfile(
+        request: GetProfileRequest,
+        callback: (Result<GetProfileResponse>) -> Unit,
+    ) {
+        launchAsync(callback) { getProfile(request) }
+    }
+
+    suspend fun getProfile(request: GetProfileRequest): GetProfileResponse = withContext(Dispatchers.IO) {
+        post("/profile/${request.organizationCode}/get", request, GetProfileResponse::class.java)
+    }
+
+    fun putProfile(
+        request: PutProfileRequest,
+        callback: (Result<Unit>) -> Unit,
+    ) {
+        launchAsync(callback) { putProfile(request) }
+    }
+
+    suspend fun putProfile(request: PutProfileRequest): Unit = withContext(Dispatchers.IO) {
+        postVoid("/profile/${request.organizationCode}/put", request)
+    }
+
+    fun getSubscriptions(
+        request: SubscriptionsRequest,
+        callback: (Result<SubscriptionsResponse>) -> Unit,
+    ) {
+        launchAsync(callback) { getSubscriptions(request) }
+    }
+
+    suspend fun getSubscriptions(request: SubscriptionsRequest): SubscriptionsResponse =
+        withContext(Dispatchers.IO) {
+            post("/subscriptions/${request.organizationCode}/get", request, SubscriptionsResponse::class.java)
+        }
+
+    fun setSubscriptions(
+        request: SubscriptionsRequest,
+        callback: (Result<Unit>) -> Unit,
+    ) {
+        launchAsync(callback) { setSubscriptions(request) }
+    }
+
+    suspend fun setSubscriptions(request: SubscriptionsRequest): Unit = withContext(Dispatchers.IO) {
+        postVoid("/subscriptions/${request.organizationCode}/update", request)
+    }
+
     /** Builds an absolute CDN URL for unit tests and debugging. */
     fun buildUrl(path: String, query: Map<String, String> = emptyMap()): String {
         val normalized = if (path.startsWith("/")) path else "/$path"
@@ -197,6 +259,27 @@ class HeadlessApiClient(
             .post(json.toRequestBody(jsonMediaType))
             .build()
         return execute(request, type)
+    }
+
+    private fun postVoid(path: String, body: Any) {
+        val json = gson.toJson(body)
+        val request = Request.Builder()
+            .url(buildUrl(path))
+            .header("Accept", "application/json")
+            .header("Content-Type", "application/json")
+            .post(json.toRequestBody(jsonMediaType))
+            .build()
+        try {
+            okHttpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw HeadlessException("HTTP ${response.code} for ${request.url}")
+                }
+            }
+        } catch (error: HeadlessException) {
+            throw error
+        } catch (error: IOException) {
+            throw HeadlessException("Network error for ${request.url}", error)
+        }
     }
 
     private fun emptyConsent(config: ConsentConfig): Consent =

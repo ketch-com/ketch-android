@@ -111,5 +111,111 @@ data class ConfigurationPurpose(
     @SerializedName("legalBasisCode") val legalBasisCode: String? = null,
 )
 
+/** ketch-types `DataSubject` */
+data class DataSubject(
+    @SerializedName("email") val email: String,
+    @SerializedName("firstName") val firstName: String,
+    @SerializedName("lastName") val lastName: String,
+    @SerializedName("country") val country: String? = null,
+    @SerializedName("stateRegion") val stateRegion: String? = null,
+    @SerializedName("city") val city: String? = null,
+    @SerializedName("description") val description: String? = null,
+    @SerializedName("phone") val phone: String? = null,
+    @SerializedName("postalCode") val postalCode: String? = null,
+    @SerializedName("addressLine1") val addressLine1: String? = null,
+    @SerializedName("addressLine2") val addressLine2: String? = null,
+)
+
+/** ketch-types `InvokeRightRequest` */
+data class InvokeRightRequest(
+    val organizationCode: String,
+    val propertyCode: String,
+    val environmentCode: String,
+    val identities: Map<String, String>,
+    val jurisdictionCode: String,
+    val rightCode: String,
+    val user: DataSubject,
+    val controllerCode: String? = null,
+    val invokedAt: Long? = null,
+    val recaptchaToken: String? = null,
+    val regionCode: String? = null,
+    val isAuthenticated: Boolean? = null,
+)
+
+/** ketch-types `ProfilePreferencesIdentity` */
+data class ProfilePreferencesIdentity(
+    @SerializedName("identitySpace") val identitySpace: String,
+    @SerializedName("identityValue") val identityValue: String,
+)
+
+/** ketch-types `ProfilePreferencesAttribute` */
+data class ProfilePreferencesAttribute(
+    @SerializedName("attributeCode") val attributeCode: String,
+    @SerializedName("attributeValue") val attributeValue: String? = null,
+    @SerializedName("source") val source: String,
+)
+
+/** ketch-types `ProfilePreferencesContext` */
+data class ProfilePreferencesContext(
+    @SerializedName("source") val source: String,
+    @SerializedName("updatedAt") val updatedAt: Long? = null,
+    @SerializedName("configId") val configId: String? = null,
+)
+
+/** ketch-types `GetProfileRequest` */
+data class GetProfileRequest(
+    val organizationCode: String,
+    val propertyCode: String,
+    val jurisdictionCode: String,
+    val languageCode: String,
+    val identities: List<ProfilePreferencesIdentity>,
+    val controllerCode: String? = null,
+    val environmentCode: String? = null,
+    @SerializedName("accountID") val accountId: String? = null,
+    val regionCode: String? = null,
+)
+
+/** ketch-types `GetProfileResponse` */
+data class GetProfileResponse(
+    val controllerCode: String? = null,
+    val propertyCode: String? = null,
+    val environmentCode: String? = null,
+    val jurisdictionCode: String? = null,
+    val regionCode: String? = null,
+    val attributes: List<ProfilePreferencesAttribute>? = null,
+)
+
+/** ketch-types `PutProfileRequest` */
+data class PutProfileRequest(
+    val organizationCode: String,
+    val propertyCode: String,
+    val jurisdictionCode: String,
+    val languageCode: String,
+    val identities: List<ProfilePreferencesIdentity>,
+    val context: ProfilePreferencesContext,
+    val controllerCode: String? = null,
+    val environmentCode: String? = null,
+    val attributes: List<ProfilePreferencesAttribute>? = null,
+    val accountId: String? = null,
+    val regionCode: String? = null,
+)
+
+/** ketch-types `GetSubscriptionsRequest` / `SetSubscriptionsRequest` */
+data class SubscriptionsRequest(
+    val organizationCode: String,
+    val controllerCode: String? = null,
+    val propertyCode: String? = null,
+    val environmentCode: String? = null,
+    val identities: Map<String, String>? = null,
+    val topics: Map<String, Map<String, String>>? = null,
+    val controls: Map<String, Map<String, String>>? = null,
+    val collectedAt: Long? = null,
+    val jurisdictionCode: String? = null,
+    val regionCode: String? = null,
+)
+
+/** ketch-types `GetSubscriptionsResponse` */
+typealias SubscriptionsResponse = SubscriptionsRequest
+
 /** Errors from native headless HTTP calls. */
 class HeadlessException(message: String, cause: Throwable? = null) : Exception(message, cause)

@@ -40,6 +40,22 @@ class HeadlessApiClientTest {
     }
 
     @Test
+    fun buildUrl_rightsProfileSubscriptions() {
+        assertEquals(
+            "https://global.ketchcdn.com/web/v3/rights/switchbitcorp/invoke",
+            client.buildUrl("/rights/switchbitcorp/invoke"),
+        )
+        assertEquals(
+            "https://global.ketchcdn.com/web/v3/profile/acme/get",
+            client.buildUrl("/profile/acme/get"),
+        )
+        assertEquals(
+            "https://global.ketchcdn.com/web/v3/subscriptions/acme/update",
+            client.buildUrl("/subscriptions/acme/update"),
+        )
+    }
+
+    @Test
     fun ketchDataCenterBaseUrls() {
         assertEquals("https://global.ketchcdn.com/web/v3", KetchDataCenter.US.baseUrl)
         assertEquals("https://eu.ketchcdn.com/web/v3", KetchDataCenter.EU.baseUrl)
