@@ -32,7 +32,16 @@ integration-tests/
 - An Android device or emulator running API 28 or higher
 - The Ketch SDK module (`ketchsdk`) must be built successfully
 
-### Running Tests Locally
+### Headless integration tests
+
+Live CDN round-trip (no WebView): `KetchHeadlessIntegrationTest` uses org `ketch_samples` / property `android`.
+
+```bash
+./gradlew :integration-tests:connectedAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.ketch.android.integration.tests.KetchHeadlessIntegrationTest
+```
+
+## Running Tests Locally
 
 #### From Android Studio
 
