@@ -184,7 +184,9 @@ Feel free to skip the listeners you don't really need.
 
 ## Headless API (web/v3, pre-WebView)
 
-Use native HTTP for ATT-critical flows **before** loading the WebView—location, config, and consent with `protocols` from the CDN. Contract: [mobile-headless-api.md](https://github.com/ketch-com/ketch-tag/blob/main/docs/design/mobile-headless-api.md).
+Use native HTTP for cold-start flows **before** loading the WebView—location, config, and consent with `protocols` from the CDN. Contract: [mobile-headless-api.md](https://github.com/ketch-com/ketch-tag/blob/main/docs/design/mobile-headless-api.md).
+
+Testing: [mobile-headless-api-testing.md](https://github.com/ketch-com/ketch-tag/blob/main/docs/design/mobile-headless-api-testing.md). (App Tracking Transparency is iOS-only — not applicable on Android.)
 
 Pass `dataCenter` when creating the SDK (`KetchDataCenter.US`, `EU`, or `UAT`). Instance methods use the SDK's data center; static `KetchSdk` methods accept an optional `dataCenter` parameter.
 
