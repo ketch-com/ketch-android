@@ -35,10 +35,11 @@ import java.io.IOException
  */
 class HeadlessApiClient(
     dataCenter: KetchDataCenter = KetchDataCenter.US,
+    baseUrl: String? = null,
     private val okHttpClient: OkHttpClient = OkHttpClient(),
     private val gson: Gson = Gson(),
 ) {
-    private val baseUrl = dataCenter.baseUrl
+    private val baseUrl = baseUrl ?: dataCenter.baseUrl
     private val jsonMediaType = "application/json".toMediaType()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -266,33 +267,79 @@ class HeadlessApiClient(
     }
 
     private fun postConsent(path: String, body: ConsentConfigPayload, config: ConsentConfig): Consent {
-        return try {
-            val response = post(path, body, Consent::class.java)
-            if (response.purposes != null || response.protocols != null) {
-                response
-            } else {
-                emptyConsent(config)
-            }
-        } catch (_: HeadlessException) {
-            emptyConsent(config)
-        } catch (_: IOException) {
-            emptyConsent(config)
-        }
+        val request = buildConsentPostRequest(path, body)
+        return executeConsentFetch(request, config)
     }
 
     private fun postSetConsent(path: String, body: SetConsentPayload, fallback: ConsentUpdate): Consent {
-        return try {
-            val response = post(path, body, Consent::class.java)
-            if (!response.purposes.isNullOrEmpty()) {
-                response
-            } else {
-                consentFromUpdate(fallback)
+        val request = buildConsentPostRequest(path, body)
+        return executeConsentSet(request, fallback)
+    }
+
+    private fun buildConsentPostRequest(path: String, body: Any): Request {
+        val json = gson.toJson(body)
+        return Request.Builder()
+            .url(buildUrl(path))
+            .header("Accept", "application/json")
+            .header("Content-Type", "application/json")
+            .post(json.toRequestBody(jsonMediaType))
+            .build()
+    }
+
+    private fun executeConsentFetch(request: Request, config: ConsentConfig): Consent {
+        try {
+            okHttpClient.newCall(request).execute().use { response ->
+                val body = response.body?.string().orEmpty()
+                if (!response.isSuccessful) {
+                    throw HeadlessException("HTTP ${response.code} for ${request.url}")
+                }
+                if (body.isBlank() || body == "null") {
+                    return emptyConsent(config)
+                }
+                val decoded = decodeConsent(body)
+                if (decoded != null && hasUsableConsentFields(decoded)) {
+                    return decoded
+                }
+                return emptyConsent(config)
             }
-        } catch (_: HeadlessException) {
-            consentFromUpdate(fallback)
-        } catch (_: IOException) {
-            consentFromUpdate(fallback)
+        } catch (error: HeadlessException) {
+            throw error
+        } catch (error: IOException) {
+            throw HeadlessException("Network error for ${request.url}", error)
         }
+    }
+
+    private fun executeConsentSet(request: Request, fallback: ConsentUpdate): Consent {
+        try {
+            okHttpClient.newCall(request).execute().use { response ->
+                val body = response.body?.string().orEmpty()
+                if (!response.isSuccessful) {
+                    throw HeadlessException("HTTP ${response.code} for ${request.url}")
+                }
+                val decoded = decodeConsent(body)
+                if (decoded != null && hasUsableConsentFields(decoded)) {
+                    return decoded
+                }
+                return consentFromUpdate(fallback)
+            }
+        } catch (error: HeadlessException) {
+            throw error
+        } catch (error: IOException) {
+            throw HeadlessException("Network error for ${request.url}", error)
+        }
+    }
+
+    private fun decodeConsent(body: String): Consent? =
+        try {
+            gson.fromJson(body, Consent::class.java)
+        } catch (_: Exception) {
+            null
+        }
+
+    private fun hasUsableConsentFields(consent: Consent): Boolean {
+        if (!consent.purposes.isNullOrEmpty()) return true
+        if (!consent.protocols.isNullOrEmpty()) return true
+        return false
     }
 
     private fun <T> post(path: String, body: Any, type: Class<T>): T {
