@@ -109,7 +109,11 @@ class HeadlessApiClient(
     suspend fun fetchProtocols(config: ConsentConfig): Consent = withContext(Dispatchers.IO) {
         val response = fetchConsent(config)
         if (response.protocols.isNullOrEmpty()) {
-            Consent(purposes = null, vendors = null, protocols = null)
+            Consent(
+                purposes = response.purposes,
+                vendors = response.vendors,
+                protocols = null,
+            )
         } else {
             response
         }

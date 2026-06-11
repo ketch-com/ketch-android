@@ -82,6 +82,23 @@ class HeadlessConsentTest {
     }
 
     @Test
+    fun fetchProtocolsPreservesPurposesWhenProtocolsMissing() = runBlocking {
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(HttpURLConnection.HTTP_OK)
+                .setBody("""{"purposes":{"analytics":true,"marketing":false}}""")
+                .addHeader("Content-Type", "application/json"),
+        )
+
+        val client = headlessClient()
+        val consent = client.fetchProtocols(sampleConsentConfig())
+
+        assertNull(consent.protocols)
+        assertEquals(true, consent.purposes?.get("analytics"))
+        assertEquals(false, consent.purposes?.get("marketing"))
+    }
+
+    @Test
     fun setConsentAcceptsProtocolsOnlyResponse() = runBlocking {
         mockWebServer.enqueue(
             MockResponse()
