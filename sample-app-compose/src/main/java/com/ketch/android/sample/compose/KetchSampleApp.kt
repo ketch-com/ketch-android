@@ -7,6 +7,8 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,6 +30,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -57,9 +60,17 @@ import com.ketch.android.sample.compose.ui.theme.LightToggleTrack
 
 @Composable
 fun KetchSampleApp(
-    logEntries: List<String>,
+    dashboard: SampleDashboardState,
+    connectionSummary: String,
+    onLoad: () -> Unit,
     onShowConsent: () -> Unit,
     onShowPreferences: () -> Unit,
+    onSetLanguage: () -> Unit,
+    onSetJurisdiction: () -> Unit,
+    onSetRegion: () -> Unit,
+    onHeadlessLocation: () -> Unit,
+    onHeadlessBootstrap: () -> Unit,
+    onHeadlessConsent: () -> Unit,
 ) {
     var isDarkMode by rememberSaveable { mutableStateOf(false) }
 
@@ -70,49 +81,100 @@ fun KetchSampleApp(
                 .background(MaterialTheme.colorScheme.background)
                 .windowInsetsPadding(WindowInsets.systemBars)
         ) {
-            HeaderBar(
-                isDarkMode = isDarkMode,
-                onToggleDarkMode = { isDarkMode = it }
-            )
-
-            HorizontalDivider(
-                color = if (isDarkMode) DarkDivider else LightDivider,
-                thickness = 1.dp
-            )
-
+            HeaderBar(isDarkMode = isDarkMode, onToggleDarkMode = { isDarkMode = it })
+            HorizontalDivider(color = if (isDarkMode) DarkDivider else LightDivider, thickness = 1.dp)
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
                     .padding(20.dp)
             ) {
-                SectionHeader("Experience Functions")
-                Spacer(Modifier.height(16.dp))
-                CardsRow(
-                    onShowConsent = onShowConsent,
-                    onShowPreferences = onShowPreferences
-                )
-                Spacer(Modifier.height(24.dp))
-                SectionHeader("Event Log")
+                SectionHeader("SDK Health Dashboard")
+                DashboardRow("Init", dashboard.initState)
+                DashboardRow("Status", dashboard.statusText)
+                DashboardRow("Connection", connectionSummary)
+                DashboardRow("Load", dashboard.loadState)
+                DashboardRow("Visibility", dashboard.experienceVisibility)
+                DashboardRow("Dismiss", dashboard.dismissReason)
+
                 Spacer(Modifier.height(12.dp))
-                EventLog(
-                    entries = logEntries,
-                    isDarkMode = isDarkMode
-                )
+                SectionHeader("Privacy / Consent State")
+                DashboardRow("Environment", dashboard.environment)
+                DashboardRow("Jurisdiction", dashboard.jurisdiction)
+                DashboardRow("Region", dashboard.region)
+                DashboardRow("Consent", dashboard.consent)
+                DashboardRow("US Privacy", dashboard.usPrivacy)
+                DashboardRow("TCF", dashboard.tcf)
+                DashboardRow("GPP", dashboard.gpp)
+
+                Spacer(Modifier.height(12.dp))
+                SectionHeader("Actions")
+                ActionButtonsRow(onLoad, onShowConsent, onShowPreferences)
+                ConfigButtonsRow(onSetLanguage, onSetJurisdiction, onSetRegion)
+
+                Spacer(Modifier.height(12.dp))
+                SectionHeader("Headless (live CDN)")
+                DashboardRow("Location", dashboard.headlessLocationResult)
+                DashboardRow("Bootstrap", dashboard.headlessBootstrapResult)
+                DashboardRow("Consent", dashboard.headlessConsentResult)
+                HeadlessButtonsRow(onHeadlessLocation, onHeadlessBootstrap, onHeadlessConsent)
+
+                Spacer(Modifier.height(16.dp))
+                SectionHeader("Experience Functions")
+                Spacer(Modifier.height(12.dp))
+                CardsRow(onShowConsent = onShowConsent, onShowPreferences = onShowPreferences)
+
+                Spacer(Modifier.height(16.dp))
+                SectionHeader("Event Log")
+                Spacer(Modifier.height(8.dp))
+                EventLog(entries = dashboard.eventLog, isDarkMode = isDarkMode)
             }
         }
     }
 }
 
 @Composable
-private fun HeaderBar(
-    isDarkMode: Boolean,
-    onToggleDarkMode: (Boolean) -> Unit,
-) {
+private fun DashboardRow(label: String, value: String) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+        Text("$label:", fontSize = 12.sp, modifier = Modifier.width(100.dp))
+        Text(value, fontSize = 12.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ActionButtonsRow(onLoad: () -> Unit, onShowConsent: () -> Unit, onShowPreferences: () -> Unit) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(onClick = onLoad) { Text("Load") }
+        OutlinedButton(onClick = onShowConsent) { Text("Show Consent") }
+        OutlinedButton(onClick = onShowPreferences) { Text("Show Preferences") }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ConfigButtonsRow(onLanguage: () -> Unit, onJurisdiction: () -> Unit, onRegion: () -> Unit) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(onClick = onLanguage) { Text("Set Language EN") }
+        OutlinedButton(onClick = onJurisdiction) { Text("Set Jurisdiction US") }
+        OutlinedButton(onClick = onRegion) { Text("Set Region CA") }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun HeadlessButtonsRow(onLocation: () -> Unit, onBootstrap: () -> Unit, onConsent: () -> Unit) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(onClick = onLocation) { Text("Fetch Location") }
+        OutlinedButton(onClick = onBootstrap) { Text("Fetch Bootstrap") }
+        OutlinedButton(onClick = onConsent) { Text("Cold Start") }
+    }
+}
+
+@Composable
+private fun HeaderBar(isDarkMode: Boolean, onToggleDarkMode: (Boolean) -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -120,10 +182,8 @@ private fun HeaderBar(
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
         )
-        Text("☀️", fontSize = 16.sp)
-        Spacer(Modifier.width(4.dp))
         Switch(
             checked = isDarkMode,
             onCheckedChange = onToggleDarkMode,
@@ -132,134 +192,71 @@ private fun HeaderBar(
                 uncheckedTrackColor = if (isDarkMode) DarkToggleTrack else LightToggleTrack,
                 checkedThumbColor = KetchPurple,
                 uncheckedThumbColor = KetchPurple,
-            )
+            ),
         )
-        Spacer(Modifier.width(4.dp))
-        Text("🌙", fontSize = 16.sp)
     }
 }
 
 @Composable
 private fun SectionHeader(title: String) {
-    Text(
-        text = "▾  $title",
-        fontSize = 18.sp,
-        fontWeight = FontWeight.Bold,
-        color = KetchPurple,
-    )
+    Text(text = title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = KetchPurple)
 }
 
 @Composable
-private fun CardsRow(
-    onShowConsent: () -> Unit,
-    onShowPreferences: () -> Unit,
-) {
+private fun CardsRow(onShowConsent: () -> Unit, onShowPreferences: () -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(IntrinsicSize.Max),
+        modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Max),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        ActionCard(
-            title = "Privacy Preference Unknown",
-            description = "Trigger the consent banner. This triggers automatically for new users.",
-            onExecute = onShowConsent,
-            modifier = Modifier.weight(1f),
-        )
-        ActionCard(
-            title = "Preferences Opened",
-            description = "Open the Ketch Privacy Center to manage consent preferences.",
-            onExecute = onShowPreferences,
-            modifier = Modifier.weight(1f),
-        )
+        ActionCard("Privacy Preference Unknown", "Trigger the consent banner.", onShowConsent, Modifier.weight(1f))
+        ActionCard("Preferences Opened", "Open the Privacy Center.", onShowPreferences, Modifier.weight(1f))
     }
 }
 
 @Composable
-private fun ActionCard(
-    title: String,
-    description: String,
-    onExecute: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+private fun ActionCard(title: String, description: String, onExecute: () -> Unit, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
-            .border(
-                BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                RoundedCornerShape(12.dp)
-            )
+            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outline), RoundedCornerShape(12.dp))
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surface)
-            .padding(16.dp)
+            .padding(16.dp),
     ) {
-        Text(
-            text = title,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
+        Text(title, fontSize = 15.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
-        Text(
-            text = description,
-            fontSize = 13.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-        )
+        Text(description, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
         Spacer(Modifier.height(12.dp))
         Button(
             onClick = onExecute,
             shape = RoundedCornerShape(8.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = KetchPurple,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            ),
-        ) {
-            Text("Execute", fontSize = 14.sp, fontWeight = FontWeight.Medium)
-        }
+            colors = ButtonDefaults.buttonColors(containerColor = KetchPurple),
+        ) { Text("Execute") }
     }
 }
 
 @Composable
-private fun EventLog(
-    entries: List<String>,
-    isDarkMode: Boolean,
-) {
+private fun EventLog(entries: List<String>, isDarkMode: Boolean) {
     val listState = rememberLazyListState()
-
     LaunchedEffect(entries.size) {
-        if (entries.isNotEmpty()) {
-            listState.animateScrollToItem(entries.size - 1)
-        }
+        if (entries.isNotEmpty()) listState.animateScrollToItem(entries.size - 1)
     }
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(220.dp)
-            .border(
-                BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-                RoundedCornerShape(8.dp)
-            )
+            .height(180.dp)
+            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outline), RoundedCornerShape(8.dp))
             .clip(RoundedCornerShape(8.dp))
             .background(if (isDarkMode) DarkLogBackground else LightLogBackground)
-            .padding(12.dp)
+            .padding(12.dp),
     ) {
         if (entries.isEmpty()) {
-            Text(
-                text = "Waiting for events...",
-                fontSize = 11.sp,
-                fontFamily = FontFamily.Monospace,
-                color = if (isDarkMode) DarkLogText else LightLogText,
-            )
+            Text("Waiting for events...", fontSize = 11.sp, fontFamily = FontFamily.Monospace,
+                color = if (isDarkMode) DarkLogText else LightLogText)
         } else {
             LazyColumn(state = listState) {
                 items(entries) { entry ->
-                    Text(
-                        text = entry,
-                        fontSize = 11.sp,
-                        fontFamily = FontFamily.Monospace,
-                        color = if (isDarkMode) DarkLogText else LightLogText,
-                    )
+                    Text(entry, fontSize = 11.sp, fontFamily = FontFamily.Monospace,
+                        color = if (isDarkMode) DarkLogText else LightLogText)
                 }
             }
         }

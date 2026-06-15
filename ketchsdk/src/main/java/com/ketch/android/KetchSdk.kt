@@ -48,6 +48,7 @@ object KetchSdk {
      * @param ketchUrl - Overrides the ketch url. Optional; defaults to [dataCenter] base URL.
      * @param dataCenter - CDN region for headless and WebView API calls. Default US.
      * @param logLevel - the log level, can be TRACE, DEBUG, INFO, WARN, ERROR. Default is ERROR
+     * @param webResourceUrlOverrides - Map of exact source URL to local replacement URL for WebView resources (e.g. tag scripts).
      */
     fun create(
         context: Context,
@@ -59,6 +60,7 @@ object KetchSdk {
         ketchUrl: String? = null,
         dataCenter: KetchDataCenter = KetchDataCenter.US,
         logLevel: Ketch.LogLevel = Ketch.LogLevel.ERROR,
+        webResourceUrlOverrides: Map<String, String> = emptyMap(),
     ): Ketch {
         return Ketch.create(
             context = context,
@@ -70,6 +72,7 @@ object KetchSdk {
             ketchUrl = ketchUrl,
             dataCenter = dataCenter,
             logLevel = logLevel,
+            webResourceUrlOverrides = webResourceUrlOverrides,
         )
     }
 

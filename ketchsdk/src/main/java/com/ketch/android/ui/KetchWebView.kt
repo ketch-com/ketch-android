@@ -49,6 +49,12 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
 
     var listener: WebViewListener? = null
     private val localContentWebViewClient = LocalContentWebViewClient(shouldRetry)
+    private var webResourceUrlOverrides: Map<String, String> = emptyMap()
+
+    fun setWebResourceUrlOverrides(overrides: Map<String, String>) {
+        webResourceUrlOverrides = overrides
+        localContentWebViewClient.webResourceUrlOverrides = overrides
+    }
 
     init {
         NativeStorage.initialize(context)
@@ -101,6 +107,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
 
     class LocalContentWebViewClient(private var shouldRetry: Boolean = false) : WebViewClientCompat() {
 
+        var webResourceUrlOverrides: Map<String, String> = emptyMap()
+
         // Flag indicating if the webview has finished loading
         // We use atomic boolean here because we are using it within a coroutine
         private var isLoaded = AtomicBoolean(false)
@@ -115,6 +123,14 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             view.context.startActivity(intent)
             return true
+        }
+
+        override fun shouldInterceptRequest(
+            view: WebView,
+            request: WebResourceRequest,
+        ): WebResourceResponse? {
+            WebResourceOverrideHandler.intercept(webResourceUrlOverrides, request)?.let { return it }
+            return super.shouldInterceptRequest(view, request)
         }
 
         override fun onLoadResource(view: WebView?, url: String?) {
@@ -132,7 +148,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             }
 
             (view as? KetchWebView)?.let { ketchWebView ->
-                ketchWebView.listener?.onClose(HideExperienceStatus.None)
+                Log.w(TAG, "onDismiss source=rendererCrash status=None")
+                ketchWebView.listener?.onClose(HideExperienceStatus.None, "rendererCrash")
                 ketchWebView.kill()
             }
 
@@ -222,8 +239,10 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         ageUpper: Int?,
         bottomPadding: Int?,
         topPadding: Int?,
-        cssStyle: String?
+        cssStyle: String?,
+        webResourceUrlOverrides: Map<String, String> = emptyMap(),
     ) {
+        setWebResourceUrlOverrides(webResourceUrlOverrides)
         clearCache(true)
 
         // Convert padding values to string
@@ -256,7 +275,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             ageUpper = ageUpper,
             bottomPadding = bottomPaddingPx,
             topPadding = topPaddingPx,
-            cssStyleOverride = cssStyle
+            cssStyleOverride = cssStyle,
+            webResourceUrlOverrides = webResourceUrlOverrides,
         )
 
         loadDataWithBaseURL("http://localhost", indexHtml, "text/html", "UTF-8", null)
@@ -268,9 +288,13 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         fun hideExperience(status: String?) {
             // Determine the hideExperience event status
             val parsedStatus = parseHideExperienceStatus(status)
-            Log.d(TAG, "hideExperience: $status = ${parsedStatus.name}")
+            if (parsedStatus === HideExperienceStatus.None && !status.isNullOrBlank()) {
+                Log.w(TAG, "onDismiss source=hideExperience parseFallback rawStatus=$status")
+            } else {
+                Log.d(TAG, "onDismiss source=hideExperience status=${parsedStatus.name} rawStatus=$status")
+            }
             runOnMainThread {
-                ketchWebView.listener?.onClose(parsedStatus)
+                ketchWebView.listener?.onClose(parsedStatus, "hideExperience")
             }
         }
 
@@ -374,7 +398,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
 
         @JavascriptInterface
         fun tapOutside(dialogSize: String?) {
-            Log.d(TAG, "tapOutside: $dialogSize")
+            Log.d(TAG, "onDismiss source=tapOutside dialogSize=$dialogSize")
             runOnMainThread {
                 ketchWebView.listener?.onTapOutside()
             }
@@ -480,11 +504,17 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         fun onConsentUpdated(consent: Consent)
         fun onError(errMsg: String?)
         fun changeDialog(display: ContentDisplay)
-        fun onClose(status: HideExperienceStatus)
+        fun onClose(status: HideExperienceStatus, source: String = "hideExperience")
         fun onWillShowExperience(experienceType: WillShowExperienceType)
         fun onHasShownExperience()
         fun onTapOutside()
         fun onNativeStoragePut(key: String, value: String) {}
+    }
+
+    internal fun requestWebDismiss(callback: ((Boolean) -> Unit)? = null) {
+        evaluateJavascript(TRIGGER_OUTSIDE_TAP_DISMISS_JS) { result ->
+            callback?.invoke(result.equals("true", ignoreCase = true))
+        }
     }
 
     internal enum class ExperienceType {
@@ -499,5 +529,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
 
     companion object {
         private val TAG: String = KetchWebView::class.java.simpleName
+
+        private const val TRIGGER_OUTSIDE_TAP_DISMISS_JS =
+            "(function(){if(typeof triggerOutsideTapDismiss==='function'){return triggerOutsideTapDismiss();}return false;})()"
     }
 }

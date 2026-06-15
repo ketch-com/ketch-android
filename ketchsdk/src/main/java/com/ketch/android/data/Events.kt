@@ -7,6 +7,7 @@ enum class HideExperienceStatus(val value: String?) {
     Close("close"),
     CloseWithoutSettingConsent("closeWithoutSettingConsent"),
     WillNotShow("willNotShow"),
+    SetSubscriptions("setSubscriptions"),
     None(null);
 
     companion object {

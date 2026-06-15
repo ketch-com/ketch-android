@@ -1,6 +1,8 @@
 package com.ketch.android
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
@@ -45,6 +47,7 @@ class Ketch private constructor(
     private val dataCenter: KetchDataCenter,
     private val logLevel: LogLevel,
     private val headlessApiClient: HeadlessApiClient,
+    private var webResourceUrlOverrides: Map<String, String> = emptyMap(),
 ) {
     private val effectiveKetchUrl: String = ketchUrl ?: dataCenter.baseUrl
     // Weak reference to the original (Activity) context for WebView creation.
@@ -76,6 +79,9 @@ class Ketch private constructor(
 
     // Lock object for synchronization
     private val lock = Any()
+
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var tapOutsideFallbackRunnable: Runnable? = null
 
     /**
      * Retrieve a String value from the preferences.
@@ -145,7 +151,8 @@ class Ketch private constructor(
                 ageUpper,
                 bottomPadding,
                 topPadding,
-                cssStyle
+                cssStyle,
+                webResourceUrlOverrides,
             )
             true
         } else {
@@ -155,6 +162,15 @@ class Ketch private constructor(
 
     /** CDN region used for headless and WebView API calls. */
     fun getDataCenter(): KetchDataCenter = dataCenter
+
+    /**
+     * Redirect exact-match WebView resource URLs (e.g. UAT tag scripts) to local dev servers.
+     * Android uses native [WebViewClient.shouldInterceptRequest]; JS hook is also embedded in index HTML.
+     */
+    fun setWebResourceUrlOverrides(overrides: Map<String, String>) {
+        webResourceUrlOverrides = overrides.toMap()
+        activeWebView?.setWebResourceUrlOverrides(webResourceUrlOverrides)
+    }
 
     /** GeoIP / jurisdiction hint (`GET /ip`). */
     fun fetchLocation(callback: (Result<LocationResponse>) -> Unit) {
@@ -331,7 +347,8 @@ class Ketch private constructor(
                 ageUpper,
                 bottomPadding,
                 topPadding,
-                cssStyle
+                cssStyle,
+                webResourceUrlOverrides,
             )
             true
         } else {
@@ -375,7 +392,8 @@ class Ketch private constructor(
                 ageUpper,
                 bottomPadding,
                 topPadding,
-                cssStyle
+                cssStyle,
+                webResourceUrlOverrides,
             )
             true
         } else {
@@ -423,7 +441,8 @@ class Ketch private constructor(
                 ageUpper,
                 bottomPadding,
                 topPadding,
-                cssStyle
+                cssStyle,
+                webResourceUrlOverrides,
             )
             true
         } else {
@@ -435,7 +454,22 @@ class Ketch private constructor(
      * Dismiss the dialog
      */
     fun dismissDialog() {
+        dismissExperience(HideExperienceStatus.Close, "dismissDialog")
+    }
+
+    private fun cancelTapOutsideFallback() {
+        tapOutsideFallbackRunnable?.let { mainHandler.removeCallbacks(it) }
+        tapOutsideFallbackRunnable = null
+    }
+
+    private fun notifyDismiss(source: String, status: HideExperienceStatus) {
+        Log.d(TAG, "onDismiss source=$source status=${status.name}")
+        listener?.onDismiss(status)
+    }
+
+    private fun dismissExperience(status: HideExperienceStatus, source: String) {
         synchronized(lock) {
+            cancelTapOutsideFallback()
             val fragment = findDialogFragment()
             if (fragment != null) {
                 try {
@@ -446,9 +480,34 @@ class Ketch private constructor(
                     cleanupWebView()
                     isShowingExperience = false
                     activeDialogFragment = null
-                    this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
+                    notifyDismiss(source, status)
                 }
+            } else {
+                cleanupWebView()
+                isShowingExperience = false
+                notifyDismiss(source, status)
             }
+        }
+    }
+
+    private fun scheduleTapOutsideFallback() {
+        cancelTapOutsideFallback()
+        tapOutsideFallbackRunnable = Runnable {
+            dismissExperience(HideExperienceStatus.Close, "tapOutsideTimeout")
+        }.also {
+            mainHandler.postDelayed(it, TAP_OUTSIDE_FALLBACK_MS)
+        }
+    }
+
+    private fun handleTapOutside() {
+        Log.d(TAG, "onDismiss source=tapOutside delegating to web")
+        val webView = activeWebView
+        if (webView == null) {
+            dismissExperience(HideExperienceStatus.Close, "tapOutsideNoWebView")
+            return
+        }
+        webView.requestWebDismiss {
+            scheduleTapOutsideFallback()
         }
     }
 
@@ -554,7 +613,8 @@ class Ketch private constructor(
             if (existingFragment != null) {
                 try {
                     (existingFragment as? KetchDialogFragment)?.dismissAllowingStateLoss()
-                    this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
+                    Log.d(TAG, "onDismiss source=initCleanup status=Close")
+                    this@Ketch.listener?.onDismiss(HideExperienceStatus.Close)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error dismissing existing dialog in init: ${e.message}")
                 }
@@ -590,6 +650,7 @@ class Ketch private constructor(
             // FragmentManager would also be invalid at that point.
             val webViewContext = activityContext.get() ?: context
             val webView = KetchWebView(webViewContext, shouldRetry)
+            webView.setWebResourceUrlOverrides(webResourceUrlOverrides)
 
             // Enable debug mode
             if (logLevel === LogLevel.DEBUG) {
@@ -702,28 +763,8 @@ class Ketch private constructor(
                     }
                 }
 
-                override fun onClose(status: HideExperienceStatus) {
-                    // Dismiss dialog fragment safely
-                    synchronized(lock) {
-                        val fragment = findDialogFragment()
-                        if (fragment != null) {
-                            try {
-                                (fragment as? KetchDialogFragment)?.dismissAllowingStateLoss()
-                                this@Ketch.listener?.onDismiss(status)
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Error dismissing dialog: ${e.message}")
-                                // Ensure state and WebView are cleaned up even if dismissal fails
-                                cleanupWebView()
-                                isShowingExperience = false
-                                this@Ketch.listener?.onDismiss(status)
-                            }
-                        } else {
-                            // Even if fragment isn't found, clean up and reset state
-                            cleanupWebView()
-                            isShowingExperience = false
-                            this@Ketch.listener?.onDismiss(status)
-                        }
-                    }
+                override fun onClose(status: HideExperienceStatus, source: String) {
+                    dismissExperience(status, source)
                 }
 
                 override fun onWillShowExperience(experienceType: WillShowExperienceType) {
@@ -735,22 +776,7 @@ class Ketch private constructor(
                 }
 
                 override fun onTapOutside() {
-                    // Dismiss dialog fragment safely
-                    synchronized(lock) {
-                        val fragment = findDialogFragment()
-                        if (fragment != null) {
-                            try {
-                                (fragment as? KetchDialogFragment)?.dismissAllowingStateLoss()
-                                this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Error dismissing dialog on tap outside: ${e.message}")
-                                // Ensure state and WebView are cleaned up even if dismissal fails
-                                cleanupWebView()
-                                isShowingExperience = false
-                                this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
-                            }
-                        }
-                    }
+                    handleTapOutside()
                 }
 
                 private fun showConsentPopup() {
@@ -805,7 +831,7 @@ class Ketch private constructor(
                             }
 
                             ContentDisplay.Banner -> {
-                                it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
+                                it.theme?.banner?.container?.backdrop?.disableContentInteractions == true
                             }
                         }
                     } ?: false
@@ -920,6 +946,7 @@ class Ketch private constructor(
 
     companion object {
         val TAG = Ketch::class.java.simpleName
+        private const val TAP_OUTSIDE_FALLBACK_MS = 2000L
         fun create(
             context: Context,
             fragmentManager: FragmentManager,
@@ -930,6 +957,7 @@ class Ketch private constructor(
             ketchUrl: String?,
             dataCenter: KetchDataCenter = KetchDataCenter.US,
             logLevel: LogLevel,
+            webResourceUrlOverrides: Map<String, String> = emptyMap(),
         ) = Ketch(
             context,
             WeakReference(fragmentManager),
@@ -941,6 +969,7 @@ class Ketch private constructor(
             dataCenter,
             logLevel,
             HeadlessApiClient(dataCenter),
+            webResourceUrlOverrides,
         )
     }
 }
