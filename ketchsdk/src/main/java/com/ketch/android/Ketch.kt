@@ -1,13 +1,32 @@
 package com.ketch.android
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
+import com.ketch.android.api.HeadlessApiClient
+import com.ketch.android.api.KetchDataCenter
 import com.ketch.android.data.Consent
+import com.ketch.android.data.ConsentConfig
+import com.ketch.android.data.ConsentUpdate
 import com.ketch.android.data.ContentDisplay
+import com.ketch.android.data.FullConfigurationRequest
+import com.ketch.android.data.GetProfileRequest
+import com.ketch.android.data.GetProfileResponse
+import com.ketch.android.data.HeadlessConfiguration
+import com.ketch.android.data.InvokeRightRequest
+import com.ketch.android.data.PreferenceQRRequest
+import com.ketch.android.data.PutProfileRequest
+import com.ketch.android.data.SubscriptionConfiguration
+import com.ketch.android.data.SubscriptionConfigurationRequest
+import com.ketch.android.data.SubscriptionsRequest
+import com.ketch.android.data.SubscriptionsResponse
+import com.ketch.android.data.WebReportRequest
 import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.KetchConfig
+import com.ketch.android.data.LocationResponse
 import com.ketch.android.data.WillShowExperienceType
 import com.ketch.android.ui.KetchDialogFragment
 import com.ketch.android.ui.KetchWebView
@@ -25,8 +44,12 @@ class Ketch private constructor(
     private val environment: String?,
     private val listener: Listener?,
     private val ketchUrl: String?,
-    private val logLevel: LogLevel
+    private val dataCenter: KetchDataCenter,
+    private val logLevel: LogLevel,
+    private val headlessApiClient: HeadlessApiClient,
+    private var webResourceUrlOverrides: Map<String, String> = emptyMap(),
 ) {
+    private val effectiveKetchUrl: String = ketchUrl ?: dataCenter.baseUrl
     // Weak reference to the original (Activity) context for WebView creation.
     // WebView requires an Activity context for native UI popups (e.g., <select> dropdowns).
     // Using applicationContext causes BadTokenException when the WebView tries to show a Dialog.
@@ -56,6 +79,9 @@ class Ketch private constructor(
 
     // Lock object for synchronization
     private val lock = Any()
+
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var tapOutsideFallbackRunnable: Runnable? = null
 
     /**
      * Retrieve a String value from the preferences.
@@ -118,20 +144,172 @@ class Ketch private constructor(
                 null,
                 emptyList(),
                 null,
-                ketchUrl,
+                effectiveKetchUrl,
                 logLevel,
                 age,
                 ageLower,
                 ageUpper,
                 bottomPadding,
                 topPadding,
-                cssStyle
+                cssStyle,
+                webResourceUrlOverrides,
             )
             true
         } else {
             false
         }
     }
+
+    /** CDN region used for headless and WebView API calls. */
+    fun getDataCenter(): KetchDataCenter = dataCenter
+
+    /**
+     * Redirect exact-match WebView resource URLs (e.g. UAT tag scripts) to local dev servers.
+     * Android uses native [WebViewClient.shouldInterceptRequest]; JS hook is also embedded in index HTML.
+     */
+    fun setWebResourceUrlOverrides(overrides: Map<String, String>) {
+        webResourceUrlOverrides = overrides.toMap()
+        activeWebView?.setWebResourceUrlOverrides(webResourceUrlOverrides)
+    }
+
+    /** GeoIP / jurisdiction hint (`GET /ip`). */
+    fun fetchLocation(callback: (Result<LocationResponse>) -> Unit) {
+        headlessApiClient.fetchLocation(callback)
+    }
+
+    suspend fun fetchLocation(): LocationResponse = headlessApiClient.fetchLocation()
+
+    /** Minimal config (`GET .../boot.json`). */
+    fun fetchBootstrapConfiguration(
+        callback: (Result<HeadlessConfiguration>) -> Unit,
+    ) {
+        headlessApiClient.fetchBootstrapConfiguration(orgCode, property, callback)
+    }
+
+    suspend fun fetchBootstrapConfiguration(): HeadlessConfiguration =
+        headlessApiClient.fetchBootstrapConfiguration(orgCode, property)
+
+    /** Full config with optional env / jurisdiction / language and hash query param. */
+    fun fetchFullConfiguration(
+        request: FullConfigurationRequest,
+        callback: (Result<HeadlessConfiguration>) -> Unit,
+    ) {
+        headlessApiClient.fetchFullConfiguration(request, callback)
+    }
+
+    suspend fun fetchFullConfiguration(request: FullConfigurationRequest): HeadlessConfiguration =
+        headlessApiClient.fetchFullConfiguration(request)
+
+    /** Server consent including `protocols` (`POST .../consent/{org}/get`). */
+    fun fetchConsent(
+        config: ConsentConfig,
+        callback: (Result<Consent>) -> Unit,
+    ) {
+        headlessApiClient.fetchConsent(config, callback)
+    }
+
+    suspend fun fetchConsent(config: ConsentConfig): Consent =
+        headlessApiClient.fetchConsent(config)
+
+    /** Protocol strings only (same endpoint as fetchConsent). */
+    fun fetchProtocols(
+        config: ConsentConfig,
+        callback: (Result<Consent>) -> Unit,
+    ) {
+        headlessApiClient.fetchProtocols(config, callback)
+    }
+
+    suspend fun fetchProtocols(config: ConsentConfig): Consent =
+        headlessApiClient.fetchProtocols(config)
+
+    /** Updates consent; returns server response with computed `protocols`. */
+    fun setConsent(
+        update: ConsentUpdate,
+        callback: (Result<Consent>) -> Unit,
+    ) {
+        headlessApiClient.setConsent(update.withoutProtocols(), callback)
+    }
+
+    suspend fun setConsent(update: ConsentUpdate): Consent =
+        headlessApiClient.setConsent(update.withoutProtocols())
+
+    /** Invokes a data subject right (`POST .../rights/{org}/invoke`). */
+    fun invokeRight(
+        request: InvokeRightRequest,
+        callback: (Result<Unit>) -> Unit,
+    ) {
+        headlessApiClient.invokeRight(request, callback)
+    }
+
+    suspend fun invokeRight(request: InvokeRightRequest) = headlessApiClient.invokeRight(request)
+
+    /** Gets profile preferences (`POST .../profile/{org}/get`). */
+    fun getProfile(
+        request: GetProfileRequest,
+        callback: (Result<GetProfileResponse>) -> Unit,
+    ) {
+        headlessApiClient.getProfile(request, callback)
+    }
+
+    suspend fun getProfile(request: GetProfileRequest): GetProfileResponse =
+        headlessApiClient.getProfile(request)
+
+    /** Updates profile preferences (`POST .../profile/{org}/put`). */
+    fun putProfile(
+        request: PutProfileRequest,
+        callback: (Result<Unit>) -> Unit,
+    ) {
+        headlessApiClient.putProfile(request, callback)
+    }
+
+    suspend fun putProfile(request: PutProfileRequest) = headlessApiClient.putProfile(request)
+
+    /** Gets subscription topics/controls (`POST .../subscriptions/{org}/get`). */
+    fun getSubscriptions(
+        request: SubscriptionsRequest,
+        callback: (Result<SubscriptionsResponse>) -> Unit,
+    ) {
+        headlessApiClient.getSubscriptions(request, callback)
+    }
+
+    suspend fun getSubscriptions(request: SubscriptionsRequest): SubscriptionsResponse =
+        headlessApiClient.getSubscriptions(request)
+
+    /** Updates subscription topics/controls (`POST .../subscriptions/{org}/update`). */
+    fun setSubscriptions(
+        request: SubscriptionsRequest,
+        callback: (Result<Unit>) -> Unit,
+    ) {
+        headlessApiClient.setSubscriptions(request, callback)
+    }
+
+    suspend fun setSubscriptions(request: SubscriptionsRequest) =
+        headlessApiClient.setSubscriptions(request)
+
+    fun fetchSubscriptionsConfiguration(
+        request: SubscriptionConfigurationRequest,
+        callback: (Result<SubscriptionConfiguration>) -> Unit,
+    ) {
+        headlessApiClient.fetchSubscriptionsConfiguration(request, callback)
+    }
+
+    suspend fun fetchSubscriptionsConfiguration(
+        request: SubscriptionConfigurationRequest,
+    ): SubscriptionConfiguration = headlessApiClient.fetchSubscriptionsConfiguration(request)
+
+    fun preferenceQRUrl(request: PreferenceQRRequest): String =
+        headlessApiClient.preferenceQRUrl(request)
+
+    fun webReport(
+        channel: String,
+        request: WebReportRequest,
+        callback: (Result<Unit>) -> Unit,
+    ) {
+        headlessApiClient.webReport(channel, request, callback)
+    }
+
+    suspend fun webReport(channel: String, request: WebReportRequest) =
+        headlessApiClient.webReport(channel, request)
 
     /**
      * Display the consent, adding the fragment dialog to the given FragmentManager.
@@ -149,6 +327,15 @@ class Ketch private constructor(
             return false
         }
 
+        activeWebView?.let { webView ->
+            Log.d(TAG, "showConsent on existing WebView")
+            webView.evaluateJavascript(
+                "(function(){try{window.ketch('showConsent');return 'ok';}catch(e){return String(e);}})()"
+            ) { result -> Log.d(TAG, "showConsent JS result: $result") }
+            webView.requestShowConsent(forceImmediate = true)
+            return true
+        }
+
         val webView = createWebView(shouldRetry, synchronousPreferences)
         return if (webView != null) {
             webView.load(
@@ -162,15 +349,17 @@ class Ketch private constructor(
                 KetchWebView.ExperienceType.CONSENT,
                 emptyList(),
                 null,
-                ketchUrl,
+                effectiveKetchUrl,
                 logLevel,
                 age,
                 ageLower,
                 ageUpper,
                 bottomPadding,
                 topPadding,
-                cssStyle
+                cssStyle,
+                webResourceUrlOverrides,
             )
+            webView.requestShowConsent(forceImmediate = true)
             true
         } else {
             false
@@ -206,14 +395,15 @@ class Ketch private constructor(
                 KetchWebView.ExperienceType.PREFERENCES,
                 emptyList(),
                 null,
-                ketchUrl,
+                effectiveKetchUrl,
                 logLevel,
                 age,
                 ageLower,
                 ageUpper,
                 bottomPadding,
                 topPadding,
-                cssStyle
+                cssStyle,
+                webResourceUrlOverrides,
             )
             true
         } else {
@@ -254,14 +444,15 @@ class Ketch private constructor(
                 KetchWebView.ExperienceType.PREFERENCES,
                 tabs,
                 tab,
-                ketchUrl,
+                effectiveKetchUrl,
                 logLevel,
                 age,
                 ageLower,
                 ageUpper,
                 bottomPadding,
                 topPadding,
-                cssStyle
+                cssStyle,
+                webResourceUrlOverrides,
             )
             true
         } else {
@@ -273,7 +464,22 @@ class Ketch private constructor(
      * Dismiss the dialog
      */
     fun dismissDialog() {
+        dismissExperience(HideExperienceStatus.Close, "dismissDialog")
+    }
+
+    private fun cancelTapOutsideFallback() {
+        tapOutsideFallbackRunnable?.let { mainHandler.removeCallbacks(it) }
+        tapOutsideFallbackRunnable = null
+    }
+
+    private fun notifyDismiss(source: String, status: HideExperienceStatus) {
+        Log.d(TAG, "onDismiss source=$source status=${status.name}")
+        listener?.onDismiss(status)
+    }
+
+    private fun dismissExperience(status: HideExperienceStatus, source: String) {
         synchronized(lock) {
+            cancelTapOutsideFallback()
             val fragment = findDialogFragment()
             if (fragment != null) {
                 try {
@@ -284,9 +490,34 @@ class Ketch private constructor(
                     cleanupWebView()
                     isShowingExperience = false
                     activeDialogFragment = null
-                    this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
+                    notifyDismiss(source, status)
                 }
+            } else {
+                cleanupWebView()
+                isShowingExperience = false
+                notifyDismiss(source, status)
             }
+        }
+    }
+
+    private fun scheduleTapOutsideFallback() {
+        cancelTapOutsideFallback()
+        tapOutsideFallbackRunnable = Runnable {
+            dismissExperience(HideExperienceStatus.Close, "tapOutsideTimeout")
+        }.also {
+            mainHandler.postDelayed(it, TAP_OUTSIDE_FALLBACK_MS)
+        }
+    }
+
+    private fun handleTapOutside() {
+        Log.d(TAG, "onDismiss source=tapOutside delegating to web")
+        val webView = activeWebView
+        if (webView == null) {
+            dismissExperience(HideExperienceStatus.Close, "tapOutsideNoWebView")
+            return
+        }
+        webView.requestWebDismiss {
+            scheduleTapOutsideFallback()
         }
     }
 
@@ -392,7 +623,8 @@ class Ketch private constructor(
             if (existingFragment != null) {
                 try {
                     (existingFragment as? KetchDialogFragment)?.dismissAllowingStateLoss()
-                    this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
+                    Log.d(TAG, "onDismiss source=initCleanup status=Close")
+                    this@Ketch.listener?.onDismiss(HideExperienceStatus.Close)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error dismissing existing dialog in init: ${e.message}")
                 }
@@ -428,6 +660,7 @@ class Ketch private constructor(
             // FragmentManager would also be invalid at that point.
             val webViewContext = activityContext.get() ?: context
             val webView = KetchWebView(webViewContext, shouldRetry)
+            webView.setWebResourceUrlOverrides(webResourceUrlOverrides)
 
             // Enable debug mode
             if (logLevel === LogLevel.DEBUG) {
@@ -437,13 +670,24 @@ class Ketch private constructor(
             webView.listener = object : KetchWebView.WebViewListener {
 
                 private var config: KetchConfig? = null
-                private var showConsent: Boolean = false
+                private var showConsentPending = false
+                private var allowShowBeforeConfig = false
+
+                override fun requestShowConsent(forceImmediate: Boolean) {
+                    if (forceImmediate) {
+                        allowShowBeforeConfig = true
+                    }
+                    showConsent()
+                }
 
                 override fun showConsent() {
-                    if (config == null) {
-                        showConsent = true
+                    if (config == null && !allowShowBeforeConfig) {
+                        Log.d(TAG, "showConsent deferred until config loads")
+                        showConsentPending = true
                         return
                     }
+                    allowShowBeforeConfig = false
+                    showConsentPending = false
                     showConsentPopup()
                 }
 
@@ -499,13 +743,15 @@ class Ketch private constructor(
 
                 override fun onConfigUpdated(config: KetchConfig?) {
                     this.config = config
-
                     this@Ketch.listener?.onConfigUpdated(config)
-
-                    if (!showConsent) {
-                        return
+                    if (showConsentPending) {
+                        showConsentPending = false
+                        showConsentPopup()
                     }
-                    showConsentPopup()
+                }
+
+                override fun onConfigDebugInfo(configSummary: String, purposesSummary: String) {
+                    this@Ketch.listener?.onConfigDebugInfo(configSummary, purposesSummary)
                 }
 
                 override fun onEnvironmentUpdated(environment: String?) {
@@ -540,28 +786,8 @@ class Ketch private constructor(
                     }
                 }
 
-                override fun onClose(status: HideExperienceStatus) {
-                    // Dismiss dialog fragment safely
-                    synchronized(lock) {
-                        val fragment = findDialogFragment()
-                        if (fragment != null) {
-                            try {
-                                (fragment as? KetchDialogFragment)?.dismissAllowingStateLoss()
-                                this@Ketch.listener?.onDismiss(status)
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Error dismissing dialog: ${e.message}")
-                                // Ensure state and WebView are cleaned up even if dismissal fails
-                                cleanupWebView()
-                                isShowingExperience = false
-                                this@Ketch.listener?.onDismiss(status)
-                            }
-                        } else {
-                            // Even if fragment isn't found, clean up and reset state
-                            cleanupWebView()
-                            isShowingExperience = false
-                            this@Ketch.listener?.onDismiss(status)
-                        }
-                    }
+                override fun onClose(status: HideExperienceStatus, source: String) {
+                    dismissExperience(status, source)
                 }
 
                 override fun onWillShowExperience(experienceType: WillShowExperienceType) {
@@ -573,22 +799,7 @@ class Ketch private constructor(
                 }
 
                 override fun onTapOutside() {
-                    // Dismiss dialog fragment safely
-                    synchronized(lock) {
-                        val fragment = findDialogFragment()
-                        if (fragment != null) {
-                            try {
-                                (fragment as? KetchDialogFragment)?.dismissAllowingStateLoss()
-                                this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Error dismissing dialog on tap outside: ${e.message}")
-                                // Ensure state and WebView are cleaned up even if dismissal fails
-                                cleanupWebView()
-                                isShowingExperience = false
-                                this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
-                            }
-                        }
-                    }
+                    handleTapOutside()
                 }
 
                 private fun showConsentPopup() {
@@ -612,6 +823,7 @@ class Ketch private constructor(
 
                             fragmentManager.get()?.let { fm ->
                                 if (!fm.isDestroyed) {
+                                    Log.d(TAG, "showConsentPopup: showing dialog")
                                     dialog.show(manager = fm)
                                     isShowingExperience = true
                                     this@Ketch.listener?.onShow()
@@ -627,11 +839,10 @@ class Ketch private constructor(
                             }
                         } catch (e: Exception) {
                             isShowingExperience = false
+                            showConsentPending = false
                             Log.e(TAG, "Error showing dialog: ${e.message}")
                             this@Ketch.listener?.onError("Error showing dialog: ${e.message}")
                         }
-
-                        showConsent = false
                     }
                 }
 
@@ -643,7 +854,7 @@ class Ketch private constructor(
                             }
 
                             ContentDisplay.Banner -> {
-                                it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
+                                it.theme?.banner?.container?.backdrop?.disableContentInteractions == true
                             }
                         }
                     } ?: false
@@ -699,6 +910,11 @@ class Ketch private constructor(
          * Called when the config is updated
          */
         fun onConfigUpdated(config: KetchConfig?)
+
+        /**
+         * Debug summary parsed from raw config.json (purposes, experiences, env).
+         */
+        fun onConfigDebugInfo(configSummary: String, purposesSummary: String) {}
 
         /**
          * Called when the environment is updated.
@@ -758,6 +974,7 @@ class Ketch private constructor(
 
     companion object {
         val TAG = Ketch::class.java.simpleName
+        private const val TAP_OUTSIDE_FALLBACK_MS = 2000L
         fun create(
             context: Context,
             fragmentManager: FragmentManager,
@@ -766,7 +983,9 @@ class Ketch private constructor(
             environment: String?,
             listener: Listener?,
             ketchUrl: String?,
+            dataCenter: KetchDataCenter = KetchDataCenter.US,
             logLevel: LogLevel,
+            webResourceUrlOverrides: Map<String, String> = emptyMap(),
         ) = Ketch(
             context,
             WeakReference(fragmentManager),
@@ -775,7 +994,13 @@ class Ketch private constructor(
             environment,
             listener,
             ketchUrl,
-            logLevel
+            dataCenter,
+            logLevel,
+            HeadlessApiClient(dataCenter),
+            webResourceUrlOverrides,
         )
     }
 }
+
+private fun ConsentUpdate.withoutProtocols(): ConsentUpdate =
+    copy(protocols = null)

@@ -11,101 +11,208 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import com.ketch.android.Ketch
 import com.ketch.android.KetchSdk
+import com.ketch.android.api.KetchDataCenter
 import com.ketch.android.data.Consent
+import com.ketch.android.data.ConsentConfig
+import com.ketch.android.data.FullConfigurationRequest
+import com.ketch.android.data.HeadlessConfiguration
 import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.KetchConfig
 import com.ketch.android.data.WillShowExperienceType
 import com.ketch.android.sample.standard.databinding.ActivityMainBinding
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
+
+private object DevUrlOverrides {
+    const val ENABLED = true
+
+    val forEmulator: Map<String, String> = mapOf(
+        "https://cdn.uat.ketchjs.com/ketchtag/stable/v2.12/ketch-sdk.js" to "http://localhost:9000/ketch-sdk.js",
+        "ketch-sdk.js" to "http://localhost:9000/ketch-sdk.js",
+    )
+
+    val forDevice: Map<String, String> = mapOf(
+        "https://cdn.uat.ketchjs.com/ketchtag/stable/v2.12/ketch-sdk.js" to "http://localhost:9000/ketch-sdk.js",
+        "ketch-sdk.js" to "http://localhost:9000/ketch-sdk.js",
+    )
+}
+
+private data class SampleDashboardState(
+    val initState: String = "Initialized",
+    val statusText: String = "Ketch initialized",
+    val loadState: String = "idle",
+    val experienceVisibility: String = "hidden",
+    val dismissReason: String = "—",
+    val environment: String = "Not set",
+    val jurisdiction: String = "Not set",
+    val region: String = "Not set",
+    val consent: String = "Not set",
+    val usPrivacy: String = "Not set",
+    val tcf: String = "Not set",
+    val gpp: String = "Not set",
+    val configSummary: String = "Not loaded",
+    val purposesSummary: String = "Not loaded",
+    val headlessLocationResult: String = "—",
+    val headlessBootstrapResult: String = "—",
+    val headlessConsentResult: String = "—",
+    val eventLog: List<String> = emptyList(),
+) {
+    fun appendLog(message: String): SampleDashboardState {
+        val line = "[${SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())}] $message"
+        return copy(eventLog = (eventLog + line).takeLast(50))
+    }
+
+    fun setStatus(message: String): SampleDashboardState =
+        appendLog(message).copy(statusText = message)
+}
+
+private object HeadlessSampleSupport {
+    const val ORG_CODE = "ethansch061226"
+    const val PROPERTY = "website_smart_tag"
+    const val ENVIRONMENT = "production"
+    val dataCenter: KetchDataCenter = KetchDataCenter.UAT
+
+    fun uniqueEmailIdentity(): Map<String, String> =
+        mapOf("email" to "headless-${UUID.randomUUID()}@integration.ketch.test")
+
+    fun consentConfigFrom(
+        config: HeadlessConfiguration,
+        identities: Map<String, String>,
+    ): ConsentConfig {
+        val jurisdiction = config.jurisdiction?.code
+            ?: config.jurisdiction?.defaultJurisdictionCode
+            ?: "us"
+        val purposes = config.purposes
+            ?.mapNotNull { purpose ->
+                val code = purpose.code
+                val legalBasis = purpose.legalBasisCode
+                if (code != null && legalBasis != null) {
+                    code to ConsentConfig.PurposeLegalBasis(legalBasis)
+                } else {
+                    null
+                }
+            }
+            ?.toMap()
+            ?: emptyMap()
+        require(purposes.isNotEmpty()) { "Configuration returned no purposes" }
+        return ConsentConfig(
+            organizationCode = ORG_CODE,
+            propertyCode = PROPERTY,
+            environmentCode = ENVIRONMENT,
+            jurisdictionCode = jurisdiction,
+            identities = identities,
+            purposes = purposes,
+        )
+    }
+}
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var ketch: Ketch
+    private var dashboard = SampleDashboardState()
 
     companion object {
         private const val TAG = "KetchSample"
-        private const val ORG_CODE = "ketch_samples"
-        private const val PROPERTY = "android"
+        private const val ORG_CODE = "ethansch061226"
+        private const val PROPERTY = "website_smart_tag"
         private const val ENVIRONMENT = "production"
+        private const val LANGUAGE = "en"
     }
 
     private val ketchListener = object : Ketch.Listener {
         override fun onShow() {
-            Log.d(TAG, "onShow: Dialog shown")
-            appendLog("onShow: Dialog shown")
+            updateDashboard {
+                it.copy(experienceVisibility = "showing").appendLog("onShow")
+            }
         }
 
         override fun onDismiss(status: HideExperienceStatus) {
-            Log.d(TAG, "onDismiss: status=$status")
-            appendLog("onDismiss: status=$status")
+            updateDashboard {
+                it.copy(experienceVisibility = "dismissed", dismissReason = status.toString())
+                    .appendLog("onDismiss: $status")
+            }
         }
 
         override fun onConfigUpdated(config: KetchConfig?) {
-            Log.d(TAG, "onConfigUpdated: $config")
-            appendLog("onConfigUpdated")
+            updateDashboard { it.appendLog("onConfigUpdated") }
         }
 
         override fun onEnvironmentUpdated(environment: String?) {
-            Log.d(TAG, "onEnvironmentUpdated: $environment")
-            appendLog("onEnvironmentUpdated: $environment")
+            updateDashboard {
+                it.copy(
+                    environment = environment ?: "Not set",
+                    loadState = "loaded",
+                ).appendLog("onEnvironmentUpdated: $environment")
+            }
         }
 
         override fun onRegionInfoUpdated(regionInfo: String?) {
-            Log.d(TAG, "onRegionInfoUpdated: $regionInfo")
-            appendLog("onRegionInfoUpdated: $regionInfo")
+            updateDashboard {
+                it.copy(region = regionInfo ?: "Not set").appendLog("onRegionInfoUpdated: $regionInfo")
+            }
         }
 
         override fun onJurisdictionUpdated(jurisdiction: String?) {
-            Log.d(TAG, "onJurisdictionUpdated: $jurisdiction")
-            appendLog("onJurisdictionUpdated: $jurisdiction")
+            updateDashboard {
+                it.copy(jurisdiction = jurisdiction ?: "Not set").appendLog("onJurisdictionUpdated: $jurisdiction")
+            }
         }
 
         override fun onIdentitiesUpdated(identities: String?) {
-            Log.d(TAG, "onIdentitiesUpdated: $identities")
-            appendLog("onIdentitiesUpdated: $identities")
+            updateDashboard { it.appendLog("onIdentitiesUpdated: $identities") }
         }
 
         override fun onConsentUpdated(consent: Consent) {
-            Log.d(TAG, "onConsentUpdated: purposes=${consent.purposes}")
-            appendLog("onConsentUpdated: ${consent.purposes}")
+            updateDashboard {
+                it.copy(consent = consent.purposes.toString()).appendLog("onConsentUpdated")
+            }
         }
 
         override fun onError(errMsg: String?) {
-            Log.e(TAG, "onError: $errMsg")
-            appendLog("ERROR: $errMsg")
+            updateDashboard {
+                it.copy(loadState = "error", initState = "Error")
+                    .setStatus("Error: ${errMsg ?: "unknown"}")
+            }
         }
 
         override fun onUSPrivacyUpdated(values: Map<String, Any?>) {
-            Log.d(TAG, "onUSPrivacyUpdated: $values")
-            appendLog("onUSPrivacyUpdated: ${values["IABUSPrivacy_String"]}")
+            updateDashboard {
+                it.copy(usPrivacy = values["IABUSPrivacy_String"]?.toString() ?: "Not set")
+                    .appendLog("onUSPrivacyUpdated")
+            }
         }
 
         override fun onTCFUpdated(values: Map<String, Any?>) {
-            Log.d(TAG, "onTCFUpdated: $values")
-            appendLog("onTCFUpdated: ${values["IABTCF_TCString"]}")
+            updateDashboard {
+                it.copy(tcf = values["IABTCF_TCString"]?.toString() ?: "Not set").appendLog("onTCFUpdated")
+            }
         }
 
         override fun onGPPUpdated(values: Map<String, Any?>) {
-            Log.d(TAG, "onGPPUpdated: $values")
-            appendLog("onGPPUpdated: ${values["IABGPP_HDR_GppString"]}")
+            updateDashboard {
+                it.copy(gpp = values["IABGPP_HDR_GppString"]?.toString() ?: "Not set").appendLog("onGPPUpdated")
+            }
         }
 
         override fun onWillShowExperience(type: WillShowExperienceType) {
-            Log.d(TAG, "onWillShowExperience: $type")
-            appendLog("onWillShowExperience: $type")
+            updateDashboard {
+                it.copy(experienceVisibility = "will show: $type").appendLog("onWillShowExperience: $type")
+            }
         }
 
         override fun onHasShownExperience() {
-            Log.d(TAG, "onHasShownExperience")
-            appendLog("onHasShownExperience")
+            updateDashboard {
+                it.copy(experienceVisibility = "shown").appendLog("onHasShownExperience")
+            }
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         WindowCompat.setDecorFitsSystemWindows(window, false)
-
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -126,12 +233,12 @@ class MainActivity : AppCompatActivity() {
         setupDarkModeToggle()
         initializeKetch()
         setupClickListeners()
+        renderDashboard()
     }
 
     private fun setupDarkModeToggle() {
         val isNightMode = AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
         binding.darkModeSwitch.isChecked = isNightMode
-
         binding.darkModeSwitch.setOnCheckedChangeListener { _, isChecked ->
             AppCompatDelegate.setDefaultNightMode(
                 if (isChecked) AppCompatDelegate.MODE_NIGHT_YES
@@ -142,45 +249,159 @@ class MainActivity : AppCompatActivity() {
 
     private fun initializeKetch() {
         ketch = KetchSdk.create(
-            this,
-            supportFragmentManager,
-            ORG_CODE,
-            PROPERTY,
-            ENVIRONMENT,
-            ketchListener,
-            null,
-            Ketch.LogLevel.DEBUG
+            context = this,
+            fragmentManager = supportFragmentManager,
+            organization = ORG_CODE,
+            property = PROPERTY,
+            environment = ENVIRONMENT,
+            listener = ketchListener,
+            dataCenter = HeadlessSampleSupport.dataCenter,
+            logLevel = Ketch.LogLevel.DEBUG,
+            webResourceUrlOverrides = if (DevUrlOverrides.ENABLED) DevUrlOverrides.forEmulator else emptyMap(),
         )
-
-        ketch.setIdentities(mapOf("aaid" to "sample-test-123"))
-
-        appendLog("Ketch initialized")
-
-        ketch.load()
-        appendLog("load() called")
+        ketch.setIdentities(mapOf("email" to "sample-test@integration.ketch.test"))
+        ketch.setLanguage("en")
+        dashboard = dashboard.setStatus("Ketch initialized")
     }
 
     private fun setupClickListeners() {
-        binding.showConsentButton.setOnClickListener {
+        val showConsent = {
             Log.d(TAG, "showConsent() called")
-            appendLog("showConsent() called")
+            updateDashboard { it.setStatus("showConsent() called") }
             ketch.showConsent()
         }
-
-        binding.showPreferencesButton.setOnClickListener {
+        val showPreferences = {
             Log.d(TAG, "showPreferences() called")
-            appendLog("showPreferences() called")
+            updateDashboard { it.setStatus("showPreferences() called") }
             ketch.showPreferences()
+        }
+
+        binding.loadButton.setOnClickListener {
+            updateDashboard { it.copy(loadState = "loading").setStatus("Load called") }
+            ketch.load()
+        }
+        binding.showConsentButton.setOnClickListener { showConsent() }
+        binding.showPreferencesButton.setOnClickListener { showPreferences() }
+        binding.showConsentCardButton.setOnClickListener { showConsent() }
+        binding.showPreferencesCardButton.setOnClickListener { showPreferences() }
+
+        binding.setLanguageButton.setOnClickListener {
+            ketch.setLanguage("EN")
+            updateDashboard { it.setStatus("Language set to EN") }
+        }
+        binding.setJurisdictionButton.setOnClickListener {
+            ketch.setJurisdiction("US")
+            updateDashboard { it.setStatus("Jurisdiction set to US") }
+        }
+        binding.setRegionButton.setOnClickListener {
+            ketch.setRegion("California")
+            updateDashboard { it.setStatus("Region set to California") }
+        }
+
+        binding.headlessLocationButton.setOnClickListener { runHeadlessLocation() }
+        binding.headlessBootstrapButton.setOnClickListener { runHeadlessBootstrap() }
+        binding.headlessConsentButton.setOnClickListener { runHeadlessConsent() }
+    }
+
+    private fun updateDashboard(block: (SampleDashboardState) -> SampleDashboardState) {
+        runOnUiThread {
+            dashboard = block(dashboard)
+            renderDashboard()
         }
     }
 
-    private fun appendLog(message: String) {
-        runOnUiThread {
-            val current = binding.eventLogText.text.toString()
-            val prefix = if (current == "Waiting for events...") "" else "$current\n"
-            binding.eventLogText.text = "$prefix$message"
-            binding.eventLogScroll.post {
-                binding.eventLogScroll.fullScroll(ScrollView.FOCUS_DOWN)
+    private fun renderDashboard() {
+        binding.initText.text = "Init: ${dashboard.initState}"
+        binding.statusText.text = "Status: ${dashboard.statusText}"
+        binding.connectionText.text = "Connection: $ORG_CODE / $PROPERTY / $ENVIRONMENT"
+        binding.loadStateText.text = "Load: ${dashboard.loadState}"
+        binding.visibilityText.text = "Visibility: ${dashboard.experienceVisibility}"
+        binding.dismissText.text = "Dismiss: ${dashboard.dismissReason}"
+        binding.environmentText.text = "Environment: ${dashboard.environment}"
+        binding.jurisdictionText.text = "Jurisdiction: ${dashboard.jurisdiction}"
+        binding.regionText.text = "Region: ${dashboard.region}"
+        binding.consentText.text = "Consent: ${truncate(dashboard.consent)}"
+        binding.usPrivacyText.text = "US Privacy: ${truncate(dashboard.usPrivacy)}"
+        binding.tcfText.text = "TCF: ${truncate(dashboard.tcf)}"
+        binding.gppText.text = "GPP: ${truncate(dashboard.gpp)}"
+        binding.headlessLocationText.text = "Location: ${dashboard.headlessLocationResult}"
+        binding.headlessBootstrapText.text = "Bootstrap: ${dashboard.headlessBootstrapResult}"
+        binding.headlessConsentText.text = "Consent: ${dashboard.headlessConsentResult}"
+
+        binding.eventLogText.text = if (dashboard.eventLog.isEmpty()) {
+            "Waiting for events..."
+        } else {
+            dashboard.eventLog.joinToString("\n")
+        }
+        binding.eventLogScroll.post {
+            binding.eventLogScroll.fullScroll(ScrollView.FOCUS_DOWN)
+        }
+    }
+
+    private fun truncate(value: String, max: Int = 80): String =
+        if (value.length <= max) value else "${value.take(max)}…"
+
+    private fun runHeadlessLocation() {
+        updateDashboard { it.copy(headlessLocationResult = "Loading...") }
+        KetchSdk.fetchLocation(HeadlessSampleSupport.dataCenter) { result ->
+            val text = result.fold(
+                onSuccess = { "OK: ${it.location?.countryCode ?: "?"}" },
+                onFailure = { "Error: ${it.message}" },
+            )
+            updateDashboard { it.copy(headlessLocationResult = text).appendLog("headless location: $text") }
+        }
+    }
+
+    private fun runHeadlessBootstrap() {
+        updateDashboard { it.copy(headlessBootstrapResult = "Loading...") }
+        KetchSdk.fetchBootstrapConfiguration(ORG_CODE, PROPERTY, HeadlessSampleSupport.dataCenter) { result ->
+            val text = result.fold(
+                onSuccess = { "OK: ${it.purposes?.size ?: 0} purpose(s)" },
+                onFailure = { "Error: ${it.message}" },
+            )
+            updateDashboard { it.copy(headlessBootstrapResult = text).appendLog("headless bootstrap: $text") }
+        }
+    }
+
+    private fun runHeadlessConsent() {
+        updateDashboard { it.copy(headlessConsentResult = "Loading...") }
+        val identities = HeadlessSampleSupport.uniqueEmailIdentity()
+        KetchSdk.fetchLocation(HeadlessSampleSupport.dataCenter) { _ ->
+            KetchSdk.fetchBootstrapConfiguration(ORG_CODE, PROPERTY, HeadlessSampleSupport.dataCenter) { bootResult ->
+                bootResult.onSuccess { boot ->
+                    val jurisdiction = boot.jurisdiction?.code
+                        ?: boot.jurisdiction?.defaultJurisdictionCode
+                    KetchSdk.fetchFullConfiguration(
+                        FullConfigurationRequest(
+                            organizationCode = ORG_CODE,
+                            propertyCode = PROPERTY,
+                            environmentCode = ENVIRONMENT,
+                            jurisdictionCode = jurisdiction,
+                            languageCode = LANGUAGE,
+                        ),
+                        HeadlessSampleSupport.dataCenter,
+                    ) { fullResult ->
+                        fullResult.onSuccess { full ->
+                            val config = HeadlessSampleSupport.consentConfigFrom(full, identities)
+                            KetchSdk.fetchConsent(config, HeadlessSampleSupport.dataCenter) { consentResult ->
+                                val text = consentResult.fold(
+                                    onSuccess = {
+                                        val count = it.purposes?.size ?: it.protocols?.size ?: 0
+                                        "OK: $count item(s)"
+                                    },
+                                    onFailure = { "Error: ${it.message}" },
+                                )
+                                updateDashboard {
+                                    it.copy(headlessConsentResult = text).appendLog("headless consent: $text")
+                                }
+                            }
+                        }.onFailure { err ->
+                            updateDashboard { it.copy(headlessConsentResult = "Error: ${err.message}") }
+                        }
+                    }
+                }.onFailure { err ->
+                    updateDashboard { it.copy(headlessConsentResult = "Error: ${err.message}") }
+                }
             }
         }
     }

@@ -9,7 +9,6 @@
     android:background="@color/background"
     tools:context=".MainActivity">
 
-    <!-- Header bar -->
     <LinearLayout
         android:id="@+id/headerBar"
         android:layout_width="match_parent"
@@ -29,26 +28,12 @@
             android:textColor="@color/text_primary"
             android:fontFamily="sans-serif-medium" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="☀️"
-            android:textSize="16sp"
-            android:layout_marginEnd="4dp" />
-
         <com.google.android.material.switchmaterial.SwitchMaterial
             android:id="@+id/darkModeSwitch"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:trackTint="@color/toggle_track"
             app:thumbTint="@color/toggle_thumb" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="🌙"
-            android:textSize="16sp"
-            android:layout_marginStart="4dp" />
 
     </LinearLayout>
 
@@ -70,138 +55,74 @@
             android:orientation="vertical"
             android:padding="20dp">
 
-            <!-- Section header -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Experience Functions"
+                android:text="SDK Health Dashboard"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="@color/ketch_purple"
-                android:drawableStart="@android:drawable/arrow_down_float"
-                android:drawablePadding="4dp"
-                android:drawableTint="@color/ketch_purple"
-                android:layout_marginBottom="16dp" />
-
-            <!-- Cards row -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="24dp"
-                android:baselineAligned="false">
-
-                <!-- Privacy Preference Unknown card -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:background="@drawable/card_background"
-                    android:padding="16dp"
-                    android:layout_marginEnd="8dp">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Privacy Preference Unknown"
-                        android:textSize="15sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_primary"
-                        android:layout_marginBottom="8dp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="0dp"
-                        android:layout_weight="1"
-                        android:text="Trigger the consent banner. This triggers automatically for new users."
-                        android:textSize="13sp"
-                        android:textColor="@color/text_secondary"
-                        android:layout_marginBottom="12dp" />
-
-                    <Button
-                        android:id="@+id/showConsentButton"
-                        style="@style/Widget.KetchSample.Button.Execute"
-                        android:layout_width="wrap_content"
-                        android:layout_height="40dp"
-                        android:text="Execute" />
-
-                </LinearLayout>
-
-                <!-- Preferences Opened card -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:background="@drawable/card_background"
-                    android:padding="16dp"
-                    android:layout_marginStart="8dp">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Preferences Opened"
-                        android:textSize="15sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_primary"
-                        android:layout_marginBottom="8dp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="0dp"
-                        android:layout_weight="1"
-                        android:text="Open the Ketch Privacy Center to manage consent preferences."
-                        android:textSize="13sp"
-                        android:textColor="@color/text_secondary"
-                        android:layout_marginBottom="12dp" />
-
-                    <Button
-                        android:id="@+id/showPreferencesButton"
-                        style="@style/Widget.KetchSample.Button.Execute"
-                        android:layout_width="wrap_content"
-                        android:layout_height="40dp"
-                        android:text="Execute" />
-
-                </LinearLayout>
-
-            </LinearLayout>
-
-            <!-- Event Log section -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Event Log"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:textColor="@color/ketch_purple"
-                android:drawableStart="@android:drawable/arrow_down_float"
-                android:drawablePadding="4dp"
-                android:drawableTint="@color/ketch_purple"
                 android:layout_marginBottom="12dp" />
 
-            <ScrollView
-                android:id="@+id/eventLogScroll"
-                android:layout_width="match_parent"
-                android:layout_height="220dp"
-                android:background="@drawable/log_background"
-                android:fillViewport="true">
+            <TextView android:id="@+id/initText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Init: Initialized" android:textSize="12sp" android:fontFamily="monospace" android:layout_marginBottom="2dp" />
+            <TextView android:id="@+id/statusText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Status: Ketch initialized" android:textSize="12sp" android:fontFamily="monospace" android:layout_marginBottom="2dp" />
+            <TextView android:id="@+id/connectionText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Connection: ketch_samples / android / production" android:textSize="12sp" android:fontFamily="monospace" android:layout_marginBottom="2dp" />
+            <TextView android:id="@+id/loadStateText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Load: idle" android:textSize="12sp" android:fontFamily="monospace" android:layout_marginBottom="2dp" />
+            <TextView android:id="@+id/visibilityText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Visibility: hidden" android:textSize="12sp" android:fontFamily="monospace" android:layout_marginBottom="2dp" />
+            <TextView android:id="@+id/dismissText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Dismiss: —" android:textSize="12sp" android:fontFamily="monospace" android:layout_marginBottom="12dp" />
 
-                <TextView
-                    android:id="@+id/eventLogText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Waiting for events..."
-                    android:padding="12dp"
-                    android:textSize="11sp"
-                    android:fontFamily="monospace"
-                    android:textColor="@color/log_text"
-                    android:gravity="bottom" />
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Privacy / Consent State" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/ketch_purple" android:layout_marginBottom="8dp" />
+            <TextView android:id="@+id/environmentText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Environment: Not set" android:textSize="12sp" android:fontFamily="monospace" android:layout_marginBottom="2dp" />
+            <TextView android:id="@+id/jurisdictionText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Jurisdiction: Not set" android:textSize="12sp" android:fontFamily="monospace" android:layout_marginBottom="2dp" />
+            <TextView android:id="@+id/regionText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Region: Not set" android:textSize="12sp" android:fontFamily="monospace" android:layout_marginBottom="2dp" />
+            <TextView android:id="@+id/consentText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Consent: Not set" android:textSize="12sp" android:fontFamily="monospace" android:layout_marginBottom="2dp" />
+            <TextView android:id="@+id/usPrivacyText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="US Privacy: Not set" android:textSize="12sp" android:fontFamily="monospace" android:layout_marginBottom="2dp" />
+            <TextView android:id="@+id/tcfText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="TCF: Not set" android:textSize="12sp" android:fontFamily="monospace" android:layout_marginBottom="2dp" />
+            <TextView android:id="@+id/gppText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="GPP: Not set" android:textSize="12sp" android:fontFamily="monospace" android:layout_marginBottom="12dp" />
 
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Actions" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/ketch_purple" android:layout_marginBottom="8dp" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="8dp">
+                <Button android:id="@+id/loadButton" style="@style/Widget.KetchSample.Button.Execute" android:layout_width="wrap_content" android:layout_height="40dp" android:text="Load" android:layout_marginEnd="8dp" />
+                <Button android:id="@+id/showConsentButton" style="@style/Widget.KetchSample.Button.Execute" android:layout_width="wrap_content" android:layout_height="40dp" android:text="Show Consent" android:layout_marginEnd="8dp" />
+                <Button android:id="@+id/showPreferencesButton" style="@style/Widget.KetchSample.Button.Execute" android:layout_width="wrap_content" android:layout_height="40dp" android:text="Show Preferences" />
+            </LinearLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp">
+                <Button android:id="@+id/setLanguageButton" style="@style/Widget.KetchSample.Button.Execute" android:layout_width="wrap_content" android:layout_height="40dp" android:text="Set Language EN" android:layout_marginEnd="8dp" />
+                <Button android:id="@+id/setJurisdictionButton" style="@style/Widget.KetchSample.Button.Execute" android:layout_width="wrap_content" android:layout_height="40dp" android:text="Set Jurisdiction US" android:layout_marginEnd="8dp" />
+                <Button android:id="@+id/setRegionButton" style="@style/Widget.KetchSample.Button.Execute" android:layout_width="wrap_content" android:layout_height="40dp" android:text="Set Region CA" />
+            </LinearLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Headless (live CDN)" android:textSize="16sp" android:textStyle="bold" android:textColor="@color/ketch_purple" android:layout_marginBottom="8dp" />
+            <TextView android:id="@+id/headlessLocationText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Location: —" android:textSize="12sp" android:fontFamily="monospace" android:layout_marginBottom="2dp" />
+            <TextView android:id="@+id/headlessBootstrapText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Bootstrap: —" android:textSize="12sp" android:fontFamily="monospace" android:layout_marginBottom="2dp" />
+            <TextView android:id="@+id/headlessConsentText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Consent: —" android:textSize="12sp" android:fontFamily="monospace" android:layout_marginBottom="8dp" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="16dp">
+                <Button android:id="@+id/headlessLocationButton" style="@style/Widget.KetchSample.Button.Execute" android:layout_width="wrap_content" android:layout_height="40dp" android:text="Fetch Location" android:layout_marginEnd="8dp" />
+                <Button android:id="@+id/headlessBootstrapButton" style="@style/Widget.KetchSample.Button.Execute" android:layout_width="wrap_content" android:layout_height="40dp" android:text="Fetch Bootstrap" android:layout_marginEnd="8dp" />
+                <Button android:id="@+id/headlessConsentButton" style="@style/Widget.KetchSample.Button.Execute" android:layout_width="wrap_content" android:layout_height="40dp" android:text="Cold Start" />
+            </LinearLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Experience Functions" android:textSize="18sp" android:textStyle="bold" android:textColor="@color/ketch_purple" android:layout_marginBottom="16dp" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="24dp" android:baselineAligned="false">
+                <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:orientation="vertical" android:background="@drawable/card_background" android:padding="16dp" android:layout_marginEnd="8dp">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Privacy Preference Unknown" android:textSize="15sp" android:textStyle="bold" android:textColor="@color/text_primary" android:layout_marginBottom="8dp" />
+                    <TextView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:text="Trigger the consent banner." android:textSize="13sp" android:textColor="@color/text_secondary" android:layout_marginBottom="12dp" />
+                    <Button android:id="@+id/showConsentCardButton" style="@style/Widget.KetchSample.Button.Execute" android:layout_width="wrap_content" android:layout_height="40dp" android:text="Execute" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:orientation="vertical" android:background="@drawable/card_background" android:padding="16dp" android:layout_marginStart="8dp">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Preferences Opened" android:textSize="15sp" android:textStyle="bold" android:textColor="@color/text_primary" android:layout_marginBottom="8dp" />
+                    <TextView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:text="Open the Privacy Center." android:textSize="13sp" android:textColor="@color/text_secondary" android:layout_marginBottom="12dp" />
+                    <Button android:id="@+id/showPreferencesCardButton" style="@style/Widget.KetchSample.Button.Execute" android:layout_width="wrap_content" android:layout_height="40dp" android:text="Execute" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Event Log" android:textSize="18sp" android:textStyle="bold" android:textColor="@color/ketch_purple" android:layout_marginBottom="12dp" />
+
+            <ScrollView android:id="@+id/eventLogScroll" android:layout_width="match_parent" android:layout_height="220dp" android:background="@drawable/log_background" android:fillViewport="true">
+                <TextView android:id="@+id/eventLogText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Waiting for events..." android:padding="12dp" android:textSize="11sp" android:fontFamily="monospace" android:textColor="@color/log_text" android:gravity="bottom" />
             </ScrollView>
 
         </LinearLayout>
-
     </ScrollView>
-
 </LinearLayout>
