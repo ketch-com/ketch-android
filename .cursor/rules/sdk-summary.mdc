@@ -1,0 +1,56 @@
+---
+description: Comprehensive overview of the Ketch Android SDK architecture, public API, and internals
+alwaysApply: true
+---
+
+# Ketch Android SDK
+
+Consent management SDK for Android. Renders Ketch privacy experiences (consent banners, preference centers) via a WebView inside a DialogFragment.
+
+## Architecture
+
+1. `KetchSdk.create()` takes an Activity `Context` + `FragmentManager` and returns a `Ketch` instance.
+2. `Ketch.load()` creates a `KetchWebView` that loads Ketch JS from `global.ketchcdn.com`.
+3. JS communicates back via a `@JavascriptInterface` bridge (`androidListener`).
+4. When the JS SDK signals to show UI, `Ketch` wraps the WebView in `KetchDialogFragment` (full-screen transparent dialog) and shows it via `FragmentManager`.
+
+**Key implication**: The host Activity must be at least a `FragmentActivity` (e.g. `AppCompatActivity`) to provide `supportFragmentManager`. Plain `ComponentActivity` will not work.
+
+## Public API
+
+| Class | Role |
+|-------|------|
+| `KetchSdk` | Factory object — `create(context, fragmentManager, org, property, ...)` |
+| `Ketch` | Main SDK — `load()`, `showConsent()`, `showPreferences()`, `setIdentities()`, `setLanguage()`, `setJurisdiction()`, `setRegion()`, `setCssStyle()`, `dismissDialog()`, `getSavedString()`, `getTCFTCString()`, `getUSPrivacyString()`, `getGPPHDRGppString()` |
+| `Ketch.Listener` | Callback interface — `onShow`, `onDismiss`, `onConsentUpdated`, `onConfigUpdated`, `onError`, `onUSPrivacyUpdated`, `onTCFUpdated`, `onGPPUpdated`, `onWillShowExperience`, `onHasShownExperience`, etc. |
+| `Ketch.PreferencesTab` | Enum: `OVERVIEW`, `RIGHTS`, `CONSENTS`, `SUBSCRIPTIONS` |
+| `Ketch.LogLevel` | Enum: `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR` |
+| `Consent` | Data class with `purposes`, `vendors`, `protocols` |
+| `KetchConfig` | Data class with `experiences` and `theme` |
+| `HideExperienceStatus` | Enum: `SetConsent`, `InvokeRight`, `Close`, `CloseWithoutSettingConsent`, `WillNotShow`, `None` |
+| `WillShowExperienceType` | Enum: `ConsentExperience`, `PreferenceExperience`, `None` |
+| `ContentDisplay` | Enum: `Banner`, `Modal` |
+
+## Internal (non-public) Types
+
+- `KetchDialogFragment` — `internal`, hosts the WebView in a full-screen transparent dialog
+- `KetchWebView` — WebView subclass with JS bridge and retry logic
+- `KetchSharedPreferences` — singleton for IAB string persistence
+
+## Build Configuration
+
+- **minSdk**: 26 | **targetSdk**: 36 | **compileSdk**: 36
+- **Kotlin**: 2.1.20 | **Java**: 17 | **AGP**: 9.0.0 | **Gradle**: 9.3.1
+- **SDK version**: 3.0
+
+## Dependencies (ketchsdk)
+
+`androidx.core:core-ktx`, `androidx.appcompat:appcompat`, `kotlin-parcelize-runtime`, `gson`, `androidx.webkit:webkit`, `androidx.preference:preference`
+
+## Project Modules
+
+| Module | Purpose |
+|--------|---------|
+| `:ketchsdk` | The SDK library |
+| `:integration-tests` | Instrumented test app — see `integration-tests` rule |
+| `:sample-app-standard` | Demo app — see `sample-apps` rule |
