@@ -26,6 +26,7 @@ class MainActivity : AppCompatActivity() {
         private const val ORG_CODE = "ethansch061226"
         private const val PROPERTY = "website_smart_tag"
         private const val ENVIRONMENT = "production"
+        private const val LANGUAGE = "en"
     }
 
     private val ketchListener = object : Ketch.Listener {
@@ -44,7 +45,20 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun onConfigUpdated(config: KetchConfig?) {
-            updateDashboard { it.appendLog("onConfigUpdated") }
+            val display = config?.experiences?.consent?.display?.name ?: "null"
+            updateDashboard {
+                it.appendLog("onConfigUpdated: experience display=$display")
+            }
+        }
+
+        override fun onConfigDebugInfo(configSummary: String, purposesSummary: String) {
+            Log.d(TAG, "config: $configSummary")
+            Log.d(TAG, "purposes: $purposesSummary")
+            updateDashboard {
+                it.copy(configSummary = configSummary, purposesSummary = purposesSummary)
+                    .appendLog("config: $configSummary")
+                    .appendLog("purposes: $purposesSummary")
+            }
         }
 
         override fun onEnvironmentUpdated(environment: String?) {
@@ -131,7 +145,7 @@ class MainActivity : AppCompatActivity() {
                     ketch.load()
                 },
                 onShowConsent = {
-                    updateDashboard { it.setStatus("showConsent() called") }
+                    updateDashboard { it.setStatus("showConsent() on ${if (dashboard.loadState == "loaded") "loaded" else "new"} WebView") }
                     ketch.showConsent()
                 },
                 onShowPreferences = {
@@ -165,10 +179,12 @@ class MainActivity : AppCompatActivity() {
             property = PROPERTY,
             environment = ENVIRONMENT,
             listener = ketchListener,
+            dataCenter = HeadlessSampleSupport.dataCenter,
             logLevel = Ketch.LogLevel.DEBUG,
             webResourceUrlOverrides = if (DevUrlOverrides.ENABLED) DevUrlOverrides.forEmulator else emptyMap(),
         )
-        ketch.setIdentities(mapOf("aaid" to "sample-test-123"))
+        ketch.setIdentities(mapOf("email" to "sample-test@integration.ketch.test"))
+        ketch.setLanguage("en")
         dashboard = dashboard.setStatus("Ketch initialized")
     }
 
@@ -195,7 +211,10 @@ class MainActivity : AppCompatActivity() {
             HeadlessSampleSupport.dataCenter,
         ) { result ->
             val text = result.fold(
-                onSuccess = { "OK: ${it.purposes?.size ?: 0} purpose(s)" },
+                onSuccess = { boot ->
+                    val jurisdiction = boot.jurisdiction?.code ?: boot.jurisdiction?.defaultJurisdictionCode ?: "?"
+                    "OK: jurisdiction=$jurisdiction purposes=${boot.purposes?.size ?: 0}"
+                },
                 onFailure = { "Error: ${it.message}" },
             )
             updateDashboard { it.copy(headlessBootstrapResult = text).appendLog("headless bootstrap: $text") }
@@ -211,16 +230,35 @@ class MainActivity : AppCompatActivity() {
                 PROPERTY,
                 HeadlessSampleSupport.dataCenter,
             ) { bootResult ->
-                bootResult.onSuccess { _ ->
+                bootResult.onSuccess { boot ->
+                    val jurisdiction = boot.jurisdiction?.code
+                        ?: boot.jurisdiction?.defaultJurisdictionCode
+                    val configUrl = HeadlessSampleSupport.dataCenter.baseUrl +
+                        "/config/$ORG_CODE/$PROPERTY/$ENVIRONMENT/$jurisdiction/$LANGUAGE/config.json"
+                    updateDashboard { it.appendLog("headless config URL: $configUrl") }
                     KetchSdk.fetchFullConfiguration(
                         FullConfigurationRequest(
                             organizationCode = ORG_CODE,
                             propertyCode = PROPERTY,
                             environmentCode = ENVIRONMENT,
+                            jurisdictionCode = jurisdiction,
+                            languageCode = LANGUAGE,
                         ),
                         HeadlessSampleSupport.dataCenter,
                     ) { fullResult ->
                         fullResult.onSuccess { full ->
+                            val purposeCodes = full.purposes?.mapNotNull { it.code } ?: emptyList()
+                            val configSummary = "headless jurisdiction=${full.jurisdiction?.code} purposes=${purposeCodes.size}"
+                            val purposesSummary = if (purposeCodes.isEmpty()) {
+                                "headless purposes: none"
+                            } else {
+                                "headless purposes: ${purposeCodes.joinToString(", ")}"
+                            }
+                            updateDashboard {
+                                it.copy(configSummary = configSummary, purposesSummary = purposesSummary)
+                                    .appendLog(configSummary)
+                                    .appendLog(purposesSummary)
+                            }
                             val config = HeadlessSampleSupport.consentConfigFrom(full, identities)
                             KetchSdk.fetchConsent(config, HeadlessSampleSupport.dataCenter) { consentResult ->
                                 val text = consentResult.fold(

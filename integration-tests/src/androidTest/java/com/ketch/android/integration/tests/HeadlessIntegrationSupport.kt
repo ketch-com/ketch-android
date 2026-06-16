@@ -64,5 +64,5 @@ object HeadlessIntegrationSupport {
         )
     }
 
-    val dataCenter: KetchDataCenter = KetchDataCenter.US
+    val dataCenter: KetchDataCenter = KetchDataCenter.UAT
 }

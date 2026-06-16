@@ -30,6 +30,8 @@ import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.KetchConfig
 import com.ketch.android.data.WillShowExperienceType
+import com.ketch.android.data.summarizeConfigJson
+import com.ketch.android.data.summarizePurposesJson
 import com.ketch.android.data.getIndexHtml
 import com.ketch.android.data.parseHideExperienceStatus
 import com.ketch.android.data.parseWillShowExperienceType
@@ -262,9 +264,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             ketchMobileSdkUrl = ketchUrl ?: "https://global.ketchcdn.com/web/v3",
             language = language,
             jurisdiction = jurisdiction,
-            identities = identities.map { identity ->
-                "${identity.key}: \"${identity.value}\""
-            }.joinToString(separator = ",\n", prefix = "\n", postfix = "\n"),
+            identities = identities,
             region = region,
             environment = environment,
             forceShow = forceShow?.getUrlParameter(),
@@ -348,12 +348,19 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         @JavascriptInterface
         fun willShowExperience(type: String?) {
             val parsedType = parseWillShowExperienceType(type)
-            Log.d(TAG, "willShowExperience: $type = ${parsedType.name}")
+            Log.d(TAG, "willShowExperience: raw=$type parsed=${parsedType.name}")
             runOnMainThread {
-                if (parsedType === WillShowExperienceType.ConsentExperience) {
+                if (parsedType === WillShowExperienceType.ConsentExperience ||
+                    type?.contains("consent", ignoreCase = true) == true
+                ) {
                     ketchWebView.listener?.showConsent()
-                } else {
+                } else if (parsedType === WillShowExperienceType.PreferenceExperience ||
+                    type?.contains("preference", ignoreCase = true) == true
+                ) {
                     ketchWebView.listener?.showPreferences()
+                } else {
+                    Log.w(TAG, "willShowExperience: unknown type, defaulting to consent")
+                    ketchWebView.listener?.showConsent()
                 }
                 ketchWebView.listener?.onWillShowExperience(parsedType)
             }
@@ -370,16 +377,49 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         @JavascriptInterface
         fun showConsentExperience(showConsentExperience: String?) {
             Log.d(TAG, "showConsentExperience: $showConsentExperience")
+            runOnMainThread {
+                ketchWebView.listener?.showConsent()
+            }
         }
 
         @JavascriptInterface
         fun showPreferenceExperience(showPreferenceExperience: String?) {
             Log.d(TAG, "showPreferenceExperience: $showPreferenceExperience")
+            runOnMainThread {
+                ketchWebView.listener?.showPreferences()
+            }
+        }
+
+        @JavascriptInterface
+        fun showExperience(payload: String?) {
+            Log.d(TAG, "showExperience: $payload")
+            runOnMainThread {
+                if (payload?.contains("preference", ignoreCase = true) == true) {
+                    ketchWebView.listener?.showPreferences()
+                } else {
+                    ketchWebView.listener?.showConsent()
+                }
+            }
+        }
+
+        @JavascriptInterface
+        fun renderExperience(payload: String?) {
+            Log.d(TAG, "renderExperience: $payload")
+            runOnMainThread {
+                if (payload?.contains("preference", ignoreCase = true) == true) {
+                    ketchWebView.listener?.showPreferences()
+                } else {
+                    ketchWebView.listener?.showConsent()
+                }
+            }
         }
 
         @JavascriptInterface
         fun onConfigLoaded(configJson: String?) {
-            Log.d(TAG, "onConfigLoaded: $configJson")
+            val configSummary = summarizeConfigJson(configJson)
+            val purposesSummary = summarizePurposesJson(configJson)
+            Log.d(TAG, "onConfigLoaded summary: $configSummary")
+            Log.d(TAG, "onConfigLoaded purposes: $purposesSummary")
 
             try {
                 val config = GsonBuilder()
@@ -387,12 +427,17 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
                     .setPrettyPrinting()
                     .create()
                     .fromJson(configJson, KetchConfig::class.java)
-                Log.d(TAG, "config: $config")
+                Log.d(TAG, "config parsed: experiences=${config?.experiences?.consent?.display}")
                 runOnMainThread {
+                    ketchWebView.listener?.onConfigDebugInfo(configSummary, purposesSummary)
                     ketchWebView.listener?.onConfigUpdated(config)
                 }
             } catch (ex: JsonParseException) {
                 Log.e(TAG, ex.message, ex)
+                runOnMainThread {
+                    ketchWebView.listener?.onConfigDebugInfo(configSummary, purposesSummary)
+                    ketchWebView.listener?.onConfigUpdated(null)
+                }
             }
         }
 
@@ -490,13 +535,28 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         }
     }
 
+    internal fun requestShowConsent(forceImmediate: Boolean = false) {
+        listener?.requestShowConsent(forceImmediate)
+    }
+
+    internal fun requestShowPreferences(forceImmediate: Boolean = false) {
+        listener?.requestShowPreferences(forceImmediate)
+    }
+
     interface WebViewListener {
         fun showConsent()
         fun showPreferences()
+        fun requestShowConsent(forceImmediate: Boolean = false) {
+            showConsent()
+        }
+        fun requestShowPreferences(forceImmediate: Boolean = false) {
+            showPreferences()
+        }
         fun onUSPrivacyUpdated(values: Map<String, Any?>)
         fun onTCFUpdated(values: Map<String, Any?>)
         fun onGPPUpdated(values: Map<String, Any?>)
         fun onConfigUpdated(config: KetchConfig?)
+        fun onConfigDebugInfo(configSummary: String, purposesSummary: String) {}
         fun onEnvironmentUpdated(environment: String?)
         fun onRegionInfoUpdated(regionInfo: String?)
         fun onJurisdictionUpdated(jurisdiction: String?)
@@ -522,7 +582,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         PREFERENCES;
 
         fun getUrlParameter(): String = when (this) {
-            CONSENT -> "cd"
+            CONSENT -> "consent"
             PREFERENCES -> "preferences"
         }
     }

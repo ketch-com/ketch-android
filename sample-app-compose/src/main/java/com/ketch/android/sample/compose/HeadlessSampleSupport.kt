@@ -9,7 +9,7 @@ object HeadlessSampleSupport {
     const val ORG_CODE = "ethansch061226"
     const val PROPERTY = "website_smart_tag"
     const val ENVIRONMENT = "production"
-    val dataCenter: KetchDataCenter = KetchDataCenter.US
+    val dataCenter: KetchDataCenter = KetchDataCenter.UAT
 
     fun uniqueEmailIdentity(): Map<String, String> =
         mapOf("email" to "headless-${UUID.randomUUID()}@integration.ketch.test")

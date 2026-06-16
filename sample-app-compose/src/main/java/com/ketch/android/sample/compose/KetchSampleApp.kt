@@ -106,6 +106,8 @@ fun KetchSampleApp(
                 DashboardRow("US Privacy", dashboard.usPrivacy)
                 DashboardRow("TCF", dashboard.tcf)
                 DashboardRow("GPP", dashboard.gpp)
+                DashboardRow("Config", dashboard.configSummary)
+                DashboardRow("Purposes", dashboard.purposesSummary)
 
                 Spacer(Modifier.height(12.dp))
                 SectionHeader("Actions")

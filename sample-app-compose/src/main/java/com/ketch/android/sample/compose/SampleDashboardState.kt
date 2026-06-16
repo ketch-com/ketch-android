@@ -17,6 +17,8 @@ data class SampleDashboardState(
     val usPrivacy: String = "Not set",
     val tcf: String = "Not set",
     val gpp: String = "Not set",
+    val configSummary: String = "Not loaded",
+    val purposesSummary: String = "Not loaded",
     val headlessLocationResult: String = "—",
     val headlessBootstrapResult: String = "—",
     val headlessConsentResult: String = "—",

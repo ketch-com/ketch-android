@@ -327,6 +327,15 @@ class Ketch private constructor(
             return false
         }
 
+        activeWebView?.let { webView ->
+            Log.d(TAG, "showConsent on existing WebView")
+            webView.evaluateJavascript(
+                "(function(){try{window.ketch('showConsent');return 'ok';}catch(e){return String(e);}})()"
+            ) { result -> Log.d(TAG, "showConsent JS result: $result") }
+            webView.requestShowConsent(forceImmediate = true)
+            return true
+        }
+
         val webView = createWebView(shouldRetry, synchronousPreferences)
         return if (webView != null) {
             webView.load(
@@ -350,6 +359,7 @@ class Ketch private constructor(
                 cssStyle,
                 webResourceUrlOverrides,
             )
+            webView.requestShowConsent(forceImmediate = true)
             true
         } else {
             false
@@ -660,13 +670,24 @@ class Ketch private constructor(
             webView.listener = object : KetchWebView.WebViewListener {
 
                 private var config: KetchConfig? = null
-                private var showConsent: Boolean = false
+                private var showConsentPending = false
+                private var allowShowBeforeConfig = false
+
+                override fun requestShowConsent(forceImmediate: Boolean) {
+                    if (forceImmediate) {
+                        allowShowBeforeConfig = true
+                    }
+                    showConsent()
+                }
 
                 override fun showConsent() {
-                    if (config == null) {
-                        showConsent = true
+                    if (config == null && !allowShowBeforeConfig) {
+                        Log.d(TAG, "showConsent deferred until config loads")
+                        showConsentPending = true
                         return
                     }
+                    allowShowBeforeConfig = false
+                    showConsentPending = false
                     showConsentPopup()
                 }
 
@@ -722,13 +743,15 @@ class Ketch private constructor(
 
                 override fun onConfigUpdated(config: KetchConfig?) {
                     this.config = config
-
                     this@Ketch.listener?.onConfigUpdated(config)
-
-                    if (!showConsent) {
-                        return
+                    if (showConsentPending) {
+                        showConsentPending = false
+                        showConsentPopup()
                     }
-                    showConsentPopup()
+                }
+
+                override fun onConfigDebugInfo(configSummary: String, purposesSummary: String) {
+                    this@Ketch.listener?.onConfigDebugInfo(configSummary, purposesSummary)
                 }
 
                 override fun onEnvironmentUpdated(environment: String?) {
@@ -800,6 +823,7 @@ class Ketch private constructor(
 
                             fragmentManager.get()?.let { fm ->
                                 if (!fm.isDestroyed) {
+                                    Log.d(TAG, "showConsentPopup: showing dialog")
                                     dialog.show(manager = fm)
                                     isShowingExperience = true
                                     this@Ketch.listener?.onShow()
@@ -815,11 +839,10 @@ class Ketch private constructor(
                             }
                         } catch (e: Exception) {
                             isShowingExperience = false
+                            showConsentPending = false
                             Log.e(TAG, "Error showing dialog: ${e.message}")
                             this@Ketch.listener?.onError("Error showing dialog: ${e.message}")
                         }
-
-                        showConsent = false
                     }
                 }
 
@@ -887,6 +910,11 @@ class Ketch private constructor(
          * Called when the config is updated
          */
         fun onConfigUpdated(config: KetchConfig?)
+
+        /**
+         * Debug summary parsed from raw config.json (purposes, experiences, env).
+         */
+        fun onConfigDebugInfo(configSummary: String, purposesSummary: String) {}
 
         /**
          * Called when the environment is updated.

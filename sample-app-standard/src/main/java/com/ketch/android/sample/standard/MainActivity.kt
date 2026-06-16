@@ -29,6 +29,7 @@ class MainActivity : AppCompatActivity() {
         private const val ORG_CODE = "ethansch061226"
         private const val PROPERTY = "website_smart_tag"
         private const val ENVIRONMENT = "production"
+        private const val LANGUAGE = "en"
     }
 
     private val ketchListener = object : Ketch.Listener {
@@ -164,10 +165,12 @@ class MainActivity : AppCompatActivity() {
             property = PROPERTY,
             environment = ENVIRONMENT,
             listener = ketchListener,
+            dataCenter = HeadlessSampleSupport.dataCenter,
             logLevel = Ketch.LogLevel.DEBUG,
             webResourceUrlOverrides = if (DevUrlOverrides.ENABLED) DevUrlOverrides.forEmulator else emptyMap(),
         )
-        ketch.setIdentities(mapOf("aaid" to "sample-test-123"))
+        ketch.setIdentities(mapOf("email" to "sample-test@integration.ketch.test"))
+        ketch.setLanguage("en")
         dashboard = dashboard.setStatus("Ketch initialized")
     }
 
@@ -275,12 +278,16 @@ class MainActivity : AppCompatActivity() {
         val identities = HeadlessSampleSupport.uniqueEmailIdentity()
         KetchSdk.fetchLocation(HeadlessSampleSupport.dataCenter) { _ ->
             KetchSdk.fetchBootstrapConfiguration(ORG_CODE, PROPERTY, HeadlessSampleSupport.dataCenter) { bootResult ->
-                bootResult.onSuccess { _ ->
+                bootResult.onSuccess { boot ->
+                    val jurisdiction = boot.jurisdiction?.code
+                        ?: boot.jurisdiction?.defaultJurisdictionCode
                     KetchSdk.fetchFullConfiguration(
                         FullConfigurationRequest(
                             organizationCode = ORG_CODE,
                             propertyCode = PROPERTY,
                             environmentCode = ENVIRONMENT,
+                            jurisdictionCode = jurisdiction,
+                            languageCode = LANGUAGE,
                         ),
                         HeadlessSampleSupport.dataCenter,
                     ) { fullResult ->
