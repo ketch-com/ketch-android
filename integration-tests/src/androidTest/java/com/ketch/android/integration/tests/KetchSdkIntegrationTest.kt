@@ -3,6 +3,7 @@ package com.ketch.android.integration.tests
 import android.content.Context
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions.matches
@@ -29,6 +30,10 @@ class KetchSdkIntegrationTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
+        val app = context as IntegrationTestApp
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            app.ketch.dismissDialog()
+        }
         scenario = ActivityScenario.launch(MainActivity::class.java)
     }
 
@@ -281,7 +286,10 @@ class KetchSdkIntegrationTest {
         onView(withId(R.id.showPreferencesButton))
             .check(matches(isDisplayed()))
             .check(matches(isClickable()))
-        
+
+        onView(withId(R.id.openSecondActivityButton))
+            .check(matches(isDisplayed()))
+            .check(matches(isClickable()))
 
         
         onView(withId(R.id.setLanguageButton))

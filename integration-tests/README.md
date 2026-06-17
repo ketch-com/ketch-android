@@ -64,12 +64,16 @@ The current test suite covers:
 - **UI Interactions**: Tests all buttons and their status updates
 - **Method Calls**: Validates that SDK methods are called without errors
 - **State Management**: Checks that the app displays initial state correctly
+- **Cross-Activity Display**: Verifies Ketch initialized in Application/MainActivity can show experiences from a different Activity, including WebView content validation (`ketch-consent-banner`, `ketch-preferences`)
+- **Auto-Dismiss on Navigation**: Verifies that navigating to a different Activity while an experience is showing automatically dismisses the orphaned experience (no integrator call needed), reports `onDismiss(HideExperienceStatus.ActivityChanged)`, and leaves the new Activity able to show experiences
+- **Benign Lifecycle (No Dismiss)**: Verifies rotation and backgrounding do NOT auto-dismiss an active experience or kill the WebView
 
 ## Sample App Features
 
 The sample app includes:
 
 - Buttons to trigger all major SDK methods (`load`, `showConsent`, `showPreferences`, etc.)
+- **Open Second Activity** button to demonstrate cross-activity display with a shared Ketch instance
 - Status display to show current SDK state
 - Real-time updates from SDK callbacks
 - Display of privacy framework values (TCF, US Privacy, GPP)
