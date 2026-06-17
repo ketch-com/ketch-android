@@ -7,8 +7,7 @@ import androidx.fragment.app.FragmentManager
  * Factory to create the Ketch object.
  *
  *         KetchSdk.create(
- *               this,
- *               supportFragmentManager,
+ *               applicationContext,
  *               ORG_CODE,
  *               PROPERTY,
  *               ENVIRONMENT,
@@ -19,7 +18,39 @@ import androidx.fragment.app.FragmentManager
  **/
 object KetchSdk {
     /**
-     * Creates the Ketch
+     * Creates the Ketch instance. The SDK automatically tracks the foreground
+     * [androidx.fragment.app.FragmentActivity] to display experiences.
+     *
+     * @param context - Application or Activity context
+     * @param organization - your organization code
+     * @param property - the property name
+     * @param environment - the environment name.
+     * @param listener - Ketch.Listener. Optional
+     * @param ketchUrl - Overrides the ketch url. Optional
+     * @param logLevel - the log level, can be TRACE, DEBUG, INFO, WARN, ERROR. Default is ERROR
+     */
+    fun create(
+        context: Context,
+        organization: String,
+        property: String,
+        environment: String? = null,
+        listener: Ketch.Listener? = null,
+        ketchUrl: String? = null,
+        logLevel: Ketch.LogLevel = Ketch.LogLevel.ERROR
+    ): Ketch {
+        return Ketch.create(
+            context = context,
+            orgCode = organization,
+            property = property,
+            environment = environment,
+            listener = listener,
+            ketchUrl = ketchUrl,
+            logLevel = logLevel,
+        )
+    }
+
+    /**
+     * Creates the Ketch instance using an explicit [FragmentManager].
      *
      * @param context - an Activity Context to access application assets
      * @param fragmentManager - The FragmentManager this KetchDialogFragment will be added to.
@@ -30,6 +61,14 @@ object KetchSdk {
      * @param ketchUrl - Overrides the ketch url. Optional
      * @param logLevel - the log level, can be TRACE, DEBUG, INFO, WARN, ERROR. Default is ERROR
      */
+    @Deprecated(
+        message = "Ketch now tracks the foreground Activity automatically; the FragmentManager " +
+            "argument is no longer required. Use create(context, organization, property, ...).",
+        replaceWith = ReplaceWith(
+            "KetchSdk.create(context, organization, property, environment, listener, ketchUrl, logLevel)"
+        ),
+        level = DeprecationLevel.WARNING,
+    )
     fun create(
         context: Context,
         fragmentManager: FragmentManager,

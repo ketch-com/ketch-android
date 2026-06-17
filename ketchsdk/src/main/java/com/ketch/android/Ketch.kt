@@ -1,8 +1,11 @@
 package com.ketch.android
 
+import android.app.Activity
+import android.app.Application
 import android.content.Context
 import android.util.Log
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
@@ -19,7 +22,8 @@ import java.lang.ref.WeakReference
 @Suppress("unused")
 class Ketch private constructor(
     context: Context,
-    private val fragmentManager: WeakReference<FragmentManager>,
+    seedActivity: FragmentActivity?,
+    seedFragmentManager: FragmentManager?,
     private val orgCode: String,
     private val property: String,
     private val environment: String?,
@@ -27,13 +31,25 @@ class Ketch private constructor(
     private val ketchUrl: String?,
     private val logLevel: LogLevel
 ) {
-    // Weak reference to the original (Activity) context for WebView creation.
-    // WebView requires an Activity context for native UI popups (e.g., <select> dropdowns).
-    // Using applicationContext causes BadTokenException when the WebView tries to show a Dialog.
-    private val activityContext: WeakReference<Context> = WeakReference(context)
-
     // Use application context for non-UI operations to avoid memory leaks
     private val context: Context = context.applicationContext
+
+    private val application = context.applicationContext as? Application
+
+    // Optional seeds from deprecated create(context, fragmentManager, ...) for backward compatibility
+    private var seedActivity: WeakReference<FragmentActivity>? =
+        seedActivity?.let { WeakReference(it) }
+    private var seedFragmentManager: WeakReference<FragmentManager>? =
+        seedFragmentManager?.let { WeakReference(it) }
+
+    private val tracker: KetchLifecycleTracker? = application?.let { app ->
+        KetchLifecycleTracker(this, app).also { lifecycleTracker ->
+            app.registerActivityLifecycleCallbacks(lifecycleTracker)
+            if (seedActivity != null) {
+                lifecycleTracker.seedCurrent(seedActivity)
+            }
+        }
+    }
 
     private var identities: Map<String, String> = emptyMap()
     private var language: String? = null
@@ -50,6 +66,10 @@ class Ketch private constructor(
 
     // Reference to the active fragment to do cleanup
     private var activeDialogFragment: WeakReference<KetchDialogFragment>? = null
+
+    // The Activity that currently hosts the shown dialog. Used to auto-dismiss the
+    // experience when the integrator navigates to a different Activity while it is showing.
+    private var dialogHost: WeakReference<FragmentActivity>? = null
 
     // Reference to the active webView to prevent multiple webView instances existence
     private var activeWebView: KetchWebView? = null
@@ -281,11 +301,10 @@ class Ketch private constructor(
                 } catch (e: Exception) {
                     Log.e(TAG, "Error dismissing dialog: ${e.message}")
                 } finally {
-                    cleanupWebView()
-                    isShowingExperience = false
-                    activeDialogFragment = null
-                    this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
+                    resetShowingState(HideExperienceStatus.None)
                 }
+            } else if (isShowingExperience) {
+                resetShowingState(HideExperienceStatus.None)
             }
         }
     }
@@ -388,8 +407,7 @@ class Ketch private constructor(
 
         // Ensure any existing dialog fragments are properly cleaned up
         synchronized(lock) {
-            val existingFragment = fragmentManager.get()?.findFragmentByTag(KetchDialogFragment.TAG)
-            if (existingFragment != null) {
+            resolveFragmentManager()?.findFragmentByTag(KetchDialogFragment.TAG)?.let { existingFragment ->
                 try {
                     (existingFragment as? KetchDialogFragment)?.dismissAllowingStateLoss()
                     this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
@@ -398,6 +416,97 @@ class Ketch private constructor(
                 }
             }
         }
+    }
+
+    private fun resolveHost(): FragmentActivity? =
+        tracker?.current?.get() ?: seedActivity?.get()
+
+    private fun resolveFragmentManager(): FragmentManager? =
+        resolveHost()?.supportFragmentManager ?: seedFragmentManager?.get()
+
+    private fun resolveWebViewContext(): Context = resolveHost() ?: context
+
+    private fun reportNoHostError() {
+        isShowingExperience = false
+        Log.e(TAG, "No active Activity to host the Ketch experience")
+        this@Ketch.listener?.onError("No active Activity to host the Ketch experience")
+    }
+
+    /**
+     * Re-binds [dialogHost] and [activeDialogFragment] after a configuration change recreates
+     * the host Activity instance while the dialog is still showing.
+     */
+    internal fun onHostResumed(activity: FragmentActivity) {
+        if (!isShowingExperience) return
+        val fragment = activity.supportFragmentManager
+            .findFragmentByTag(KetchDialogFragment.TAG) as? KetchDialogFragment ?: return
+        synchronized(lock) {
+            activeDialogFragment = WeakReference(fragment)
+            dialogHost = WeakReference(activity)
+        }
+    }
+
+    /**
+     * Invoked by [KetchLifecycleTracker] when an Activity is stopped. If the stopped Activity
+     * is the one hosting a currently-shown experience AND a different Activity is now in the
+     * foreground (i.e. the integrator navigated to another screen), the orphaned experience is
+     * auto-dismissed so the SDK does not get stuck and the new Activity can show experiences.
+     *
+     * Backgrounding (Home/recents) is intentionally ignored: in that case the foreground
+     * Activity is still the host, so the dialog is preserved for when the user returns.
+     * Configuration changes (e.g. rotation) are also ignored.
+     *
+     * When auto-dismiss fires, [Listener.onDismiss] is called with [HideExperienceStatus.ActivityChanged].
+     */
+    internal fun onHostStopped(stoppedActivity: Activity, isChangingConfigurations: Boolean) {
+        if (isChangingConfigurations) return
+        if (!isShowingExperience) return
+        val host = dialogHost?.get() ?: return
+        if (host !== stoppedActivity) return
+
+        val foreground = tracker?.current?.get()
+        if (foreground != null && foreground !== host) {
+            Log.d(TAG, "Host Activity left the foreground while showing; auto-dismissing experience")
+            autoDismissOnHostGone()
+        }
+    }
+
+    // Dismiss the active dialog directly via the tracked fragment reference (not via the
+    // resolved FragmentManager, which now points at the new foreground Activity) and reset state.
+    private fun autoDismissOnHostGone() {
+        synchronized(lock) {
+            if (!isShowingExperience && activeDialogFragment?.get() == null) return
+            try {
+                activeDialogFragment?.get()?.dismissAllowingStateLoss()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error auto-dismissing dialog on host change: ${e.message}")
+            } finally {
+                resetShowingState(HideExperienceStatus.ActivityChanged)
+            }
+        }
+    }
+
+    /**
+     * Invoked when the Activity hosting a shown experience is destroyed (e.g. [Activity.finish]).
+     * Configuration changes are ignored so rotation does not reset state.
+     * Does not report [HideExperienceStatus.ActivityChanged] — the host was destroyed, not replaced.
+     */
+    internal fun onHostDestroyed(destroyedActivity: Activity, isChangingConfigurations: Boolean) {
+        if (isChangingConfigurations) return
+        if (!isShowingExperience) return
+        val host = dialogHost?.get() ?: return
+        if (host !== destroyedActivity) return
+        synchronized(lock) {
+            resetShowingState(HideExperienceStatus.None)
+        }
+    }
+
+    private fun resetShowingState(dismissStatus: HideExperienceStatus) {
+        cleanupWebView()
+        isShowingExperience = false
+        activeDialogFragment = null
+        dialogHost = null
+        this@Ketch.listener?.onDismiss(dismissStatus)
     }
 
     // Get the singleton KetchSharedPreferences object
@@ -423,10 +532,9 @@ class Ketch private constructor(
             activeWebView = null
 
             // Use Activity context for WebView so native popups (e.g., <select> dropdowns)
-            // can obtain a valid window token. Falls back to applicationContext if the
-            // Activity has been garbage collected, though this is unlikely since the
-            // FragmentManager would also be invalid at that point.
-            val webViewContext = activityContext.get() ?: context
+            // can obtain a valid window token. Falls back to applicationContext when no
+            // foreground Activity is tracked (callbacks still resolve; display needs a host).
+            val webViewContext = resolveWebViewContext()
             val webView = KetchWebView(webViewContext, shouldRetry)
 
             // Enable debug mode
@@ -455,14 +563,19 @@ class Ketch private constructor(
                         }
 
                         try {
-                            fragmentManager.get()?.let { fm ->
+                            resolveFragmentManager()?.let { fm ->
                                 if (!fm.isDestroyed) {
-                                    KetchDialogFragment.newInstance(ketchWebView = webView) {
+                                    val dialog = KetchDialogFragment.newInstance(ketchWebView = webView) {
                                         // Clean up WebView and reset flag when dialog is dismissed
                                         cleanupWebView()
                                         isShowingExperience = false
-                                    }.show(manager = fm)
+                                        activeDialogFragment = null
+                                        dialogHost = null
+                                    }
+                                    dialog.show(manager = fm)
                                     isShowingExperience = true
+                                    activeDialogFragment = WeakReference(dialog)
+                                    dialogHost = resolveHost()?.let { WeakReference(it) }
                                     this@Ketch.listener?.onShow()
                                 } else {
                                     isShowingExperience = false
@@ -470,9 +583,7 @@ class Ketch private constructor(
                                     this@Ketch.listener?.onError("FragmentManager is destroyed, cannot show dialog")
                                 }
                             } ?: run {
-                                isShowingExperience = false
-                                Log.e(TAG, "FragmentManager is null, cannot show dialog")
-                                this@Ketch.listener?.onError("FragmentManager is null, cannot show dialog")
+                                reportNoHostError()
                             }
                         } catch (e: Exception) {
                             isShowingExperience = false
@@ -603,6 +714,8 @@ class Ketch private constructor(
                                 // Clean up WebView and reset state on dismissal
                                 cleanupWebView()
                                 isShowingExperience = false
+                                activeDialogFragment = null
+                                dialogHost = null
                             }.apply {
                                 val disableContentInteractions = getDisposableContentInteractions(
                                     config?.experiences?.consent?.display ?: ContentDisplay.Banner
@@ -610,10 +723,12 @@ class Ketch private constructor(
                                 isCancelable = !disableContentInteractions
                             }
 
-                            fragmentManager.get()?.let { fm ->
+                            resolveFragmentManager()?.let { fm ->
                                 if (!fm.isDestroyed) {
                                     dialog.show(manager = fm)
                                     isShowingExperience = true
+                                    activeDialogFragment = WeakReference(dialog)
+                                    dialogHost = resolveHost()?.let { WeakReference(it) }
                                     this@Ketch.listener?.onShow()
                                 } else {
                                     isShowingExperience = false
@@ -621,9 +736,7 @@ class Ketch private constructor(
                                     this@Ketch.listener?.onError("FragmentManager is destroyed, cannot show dialog")
                                 }
                             } ?: run {
-                                isShowingExperience = false
-                                Log.e(TAG, "FragmentManager is null, cannot show dialog")
-                                this@Ketch.listener?.onError("FragmentManager is null, cannot show dialog")
+                                reportNoHostError()
                             }
                         } catch (e: Exception) {
                             isShowingExperience = false
@@ -663,7 +776,7 @@ class Ketch private constructor(
         }
 
         // Fall back to searching by tag
-        return fragmentManager.get()?.findFragmentByTag(KetchDialogFragment.TAG)
+        return resolveFragmentManager()?.findFragmentByTag(KetchDialogFragment.TAG)
     }
 
     enum class PreferencesTab {
@@ -758,6 +871,27 @@ class Ketch private constructor(
 
     companion object {
         val TAG = Ketch::class.java.simpleName
+
+        fun create(
+            context: Context,
+            orgCode: String,
+            property: String,
+            environment: String?,
+            listener: Listener?,
+            ketchUrl: String?,
+            logLevel: LogLevel,
+        ) = Ketch(
+            context = context,
+            seedActivity = context as? FragmentActivity,
+            seedFragmentManager = null,
+            orgCode = orgCode,
+            property = property,
+            environment = environment,
+            listener = listener,
+            ketchUrl = ketchUrl,
+            logLevel = logLevel,
+        )
+
         fun create(
             context: Context,
             fragmentManager: FragmentManager,
@@ -768,14 +902,15 @@ class Ketch private constructor(
             ketchUrl: String?,
             logLevel: LogLevel,
         ) = Ketch(
-            context,
-            WeakReference(fragmentManager),
-            orgCode,
-            property,
-            environment,
-            listener,
-            ketchUrl,
-            logLevel
+            context = context,
+            seedActivity = context as? FragmentActivity,
+            seedFragmentManager = fragmentManager,
+            orgCode = orgCode,
+            property = property,
+            environment = environment,
+            listener = listener,
+            ketchUrl = ketchUrl,
+            logLevel = logLevel,
         )
     }
 }

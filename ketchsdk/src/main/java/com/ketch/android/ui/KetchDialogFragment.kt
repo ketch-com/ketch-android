@@ -41,7 +41,9 @@ internal class KetchDialogFragment : DialogFragment() {
 
     override fun onDetach() {
         super.onDetach()
-        releaseWebViewReferences()
+        if (activity?.isChangingConfigurations != true) {
+            releaseWebViewReferences()
+        }
     }
 
     private fun releaseWebViewReferences() {
