@@ -60,6 +60,7 @@ fun KetchSampleApp(
     logEntries: List<String>,
     onShowConsent: () -> Unit,
     onShowPreferences: () -> Unit,
+    onOpenSecondActivity: () -> Unit,
 ) {
     var isDarkMode by rememberSaveable { mutableStateOf(false) }
 
@@ -92,6 +93,17 @@ fun KetchSampleApp(
                     onShowConsent = onShowConsent,
                     onShowPreferences = onShowPreferences
                 )
+                Spacer(Modifier.height(24.dp))
+                SectionHeader("Cross-Activity Demo")
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = onOpenSecondActivity,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = KetchPurple),
+                ) {
+                    Text("Open Second Activity", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                }
                 Spacer(Modifier.height(24.dp))
                 SectionHeader("Event Log")
                 Spacer(Modifier.height(12.dp))
