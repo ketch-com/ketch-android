@@ -43,18 +43,21 @@ integration-tests/
 
 #### From Command Line
 
-```bash
-# From the ketch-android directory
-./gradlew :integration-tests:connectedAndroidTest
-```
-
-### Running the Sample App
-
-You can also run the sample app directly to manually test the SDK:
+From the repo root (works in bash, zsh, fish, etc.):
 
 ```bash
-./gradlew :integration-tests:installDebug
+make test-integration
 ```
+
+Other targets:
+
+```bash
+make run-integration-test-app       # install, launch, and stream harness app logs
+make test-integration-class CLASS=com.ketch.android.integration.tests.ZAutoDismissOnNavigationTest
+make help
+```
+
+Reports: `integration-tests/build/reports/androidTests/connected/`.
 
 ## Test Coverage
 
