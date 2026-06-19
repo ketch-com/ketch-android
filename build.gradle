@@ -19,7 +19,55 @@ buildscript {
             'dokka'       : '1.9.20',
             'junit'       : '4.13.2',
             'gson'        : '2.13.2',
-            'webkit'      : '1.15.0'
+            'webkit'      : '1.15.0',
+            // Patched versions for transitive build-tooling CVEs (AGP, Dokka, bundletool, jetifier).
+            'jackson'     : '2.15.3',
+            'netty'       : '4.1.133.Final',
+            'protobuf'    : '3.25.5',
+            'jose4j'      : '0.9.6',
+            'jdom2'       : '2.0.6.1',
+    ]
+    ext.applyTransitiveSecurityOverrides = { details, versions ->
+        switch (details.requested.group) {
+            case 'io.netty':
+                details.useVersion(versions.netty)
+                details.because('Netty < 4.1.133.Final has known CVEs (transitive via AGP/grpc)')
+                break
+            case { it.startsWith('com.fasterxml.jackson') }:
+                details.useVersion(versions.jackson)
+                details.because('Jackson < 2.15.0 has known CVEs (transitive via Dokka)')
+                break
+            case 'com.google.protobuf':
+                details.useVersion(versions.protobuf)
+                details.because('protobuf < 3.25.5 has known CVEs (transitive via AGP)')
+                break
+            case 'org.bitbucket.b_c':
+                if (details.requested.name == 'jose4j') {
+                    details.useVersion(versions.jose4j)
+                    details.because('jose4j < 0.9.6 has known CVEs (transitive via bundletool)')
+                }
+                break
+            case 'org.jdom':
+                if (details.requested.name == 'jdom2') {
+                    details.useVersion(versions.jdom2)
+                    details.because('jdom2 < 2.0.6.1 has known CVEs (transitive via jetifier)')
+                }
+                break
+        }
+    }
+    ext.securityForcedArtifacts = [
+            'com.google.protobuf:protobuf-kotlin:3.25.5',
+            'io.netty:netty-buffer:4.1.133.Final',
+            'io.netty:netty-codec:4.1.133.Final',
+            'io.netty:netty-codec-http:4.1.133.Final',
+            'io.netty:netty-codec-http2:4.1.133.Final',
+            'io.netty:netty-codec-socks:4.1.133.Final',
+            'io.netty:netty-common:4.1.133.Final',
+            'io.netty:netty-handler:4.1.133.Final',
+            'io.netty:netty-handler-proxy:4.1.133.Final',
+            'io.netty:netty-resolver:4.1.133.Final',
+            'io.netty:netty-transport:4.1.133.Final',
+            'io.netty:netty-transport-native-unix-common:4.1.133.Final',
     ]
     repositories {
         google()
@@ -37,6 +85,15 @@ buildscript {
         classpath "org.jetbrains.kotlin:compose-compiler-gradle-plugin:${versions.kotlin}"
         classpath "org.jetbrains.dokka:dokka-gradle-plugin:${versions.dokka}"
     }
+
+    configurations.classpath {
+        resolutionStrategy {
+            eachDependency { details ->
+                applyTransitiveSecurityOverrides(details, versions)
+            }
+            force(securityForcedArtifacts as Object[])
+        }
+    }
 }
 
 allprojects {
@@ -47,6 +104,15 @@ allprojects {
         maven { url 'https://jitpack.io' }
         maven { url "https://dl.cloudsmith.io/public/indooratlas/mvn-public/maven" }
         maven { url "https://software.mobile.pendo.io/artifactory/android-release" }
+    }
+
+    configurations.configureEach {
+        resolutionStrategy {
+            eachDependency { details ->
+                rootProject.ext.applyTransitiveSecurityOverrides(details, rootProject.ext.versions)
+            }
+            force(rootProject.ext.securityForcedArtifacts as Object[])
+        }
     }
 }
 
