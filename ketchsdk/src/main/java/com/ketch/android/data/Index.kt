@@ -128,21 +128,6 @@ fun getIndexHtml(
             "        };\n" +
             "      })(window.console);\n" +
             "\n" +
-            "      // A temporary workaround to get banner/modal dimensions on tablets\n" +
-            "      // TODO: remove this once there will be a way to get dialogs position from JS SDK\n" +
-            "      function getDialogSize() {\n" +
-            "        var domElem = document.querySelector(\n" +
-            "          '#lanyard_root div[role=\"dialog\"]'\n" +
-            "        );\n" +
-            "        if (!domElem) {\n" +
-            "          return;\n" +
-            "        }\n" +
-            "        var domRect = domElem.getBoundingClientRect();\n" +
-            "        if (domRect) {\n" +
-            "          return domRect;\n" +
-            "        }\n" +
-            "      }\n" +
-            "\n" +
             "      function initKetchTag(parameters) {\n" +
             "        console.log('Ketch Tag is initialization started...');\n" +
             "        // Use parameters to set SDK query params here\n" +
@@ -162,12 +147,6 @@ fun getIndexHtml(
             "        document.getElementsByTagName('head')[0].appendChild(e);\n" +
             "      }\n" +
             "      // We put the script inside body, otherwise document.body will be null\n" +
-            "      // Trigger taps outside the dialog\n" +
-            "      document.body.addEventListener('touchstart', function (e) {\n" +
-            "        if (e.target === document.body) {\n" +
-            "          emitEvent('tapOutside', [getDialogSize()]);\n" +
-            "        }\n" +
-            "      });\n" +
             "      initKetchTag({" +
             "ketch_log: \"${logLevel}\"," +
             if (language?.isNotBlank() == true) {

@@ -87,9 +87,32 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         setWebContentsDebuggingEnabled(true)
     }
 
+    /** Remove this WebView from its parent without destroying the underlying renderer. */
+    fun detachFromParent() {
+        (parent as? ViewGroup)?.removeView(this)
+    }
+
+    /** Imperatively show the consent experience on an already-booted page. */
+    fun showConsentExperience() {
+        evaluateJavascript("ketch('showConsent')") { result ->
+            Log.d(TAG, "showConsentExperience result: $result")
+        }
+    }
+
+    /** Imperatively show the preference experience on an already-booted page. */
+    fun showPreferenceExperience(optionsJson: String) {
+        evaluateJavascript("ketch('showPreferences', $optionsJson)") { result ->
+            Log.d(TAG, "showPreferenceExperience result: $result")
+        }
+    }
+
+    /** Number of page loads since this WebView was created (for testing warm re-show). */
+    val pageLoadCount: Int
+        get() = localContentWebViewClient.pageLoadCount
+
     // Cancel any coroutines in KetchWebView and fully tear down webview to prevent memory leaks
     fun kill() {
-        (parent as? ViewGroup)?.removeView(this)
+        detachFromParent()
         localContentWebViewClient.cancelCoroutines()
         stopLoading()
         clearHistory()
@@ -104,6 +127,9 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
 
         // Reload delay, increases exponentially in onPageStarted
         private var reloadDelay = INITIAL_RELOAD_DELAY
+
+        var pageLoadCount: Int = 0
+            private set
 
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -129,8 +155,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             }
 
             (view as? KetchWebView)?.let { ketchWebView ->
-                ketchWebView.listener?.onClose(HideExperienceStatus.None)
                 ketchWebView.kill()
+                ketchWebView.listener?.onClose(HideExperienceStatus.None, retainWebView = false)
             }
 
             return true
@@ -161,6 +187,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
             super.onPageStarted(view, url, favicon)
             Log.d(TAG, "onPageStarted: $url")
+            pageLoadCount++
 
             // Reset loaded flag
             isLoaded.set(false)
@@ -370,14 +397,6 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         }
 
         @JavascriptInterface
-        fun tapOutside(dialogSize: String?) {
-            Log.d(TAG, "tapOutside: $dialogSize")
-            runOnMainThread {
-                ketchWebView.listener?.onTapOutside()
-            }
-        }
-
-        @JavascriptInterface
         fun geoip(ip: String?) {
         }
 
@@ -455,10 +474,9 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         fun onConsentUpdated(consent: Consent)
         fun onError(errMsg: String?)
         fun changeDialog(display: ContentDisplay)
-        fun onClose(status: HideExperienceStatus)
+        fun onClose(status: HideExperienceStatus, retainWebView: Boolean = true)
         fun onWillShowExperience(experienceType: WillShowExperienceType)
         fun onHasShownExperience()
-        fun onTapOutside()
     }
 
     internal enum class ExperienceType {

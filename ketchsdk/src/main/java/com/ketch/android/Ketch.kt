@@ -14,6 +14,7 @@ import com.ketch.android.data.KetchConfig
 import com.ketch.android.data.WillShowExperienceType
 import com.ketch.android.ui.KetchDialogFragment
 import com.ketch.android.ui.KetchWebView
+import org.json.JSONObject
 import java.lang.ref.WeakReference
 
 /**
@@ -74,6 +75,12 @@ class Ketch private constructor(
     // Reference to the active webView to prevent multiple webView instances existence
     private var activeWebView: KetchWebView? = null
 
+    // Cache key for the config/presentation inputs baked into the boot HTML (excludes show type/tabs)
+    private var loadedSignature: String? = null
+
+    // When true, the next dialog dismissal retains the WebView instead of destroying it
+    private var retainWebViewOnDismiss = false
+
     // Lock object for synchronization
     private val lock = Any()
 
@@ -125,32 +132,34 @@ class Ketch private constructor(
             return false
         }
 
-        val webView = createWebView(shouldRetry, synchronousPreferences)
-        return if (webView != null) {
-            webView.load(
-                orgCode,
-                property,
-                language,
-                jurisdiction,
-                region,
-                environment,
-                identities,
-                null,
-                emptyList(),
-                null,
-                ketchUrl,
-                logLevel,
-                age,
-                ageLower,
-                ageUpper,
-                bottomPadding,
-                topPadding,
-                cssStyle
-            )
-            true
-        } else {
-            false
+        val signature = buildLoadSignature(bottomPadding, topPadding)
+        if (tryWarmWebView(signature) != null) {
+            Log.d(TAG, "WebView already loaded with matching signature; skipping reload")
+            return true
         }
+
+        val webView = prepareColdWebView(shouldRetry, synchronousPreferences, signature) ?: return false
+        webView.load(
+            orgCode,
+            property,
+            language,
+            jurisdiction,
+            region,
+            environment,
+            identities,
+            null,
+            emptyList(),
+            null,
+            ketchUrl,
+            logLevel,
+            age,
+            ageLower,
+            ageUpper,
+            bottomPadding,
+            topPadding,
+            cssStyle
+        )
+        return true
     }
 
     /**
@@ -169,32 +178,35 @@ class Ketch private constructor(
             return false
         }
 
-        val webView = createWebView(shouldRetry, synchronousPreferences)
-        return if (webView != null) {
-            webView.load(
-                orgCode,
-                property,
-                language,
-                jurisdiction,
-                region,
-                environment,
-                identities,
-                KetchWebView.ExperienceType.CONSENT,
-                emptyList(),
-                null,
-                ketchUrl,
-                logLevel,
-                age,
-                ageLower,
-                ageUpper,
-                bottomPadding,
-                topPadding,
-                cssStyle
-            )
-            true
-        } else {
-            false
+        val signature = buildLoadSignature(bottomPadding, topPadding)
+        tryWarmWebView(signature, "showConsent")?.let { webView ->
+            webView.showConsentExperience()
+            return true
         }
+
+        Log.d(TAG, "Cold WebView load for showConsent")
+        val webView = prepareColdWebView(shouldRetry, synchronousPreferences, signature) ?: return false
+        webView.load(
+            orgCode,
+            property,
+            language,
+            jurisdiction,
+            region,
+            environment,
+            identities,
+            KetchWebView.ExperienceType.CONSENT,
+            emptyList(),
+            null,
+            ketchUrl,
+            logLevel,
+            age,
+            ageLower,
+            ageUpper,
+            bottomPadding,
+            topPadding,
+            cssStyle
+        )
+        return true
     }
 
     /**
@@ -213,32 +225,35 @@ class Ketch private constructor(
             return false
         }
 
-        val webView = createWebView(shouldRetry, synchronousPreferences)
-        return if (webView != null) {
-            webView.load(
-                orgCode,
-                property,
-                language,
-                jurisdiction,
-                region,
-                environment,
-                identities,
-                KetchWebView.ExperienceType.PREFERENCES,
-                emptyList(),
-                null,
-                ketchUrl,
-                logLevel,
-                age,
-                ageLower,
-                ageUpper,
-                bottomPadding,
-                topPadding,
-                cssStyle
-            )
-            true
-        } else {
-            false
+        val signature = buildLoadSignature(bottomPadding, topPadding)
+        tryWarmWebView(signature, "showPreferences")?.let { webView ->
+            webView.showPreferenceExperience(buildPreferenceOptionsJson())
+            return true
         }
+
+        Log.d(TAG, "Cold WebView load for showPreferences")
+        val webView = prepareColdWebView(shouldRetry, synchronousPreferences, signature) ?: return false
+        webView.load(
+            orgCode,
+            property,
+            language,
+            jurisdiction,
+            region,
+            environment,
+            identities,
+            KetchWebView.ExperienceType.PREFERENCES,
+            emptyList(),
+            null,
+            ketchUrl,
+            logLevel,
+            age,
+            ageLower,
+            ageUpper,
+            bottomPadding,
+            topPadding,
+            cssStyle
+        )
+        return true
     }
 
     /**
@@ -261,32 +276,35 @@ class Ketch private constructor(
             return false
         }
 
-        val webView = createWebView(shouldRetry, synchronousPreferences)
-        return if (webView != null) {
-            webView.load(
-                orgCode,
-                property,
-                language,
-                jurisdiction,
-                region,
-                environment,
-                identities,
-                KetchWebView.ExperienceType.PREFERENCES,
-                tabs,
-                tab,
-                ketchUrl,
-                logLevel,
-                age,
-                ageLower,
-                ageUpper,
-                bottomPadding,
-                topPadding,
-                cssStyle
-            )
-            true
-        } else {
-            false
+        val signature = buildLoadSignature(bottomPadding, topPadding)
+        tryWarmWebView(signature, "showPreferencesTab(tab=${tab.name})")?.let { webView ->
+            webView.showPreferenceExperience(buildPreferenceOptionsJson(tabs, tab))
+            return true
         }
+
+        Log.d(TAG, "Cold WebView load for showPreferencesTab(tab=${tab.name})")
+        val webView = prepareColdWebView(shouldRetry, synchronousPreferences, signature) ?: return false
+        webView.load(
+            orgCode,
+            property,
+            language,
+            jurisdiction,
+            region,
+            environment,
+            identities,
+            KetchWebView.ExperienceType.PREFERENCES,
+            tabs,
+            tab,
+            ketchUrl,
+            logLevel,
+            age,
+            ageLower,
+            ageUpper,
+            bottomPadding,
+            topPadding,
+            cssStyle
+        )
+        return true
     }
 
     /**
@@ -294,6 +312,7 @@ class Ketch private constructor(
      */
     fun dismissDialog() {
         synchronized(lock) {
+            retainWebViewOnDismiss = false
             val fragment = findDialogFragment()
             if (fragment != null) {
                 try {
@@ -303,7 +322,7 @@ class Ketch private constructor(
                 } finally {
                     resetShowingState(HideExperienceStatus.None)
                 }
-            } else if (isShowingExperience) {
+            } else if (isShowingExperience || activeWebView != null) {
                 resetShowingState(HideExperienceStatus.None)
             }
         }
@@ -492,8 +511,24 @@ class Ketch private constructor(
      * Does not report [HideExperienceStatus.ActivityChanged] — the host was destroyed, not replaced.
      */
     internal fun onHostDestroyed(destroyedActivity: Activity, isChangingConfigurations: Boolean) {
-        if (isChangingConfigurations) return
-        if (!isShowingExperience) return
+        if (isChangingConfigurations) {
+            if (!isShowingExperience) {
+                synchronized(lock) {
+                    cleanupWebView()
+                }
+            }
+            return
+        }
+
+        if (!isShowingExperience) {
+            synchronized(lock) {
+                if (activeWebView != null) {
+                    cleanupWebView()
+                }
+            }
+            return
+        }
+
         val host = dialogHost?.get() ?: return
         if (host !== destroyedActivity) return
         synchronized(lock) {
@@ -502,11 +537,92 @@ class Ketch private constructor(
     }
 
     private fun resetShowingState(dismissStatus: HideExperienceStatus) {
+        retainWebViewOnDismiss = false
         cleanupWebView()
         isShowingExperience = false
         activeDialogFragment = null
         dialogHost = null
         this@Ketch.listener?.onDismiss(dismissStatus)
+    }
+
+    private fun handleDialogDismissed() {
+        val retain = retainWebViewOnDismiss
+        retainWebViewOnDismiss = false
+        isShowingExperience = false
+        activeDialogFragment = null
+        dialogHost = null
+        if (retain) {
+            activeWebView?.detachFromParent()
+        } else {
+            cleanupWebView()
+        }
+    }
+
+    private fun buildLoadSignature(bottomPadding: Int, topPadding: Int): String =
+        listOf(
+            orgCode,
+            property,
+            ketchUrl ?: "",
+            environment ?: "",
+            language ?: "",
+            jurisdiction ?: "",
+            region ?: "",
+            identities.entries.sortedBy { it.key }.joinToString(",") { "${it.key}=${it.value}" },
+            age?.toString() ?: "",
+            ageLower?.toString() ?: "",
+            ageUpper?.toString() ?: "",
+            cssStyle ?: "",
+            bottomPadding.toString(),
+            topPadding.toString(),
+            logLevel.name,
+        ).joinToString("|")
+
+    private fun buildPreferenceOptionsJson(
+        tabs: List<PreferencesTab> = emptyList(),
+        tab: PreferencesTab? = null,
+    ): String {
+        val json = JSONObject()
+        tab?.let { json.put("tab", it.getUrlParameter()) }
+        if (tabs.isNotEmpty()) {
+            json.put("showOverviewTab", PreferencesTab.OVERVIEW in tabs)
+            json.put("showConsentsTab", PreferencesTab.CONSENTS in tabs)
+            json.put("showRightsTab", PreferencesTab.RIGHTS in tabs)
+            json.put("showSubscriptionsTab", PreferencesTab.SUBSCRIPTIONS in tabs)
+        }
+        return json.toString()
+    }
+
+    private fun tryWarmWebView(signature: String, operation: String? = null): KetchWebView? {
+        synchronized(lock) {
+            val cached = activeWebView
+            if (cached != null && loadedSignature == signature) {
+                if (operation != null) {
+                    Log.d(
+                        TAG,
+                        "Using warm WebView for $operation " +
+                            "(identity=${System.identityHashCode(cached)}, pageLoadCount=${cached.pageLoadCount})",
+                    )
+                }
+                return cached
+            }
+            return null
+        }
+    }
+
+    private fun prepareColdWebView(
+        shouldRetry: Boolean,
+        synchronousPreferences: Boolean,
+        signature: String,
+    ): KetchWebView? {
+        synchronized(lock) {
+            if (isShowingExperience || findDialogFragment() != null) {
+                Log.d(TAG, "Not preparing WebView as experience is already being shown")
+                return null
+            }
+            cleanupWebView()
+            loadedSignature = signature
+            return createWebView(shouldRetry, synchronousPreferences)
+        }
     }
 
     // Get the singleton KetchSharedPreferences object
@@ -519,6 +635,7 @@ class Ketch private constructor(
     private fun cleanupWebView() {
         activeWebView?.kill()
         activeWebView = null
+        loadedSignature = null
     }
 
     private fun createWebView(shouldRetry: Boolean = false, synchronousPreferences: Boolean = false): KetchWebView? {
@@ -528,8 +645,9 @@ class Ketch private constructor(
                 return null
             }
 
-            activeWebView?.kill()
-            activeWebView = null
+            if (activeWebView != null) {
+                return activeWebView
+            }
 
             // Use Activity context for WebView so native popups (e.g., <select> dropdowns)
             // can obtain a valid window token. Falls back to applicationContext when no
@@ -566,11 +684,7 @@ class Ketch private constructor(
                             resolveFragmentManager()?.let { fm ->
                                 if (!fm.isDestroyed) {
                                     val dialog = KetchDialogFragment.newInstance(ketchWebView = webView) {
-                                        // Clean up WebView and reset flag when dialog is dismissed
-                                        cleanupWebView()
-                                        isShowingExperience = false
-                                        activeDialogFragment = null
-                                        dialogHost = null
+                                        handleDialogDismissed()
                                     }
                                     dialog.show(manager = fm)
                                     isShowingExperience = true
@@ -651,27 +765,31 @@ class Ketch private constructor(
                     }
                 }
 
-                override fun onClose(status: HideExperienceStatus) {
-                    // Dismiss dialog fragment safely
+                override fun onClose(status: HideExperienceStatus, retainWebView: Boolean) {
                     synchronized(lock) {
+                        if (!retainWebView) {
+                            activeWebView = null
+                            loadedSignature = null
+                        } else {
+                            retainWebViewOnDismiss = true
+                        }
+
+                        isShowingExperience = false
+                        activeDialogFragment = null
+                        dialogHost = null
+
                         val fragment = findDialogFragment()
                         if (fragment != null) {
                             try {
                                 (fragment as? KetchDialogFragment)?.dismissAllowingStateLoss()
-                                this@Ketch.listener?.onDismiss(status)
                             } catch (e: Exception) {
                                 Log.e(TAG, "Error dismissing dialog: ${e.message}")
-                                // Ensure state and WebView are cleaned up even if dismissal fails
-                                cleanupWebView()
-                                isShowingExperience = false
-                                this@Ketch.listener?.onDismiss(status)
+                                handleDialogDismissed()
                             }
                         } else {
-                            // Even if fragment isn't found, clean up and reset state
-                            cleanupWebView()
-                            isShowingExperience = false
-                            this@Ketch.listener?.onDismiss(status)
+                            handleDialogDismissed()
                         }
+                        this@Ketch.listener?.onDismiss(status)
                     }
                 }
 
@@ -683,25 +801,6 @@ class Ketch private constructor(
                     this@Ketch.listener?.onHasShownExperience()
                 }
 
-                override fun onTapOutside() {
-                    // Dismiss dialog fragment safely
-                    synchronized(lock) {
-                        val fragment = findDialogFragment()
-                        if (fragment != null) {
-                            try {
-                                (fragment as? KetchDialogFragment)?.dismissAllowingStateLoss()
-                                this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Error dismissing dialog on tap outside: ${e.message}")
-                                // Ensure state and WebView are cleaned up even if dismissal fails
-                                cleanupWebView()
-                                isShowingExperience = false
-                                this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
-                            }
-                        }
-                    }
-                }
-
                 private fun showConsentPopup() {
                     synchronized(lock) {
                         if (isShowingExperience || findDialogFragment() != null) {
@@ -711,11 +810,7 @@ class Ketch private constructor(
 
                         try {
                             val dialog = KetchDialogFragment.newInstance(ketchWebView = webView) {
-                                // Clean up WebView and reset state on dismissal
-                                cleanupWebView()
-                                isShowingExperience = false
-                                activeDialogFragment = null
-                                dialogHost = null
+                                handleDialogDismissed()
                             }.apply {
                                 val disableContentInteractions = getDisposableContentInteractions(
                                     config?.experiences?.consent?.display ?: ContentDisplay.Banner
