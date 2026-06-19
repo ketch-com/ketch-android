@@ -50,6 +50,7 @@ class Ketch private constructor(
     private val dataCenter: KetchDataCenter,
     private val logLevel: LogLevel,
     private val headlessApiClient: HeadlessApiClient,
+    private var webResourceUrlOverrides: Map<String, String> = emptyMap(),
 ) {
     // Falls back to the CDN region's base URL when no explicit ketchUrl override is provided.
     private val effectiveKetchUrl: String = ketchUrl ?: dataCenter.baseUrl
@@ -179,13 +180,23 @@ class Ketch private constructor(
             ageUpper,
             bottomPadding,
             topPadding,
-            cssStyle
+            cssStyle,
+            webResourceUrlOverrides,
         )
         return true
     }
 
     /** CDN region used for headless and WebView API calls. */
     fun getDataCenter(): KetchDataCenter = dataCenter
+
+    /**
+     * Redirect exact-match WebView resource URLs (e.g. UAT tag scripts) to local dev servers.
+     * Android uses native [WebViewClient.shouldInterceptRequest]; JS hook is also embedded in index HTML.
+     */
+    fun setWebResourceUrlOverrides(overrides: Map<String, String>) {
+        webResourceUrlOverrides = overrides.toMap()
+        activeWebView?.setWebResourceUrlOverrides(webResourceUrlOverrides)
+    }
 
     /** GeoIP / jurisdiction hint (`GET /ip`). */
     fun fetchLocation(callback: (Result<LocationResponse>) -> Unit) {
@@ -368,7 +379,8 @@ class Ketch private constructor(
             ageUpper,
             bottomPadding,
             topPadding,
-            cssStyle
+            cssStyle,
+            webResourceUrlOverrides,
         )
         return true
     }
@@ -415,7 +427,8 @@ class Ketch private constructor(
             ageUpper,
             bottomPadding,
             topPadding,
-            cssStyle
+            cssStyle,
+            webResourceUrlOverrides,
         )
         return true
     }
@@ -466,7 +479,8 @@ class Ketch private constructor(
             ageUpper,
             bottomPadding,
             topPadding,
-            cssStyle
+            cssStyle,
+            webResourceUrlOverrides,
         )
         return true
     }
@@ -820,6 +834,7 @@ class Ketch private constructor(
             // foreground Activity is tracked (callbacks still resolve; display needs a host).
             val webViewContext = resolveWebViewContext()
             val webView = KetchWebView(webViewContext, shouldRetry)
+            webView.setWebResourceUrlOverrides(webResourceUrlOverrides)
 
             // Enable debug mode
             if (logLevel === LogLevel.DEBUG) {
@@ -897,6 +912,10 @@ class Ketch private constructor(
                         return
                     }
                     showConsentPopup()
+                }
+
+                override fun onConfigDebugInfo(configSummary: String, purposesSummary: String) {
+                    this@Ketch.listener?.onConfigDebugInfo(configSummary, purposesSummary)
                 }
 
                 override fun onEnvironmentUpdated(environment: String?) {
@@ -1076,6 +1095,11 @@ class Ketch private constructor(
         fun onConfigUpdated(config: KetchConfig?)
 
         /**
+         * Debug summary parsed from raw config.json (purposes, experiences, env).
+         */
+        fun onConfigDebugInfo(configSummary: String, purposesSummary: String) {}
+
+        /**
          * Called when the environment is updated.
          */
         fun onEnvironmentUpdated(environment: String?)
@@ -1167,6 +1191,7 @@ class Ketch private constructor(
             ketchUrl: String?,
             dataCenter: KetchDataCenter = KetchDataCenter.US,
             logLevel: LogLevel,
+            webResourceUrlOverrides: Map<String, String> = emptyMap(),
         ) = Ketch(
             context = context,
             seedActivity = context as? FragmentActivity,
@@ -1179,6 +1204,7 @@ class Ketch private constructor(
             dataCenter = dataCenter,
             logLevel = logLevel,
             headlessApiClient = HeadlessApiClient(dataCenter),
+            webResourceUrlOverrides = webResourceUrlOverrides,
         )
     }
 }

@@ -210,6 +210,68 @@ In any `FragmentActivity` (for example `MainActivity`), use the shared instance:
 
 The same `ketch` instance can be used from other Activities in your app. When the user navigates away while an experience is showing, the SDK automatically dismisses it and reports `onDismiss(HideExperienceStatus.ActivityChanged)`. Rotation and backgrounding do not dismiss the experience.
 
+## Headless API (web/v3, pre-WebView)
+
+Use native HTTP for cold-start flows **before** loading the WebView—location, config, and consent with `protocols` from the CDN. Contract: [mobile-headless-api.md](https://github.com/ketch-com/ketch-tag/blob/main/docs/design/mobile-headless-api.md).
+
+Testing: [mobile-headless-api-testing.md](https://github.com/ketch-com/ketch-tag/blob/main/docs/design/mobile-headless-api-testing.md). (App Tracking Transparency is iOS-only — not applicable on Android.)
+
+Pass `dataCenter` when creating the SDK (`KetchDataCenter.US`, `EU`, or `UAT`). Instance methods use the SDK's data center; static `KetchSdk` methods accept an optional `dataCenter` parameter.
+
+```kotlin
+val ketch = KetchSdk.create(
+    activity = this,
+    fragmentManager = supportFragmentManager,
+    organization = ORG_CODE,
+    property = PROPERTY,
+    environment = ENVIRONMENT,
+    listener = listener,
+    dataCenter = KetchDataCenter.US,
+)
+
+// Recommended cold-start order
+ketch.fetchLocation { result -> /* jurisdiction hint */ }
+ketch.fetchBootstrapConfiguration { result -> /* boot.json */ }
+ketch.fetchFullConfiguration(
+    FullConfigurationRequest(
+        organizationCode = ORG_CODE,
+        propertyCode = PROPERTY,
+        environmentCode = ENVIRONMENT,
+        jurisdictionCode = "us-ca",
+        languageCode = "en-US",
+        hash = hashFromBootstrap,
+    )
+) { result -> /* full config */ }
+
+ketch.fetchConsent(consentConfig) { result ->
+    // Consent includes purposes and protocols (GPP, TCF, US Privacy, …)
+}
+ketch.setConsent(consentUpdate) { result ->
+    // Server-computed protocols in response; request omits protocols
+}
+
+// Rights, profile, subscriptions
+ketch.invokeRight(invokeRightRequest) { }
+ketch.getProfile(profileRequest) { }
+ketch.putProfile(putProfileRequest) { }
+ketch.getSubscriptions(subscriptionsRequest) { }
+ketch.setSubscriptions(subscriptionsRequest) { }
+
+// Subscriptions config, QR URL, telemetry
+ketch.fetchSubscriptionsConfiguration(subConfigRequest) { }
+val qrUrl = ketch.preferenceQRUrl(
+    PreferenceQRRequest(
+        organizationCode = ORG_CODE,
+        propertyCode = PROPERTY,
+        environmentCode = ENVIRONMENT,
+        imageSize = 1024,
+    )
+)
+ketch.webReport("mychannel", reportRequest) { }
+```
+
+`getConsent()` on the WebView listener path is unchanged. Headless calls do not require `load()`.
+
 ## Local Development Setup
 
 If you're developing or modifying the SDK and want to test your changes with the sample app, you can use Gradle's composite builds feature to link them together.

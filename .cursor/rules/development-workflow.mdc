@@ -2,13 +2,30 @@
 alwaysApply: true
 ---
 
-# Development Workflow
+# Development Workflow — Ketch Android SDK
 
 ## Prerequisites
 
-- JDK 17 (JitPack also builds with JDK 17 — keep parity)
-- Android SDK with an emulator or device on API 26+ (API 28+ recommended for the instrumented suite)
-- `local.properties` with `sdk.dir` pointing at the Android SDK
+- **Android Studio** or Android SDK with an emulator or device on API 26+ (API 28+ recommended for the instrumented suite)
+- **JDK 17** (JitPack also builds with JDK 17 — keep parity)
+- `local.properties` with `sdk.dir` pointing at the Android SDK; emulator/device with `adb` on `PATH`
+
+## Sample apps
+
+| Module | UI stack | Manual QA entry |
+| --- | --- | --- |
+| `sample-app-compose` | Jetpack Compose | `MainActivity` + `KetchSampleApp` |
+| `sample-app-standard` | XML + ViewBinding | `activity_main.xml` + `MainActivity` |
+| `integration-tests` | XML (Espresso host) | Automation only; layout reference for dashboard |
+
+Build and run a sample:
+
+```bash
+bash .cursor/skills/ketch-android-run-sample/scripts/run-sample-app.sh compose local
+bash .cursor/skills/ketch-android-run-sample/scripts/run-sample-app.sh standard local
+```
+
+See `ketch-android-run-sample` skill for prerequisites, remote/local SDK toggle, and manual QA checklist.
 
 ## Common Commands
 
@@ -19,6 +36,10 @@ alwaysApply: true
 | `./gradlew build` | Assemble + unit-test all modules |
 | `./gradlew test` | Run JVM unit tests (all variants) |
 | `./gradlew :ketchsdk:testDebugUnitTest` | Run SDK unit tests only |
+| `./gradlew :sample-app-compose:assembleDebug` | Build Compose sample |
+| `./gradlew :sample-app-standard:assembleDebug` | Build standard sample |
+| `bash .cursor/skills/ketch-android-run-sample/scripts/run-sample-app.sh compose local` | Build, install, launch Compose sample (local SDK) |
+| `bash .cursor/skills/ketch-android-run-sample/scripts/run-sample-app.sh standard local` | Build, install, launch standard sample (local SDK) |
 | `./gradlew :integration-tests:connectedDebugAndroidTest` | Run the instrumented Espresso suite on a connected device/emulator |
 | `./gradlew ktlintCheck` | Kotlin lint check |
 | `./gradlew ktlintFormat` | Auto-format Kotlin sources |
@@ -27,6 +48,39 @@ alwaysApply: true
 | `./gradlew dokkaHtmlMultiModule` | Generate API docs |
 | `./run-integration-tests.sh` | Clean build + full instrumented run (checks for a connected device) |
 
+## SDK Health Dashboard (manual QA)
+
+Both `sample-app-compose` and `sample-app-standard` include an on-screen **SDK Health Dashboard** (pattern from `integration-tests`).
+
+| Section | What to verify |
+| --- | --- |
+| **Connection** | Init, status, `ethansch061226` / `website_smart_tag` / `production` |
+| **WebView / Experience** | Load state, visibility, dismiss reason (ATT N/A on Android) |
+| **Privacy / Consent** | Environment, jurisdiction, region, consent, US Privacy / TCF / GPP |
+| **Headless** | **Fetch Location**, **Fetch Bootstrap**, **Cold Start** — inline OK/Error |
+| **Event log** | Timestamped callback trace (~50 lines) |
+
+Manual golden path: **Load** → privacy fields update → **Show Consent** → visibility/dismiss rows change → **Fetch Bootstrap** shows success or error on-screen.
+
+Defaults: org `ethansch061226`, property `website_smart_tag`, environment `production` (constants in `MainActivity`; editable org/property UI is a future enhancement).
+
+## Local tag URL overrides (non-prod scripts)
+
+Use `webResourceUrlOverrides` to redirect exact CDN URLs (e.g. UAT `plugins.js` / `ketch.js`) to local dev servers. This is separate from `dataCenter` / `ketchUrl`, which control the boot.js base path.
+
+```kotlin
+KetchSdk.create(
+    // ...
+    webResourceUrlOverrides = mapOf(
+        "https://cdn.uat.ketchjs.com/ketchtag/stable/v2.12/ketch-sdk.js" to "http://localhost:9000/ketch-sdk.js",
+    ),
+)
+// or after create:
+ketch.setWebResourceUrlOverrides(overrides)
+```
+
+Android uses native `shouldInterceptRequest` plus a JS hook in index HTML. Sample apps: set `DevUrlOverrides.ENABLED = true` in `DevUrlOverrides.kt`.
+
 ## Validation Checklist
 
 Run before considering any change complete:
@@ -34,7 +88,8 @@ Run before considering any change complete:
 1. `./gradlew :ketchsdk:assembleDebug` — verify the SDK compiles
 2. `./gradlew ktlintCheck` — Kotlin style
 3. `./gradlew test` — unit tests
-4. `./gradlew :integration-tests:connectedDebugAndroidTest` — instrumented suite (requires a running emulator/device); run this when changing SDK runtime behavior, the lifecycle tracker, or the WebView/dialog flow
+4. Build affected sample module(s)
+5. `./gradlew :integration-tests:connectedDebugAndroidTest` — instrumented suite (requires a running emulator/device); run this when changing SDK runtime behavior, the lifecycle tracker, the WebView/dialog flow, or headless/listener contracts
 
 ## Testing
 

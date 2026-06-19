@@ -30,6 +30,8 @@ import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.KetchConfig
 import com.ketch.android.data.WillShowExperienceType
+import com.ketch.android.data.summarizeConfigJson
+import com.ketch.android.data.summarizePurposesJson
 import com.ketch.android.data.getIndexHtml
 import com.ketch.android.data.parseHideExperienceStatus
 import com.ketch.android.data.parseWillShowExperienceType
@@ -49,6 +51,12 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
 
     var listener: WebViewListener? = null
     private val localContentWebViewClient = LocalContentWebViewClient(shouldRetry)
+    private var webResourceUrlOverrides: Map<String, String> = emptyMap()
+
+    fun setWebResourceUrlOverrides(overrides: Map<String, String>) {
+        webResourceUrlOverrides = overrides
+        localContentWebViewClient.webResourceUrlOverrides = overrides
+    }
 
     init {
         KetchSharedPreferences.initialize(context)
@@ -124,6 +132,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
 
     class LocalContentWebViewClient(private var shouldRetry: Boolean = false) : WebViewClientCompat() {
 
+        var webResourceUrlOverrides: Map<String, String> = emptyMap()
+
         // Flag indicating if the webview has finished loading
         // We use atomic boolean here because we are using it within a coroutine
         private var isLoaded = AtomicBoolean(false)
@@ -141,6 +151,14 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             view.context.startActivity(intent)
             return true
+        }
+
+        override fun shouldInterceptRequest(
+            view: WebView,
+            request: WebResourceRequest,
+        ): WebResourceResponse? {
+            WebResourceOverrideHandler.intercept(webResourceUrlOverrides, request)?.let { return it }
+            return super.shouldInterceptRequest(view, request)
         }
 
         override fun onLoadResource(view: WebView?, url: String?) {
@@ -250,8 +268,10 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         ageUpper: Int?,
         bottomPadding: Int?,
         topPadding: Int?,
-        cssStyle: String?
+        cssStyle: String?,
+        webResourceUrlOverrides: Map<String, String> = emptyMap(),
     ) {
+        setWebResourceUrlOverrides(webResourceUrlOverrides)
         clearCache(true)
 
         // Convert padding values to string
@@ -284,7 +304,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             ageUpper = ageUpper,
             bottomPadding = bottomPaddingPx,
             topPadding = topPaddingPx,
-            cssStyleOverride = cssStyle
+            cssStyleOverride = cssStyle,
+            webResourceUrlOverrides = webResourceUrlOverrides,
         )
 
         loadDataWithBaseURL("http://localhost", indexHtml, "text/html", "UTF-8", null)
@@ -383,7 +404,10 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
 
         @JavascriptInterface
         fun onConfigLoaded(configJson: String?) {
-            Log.d(TAG, "onConfigLoaded: $configJson")
+            val configSummary = summarizeConfigJson(configJson)
+            val purposesSummary = summarizePurposesJson(configJson)
+            Log.d(TAG, "onConfigLoaded summary: $configSummary")
+            Log.d(TAG, "onConfigLoaded purposes: $purposesSummary")
 
             try {
                 val config = GsonBuilder()
@@ -393,10 +417,15 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
                     .fromJson(configJson, KetchConfig::class.java)
                 Log.d(TAG, "config: $config")
                 runOnMainThread {
+                    ketchWebView.listener?.onConfigDebugInfo(configSummary, purposesSummary)
                     ketchWebView.listener?.onConfigUpdated(config)
                 }
             } catch (ex: JsonParseException) {
                 Log.e(TAG, ex.message, ex)
+                runOnMainThread {
+                    ketchWebView.listener?.onConfigDebugInfo(configSummary, purposesSummary)
+                    ketchWebView.listener?.onConfigUpdated(null)
+                }
             }
         }
 
@@ -493,6 +522,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         fun onTCFUpdated(values: Map<String, Any?>)
         fun onGPPUpdated(values: Map<String, Any?>)
         fun onConfigUpdated(config: KetchConfig?)
+        fun onConfigDebugInfo(configSummary: String, purposesSummary: String) {}
         fun onEnvironmentUpdated(environment: String?)
         fun onRegionInfoUpdated(regionInfo: String?)
         fun onJurisdictionUpdated(jurisdiction: String?)
