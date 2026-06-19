@@ -31,11 +31,14 @@ The SDK is created with an application context and resolves its UI host lazily a
 
 ## Show / Dismiss Flow
 
-- `load()` / `showConsent()` / `showPreferences()` / `showPreferencesTab()` guard on `isShowingExperience`, then build a WebView via `createWebView()` and call `webView.load(...)`.
+- `load()` / `showConsent()` / `showPreferences()` / `showPreferencesTab()` guard on `isShowingExperience`. When a cached WebView exists with a matching `loadedSignature`, the warm path calls `ketch('showConsent')` / `ketch('showPreferences', opts)` via `evaluateJavascript` instead of reloading. Otherwise the cold path runs `cleanupWebView()` → `createWebView()` → `webView.load(...)`.
+- `loadedSignature` covers config/presentation inputs baked into boot HTML (org, property, language, jurisdiction, region, identities, age, padding, css, etc.) but excludes show type and preference tabs (passed imperatively on warm re-show).
 - `createWebView()` wires a `KetchWebView.WebViewListener` that forwards events to `Ketch.Listener` and shows a `KetchDialogFragment` via `showConsentPopup()` / `showPreferences` paths.
 - On show, record both `activeDialogFragment` (`WeakReference<KetchDialogFragment>`) and `dialogHost` (`WeakReference<FragmentActivity>`). Clear both on every dismiss path.
-- `cleanupWebView()` kills and nulls `activeWebView`. It runs on all dismiss paths (`onClose`, `onTapOutside`, `dismissDialog`, dialog dismiss callback, auto-dismiss, host-destroy).
-- `dismissDialog()` dismisses via the tracked fragment; if the fragment is gone but `isShowingExperience` is still true, it still resets state.
+- **`hideExperience` (`onClose`)** sets `retainWebViewOnDismiss = true`, dismisses the dialog, detaches the WebView, and keeps `activeWebView` alive for fast re-show and trailing JS events.
+- **All other dismiss paths** (`dismissDialog`, back button, auto-dismiss, host-destroyed, renderer-gone, signature change) call `cleanupWebView()` which kills and nulls `activeWebView` and clears `loadedSignature`.
+- `KetchDialogFragment` borrows the WebView for display only; it never calls `destroy()`. `handleDialogDismissed()` decides retain vs kill based on `retainWebViewOnDismiss`.
+- Tap-outside handling was removed from the SDK (no native dismiss on backdrop tap).
 
 ## Lifecycle-Driven Auto-Dismiss vs Preserve
 
@@ -44,7 +47,8 @@ Implemented in `Ketch.onHostStopped` / `onHostDestroyed` / `onHostResumed`, invo
 - **Navigate to another Activity while showing** → `autoDismissOnHostGone()` → `onDismiss(HideExperienceStatus.ActivityChanged)`. Detected when the host stops and a *different* activity is foreground.
 - **Rotation / configuration change** → preserved. Guarded by `isChangingConfigurations`. `KetchDialogFragment.onDestroyView` and `onDetach` also skip WebView release while `isChangingConfigurations`.
 - **Backgrounding (Home/recents/screen off)** → preserved. The same host returns to foreground, so no different-activity condition is met.
-- **Host Activity destroyed** (e.g. `finish()`) → `onHostDestroyed` resets state with `onDismiss(HideExperienceStatus.None)` (host destroyed, not replaced).
+- **Host Activity destroyed** (e.g. `finish()`) → `onHostDestroyed` resets state with `onDismiss(HideExperienceStatus.None)` when showing; idle retained WebViews are also cleaned up.
+- **Config change while idle-retained** → `onHostDestroyed` cleans up the retained WebView (Activity context would be stale).
 - **Config change recreates host** → `onHostResumed` re-binds `dialogHost`/`activeDialogFragment` to the new Activity instance so the dialog stays controllable.
 
 ## Listener & Status Model (`data/Events.kt`)
