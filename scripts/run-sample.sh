@@ -38,40 +38,44 @@ require_command() {
   fi
 }
 
-get_app_uid() {
-  local package_id="$1"
-  local uid=""
+wait_for_device_ready() {
+  echo "Waiting for device..."
+  adb wait-for-device
 
-  uid="$(
-    adb shell pm list packages -U "${package_id}" 2>/dev/null \
-      | tr -d '\r' \
-      | sed -n 's/^package:.* uid:\([0-9]*\).*$/\1/p' \
-      | head -1
-  )"
-
-  if [[ -z "${uid}" ]]; then
-    echo "error: could not resolve UID for ${package_id}. Is the app installed?" >&2
-    exit 1
-  fi
-
-  echo "${uid}"
-}
-
-wait_for_pid() {
-  local package_id="$1"
-  local pid=""
-
-  for _ in $(seq 1 20); do
-    pid="$(adb shell pidof -s "${package_id}" 2>/dev/null | tr -d '\r' || true)"
-    if [[ -n "${pid}" ]]; then
-      echo "${pid}"
+  local attempt
+  for attempt in $(seq 1 60); do
+    if [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)" == "1" ]] \
+      && adb shell true >/dev/null 2>&1; then
       return 0
     fi
-    sleep 0.25
+    sleep 1
   done
 
-  echo "error: could not find process for ${package_id}. Is the app running?" >&2
+  cat >&2 <<'EOF'
+error: device is connected but adb is not responding.
+
+Try:
+  adb kill-server && adb start-server
+  # then cold boot the emulator from Android Studio Device Manager
+EOF
   exit 1
+}
+
+restart_adb() {
+  echo "Restarting adb..."
+  adb kill-server >/dev/null 2>&1 || true
+  adb start-server >/dev/null
+  wait_for_device_ready
+}
+
+install_app() {
+  if ./gradlew "${GRADLE_MODULE}"; then
+    return 0
+  fi
+
+  echo "Install failed; restarting adb and retrying once..." >&2
+  restart_adb
+  ./gradlew "${GRADLE_MODULE}"
 }
 
 SAMPLE="${1:-}"
@@ -109,26 +113,20 @@ require_command adb
 
 cd "${REPO_ROOT}"
 
-if ! adb get-state >/dev/null 2>&1; then
-  echo "error: no Android device or emulator connected." >&2
-  exit 1
-fi
+wait_for_device_ready
 
-clear
+clear || true
 
 echo "Installing ${APP_LABEL}..."
-./gradlew "${GRADLE_MODULE}"
+install_app
 
 echo "Launching ${PACKAGE_ID}..."
 adb shell am start -n "${PACKAGE_ID}/.MainActivity" >/dev/null
+sleep 1
 
-wait_for_pid "${PACKAGE_ID}" >/dev/null
-
-APP_UID="$(get_app_uid "${PACKAGE_ID}")"
-echo "Streaming logs for ${PACKAGE_ID} (uid ${APP_UID}; Ctrl+C to stop)..."
-
+echo "Streaming logs for ${PACKAGE_ID} (Ctrl+C to stop)..."
 adb logcat -c
-adb logcat --uid="${APP_UID}" \
+exec adb logcat \
   "${SDK_LOG_TAGS[@]}" \
   "${LISTENER_TAG}" \
   '*:S'

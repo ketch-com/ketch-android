@@ -1,5 +1,6 @@
 package com.ketch.android.sample.compose
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -17,6 +18,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "KetchCompose"
+        private val IAB_PREFERENCE_PREFIXES = listOf("IABTCF", "IABGPP", "IABUS")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,6 +50,7 @@ class MainActivity : AppCompatActivity() {
                     logEntries.add("Opening SecondActivity")
                     startActivity(Intent(this, SecondActivity::class.java))
                 },
+                onLogSharedPreferences = { logSharedPreferences() },
             )
         }
     }
@@ -63,5 +66,38 @@ class MainActivity : AppCompatActivity() {
         logEntries.add("Ketch initialized in Application")
         ketch.load()
         logEntries.add("load() called from MainActivity")
+    }
+
+    private fun logSharedPreferences() {
+        fun emit(message: String) {
+            Log.d(TAG, message)
+            runOnUiThread { logEntries.add(message) }
+        }
+
+        val tcf = ketch.getTCFTCString()
+        val usPrivacy = ketch.getUSPrivacyString()
+        val gpp = ketch.getGPPHDRGppString()
+
+        emit("SharedPreferences — IABTCF_TCString: ${tcf ?: "(not set)"}")
+        emit("SharedPreferences — IABUSPrivacy_String: ${usPrivacy ?: "(not set)"}")
+        emit("SharedPreferences — IABGPP_HDR_GppString: ${gpp ?: "(not set)"}")
+
+        val prefs = getSharedPreferences(
+            "${applicationContext.packageName}_preferences",
+            Context.MODE_PRIVATE,
+        )
+        val iabEntries = prefs.all
+            .filterKeys { key -> IAB_PREFERENCE_PREFIXES.any { key.startsWith(it) } }
+            .toSortedMap()
+
+        if (iabEntries.isEmpty()) {
+            emit("SharedPreferences — no IAB-prefixed keys found")
+            return
+        }
+
+        emit("SharedPreferences — all IAB keys (${iabEntries.size}):")
+        iabEntries.forEach { (key, value) ->
+            emit("  $key = $value")
+        }
     }
 }

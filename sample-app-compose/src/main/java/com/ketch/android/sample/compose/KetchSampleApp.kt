@@ -61,6 +61,7 @@ fun KetchSampleApp(
     onShowConsent: () -> Unit,
     onShowPreferences: () -> Unit,
     onOpenSecondActivity: () -> Unit,
+    onLogSharedPreferences: () -> Unit,
 ) {
     var isDarkMode by rememberSaveable { mutableStateOf(false) }
 
@@ -92,6 +93,16 @@ fun KetchSampleApp(
                 CardsRow(
                     onShowConsent = onShowConsent,
                     onShowPreferences = onShowPreferences
+                )
+                Spacer(Modifier.height(24.dp))
+                SectionHeader("Debug")
+                Spacer(Modifier.height(12.dp))
+                ActionCard(
+                    title = "Shared Preferences",
+                    description = "Log IAB privacy strings persisted by the SDK (TCF, US Privacy, GPP).",
+                    onExecute = onLogSharedPreferences,
+                    modifier = Modifier.fillMaxWidth(),
+                    executeLabel = "Log Values",
                 )
                 Spacer(Modifier.height(24.dp))
                 SectionHeader("Cross-Activity Demo")
@@ -193,6 +204,7 @@ private fun ActionCard(
     description: String,
     onExecute: () -> Unit,
     modifier: Modifier = Modifier,
+    executeLabel: String = "Execute",
 ) {
     Column(
         modifier = modifier
@@ -226,7 +238,7 @@ private fun ActionCard(
                 contentColor = MaterialTheme.colorScheme.onPrimary,
             ),
         ) {
-            Text("Execute", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Text(executeLabel, fontSize = 14.sp, fontWeight = FontWeight.Medium)
         }
     }
 }
