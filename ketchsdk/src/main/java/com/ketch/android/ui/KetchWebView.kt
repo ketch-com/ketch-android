@@ -155,8 +155,9 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             }
 
             (view as? KetchWebView)?.let { ketchWebView ->
+                Log.w(TAG, "onDismiss source=rendererCrash status=None")
                 ketchWebView.kill()
-                ketchWebView.listener?.onClose(HideExperienceStatus.None, retainWebView = false)
+                ketchWebView.listener?.onClose(HideExperienceStatus.None, source = "rendererCrash", retainWebView = false)
             }
 
             return true
@@ -280,7 +281,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             ageUpper = ageUpper,
             bottomPadding = bottomPaddingPx,
             topPadding = topPaddingPx,
-            cssStyleOverride = cssStyle
+            cssStyleOverride = cssStyle,
         )
 
         loadDataWithBaseURL("http://localhost", indexHtml, "text/html", "UTF-8", null)
@@ -292,9 +293,13 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         fun hideExperience(status: String?) {
             // Determine the hideExperience event status
             val parsedStatus = parseHideExperienceStatus(status)
-            Log.d(TAG, "hideExperience: $status = ${parsedStatus.name}")
+            if (parsedStatus === HideExperienceStatus.None && !status.isNullOrBlank()) {
+                Log.w(TAG, "onDismiss source=hideExperience parseFallback rawStatus=$status")
+            } else {
+                Log.d(TAG, "onDismiss source=hideExperience status=${parsedStatus.name} rawStatus=$status")
+            }
             runOnMainThread {
-                ketchWebView.listener?.onClose(parsedStatus)
+                ketchWebView.listener?.onClose(parsedStatus, "hideExperience")
             }
         }
 
@@ -348,12 +353,19 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         @JavascriptInterface
         fun willShowExperience(type: String?) {
             val parsedType = parseWillShowExperienceType(type)
-            Log.d(TAG, "willShowExperience: $type = ${parsedType.name}")
+            Log.d(TAG, "willShowExperience: raw=$type parsed=${parsedType.name}")
             runOnMainThread {
-                if (parsedType === WillShowExperienceType.ConsentExperience) {
+                if (parsedType === WillShowExperienceType.ConsentExperience ||
+                    type?.contains("consent", ignoreCase = true) == true
+                ) {
                     ketchWebView.listener?.showConsent()
-                } else {
+                } else if (parsedType === WillShowExperienceType.PreferenceExperience ||
+                    type?.contains("preference", ignoreCase = true) == true
+                ) {
                     ketchWebView.listener?.showPreferences()
+                } else {
+                    Log.w(TAG, "willShowExperience: unknown type, defaulting to consent")
+                    ketchWebView.listener?.showConsent()
                 }
                 ketchWebView.listener?.onWillShowExperience(parsedType)
             }
@@ -370,11 +382,41 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         @JavascriptInterface
         fun showConsentExperience(showConsentExperience: String?) {
             Log.d(TAG, "showConsentExperience: $showConsentExperience")
+            runOnMainThread {
+                ketchWebView.listener?.showConsent()
+            }
         }
 
         @JavascriptInterface
         fun showPreferenceExperience(showPreferenceExperience: String?) {
             Log.d(TAG, "showPreferenceExperience: $showPreferenceExperience")
+            runOnMainThread {
+                ketchWebView.listener?.showPreferences()
+            }
+        }
+
+        @JavascriptInterface
+        fun showExperience(payload: String?) {
+            Log.d(TAG, "showExperience: $payload")
+            runOnMainThread {
+                if (payload?.contains("preference", ignoreCase = true) == true) {
+                    ketchWebView.listener?.showPreferences()
+                } else {
+                    ketchWebView.listener?.showConsent()
+                }
+            }
+        }
+
+        @JavascriptInterface
+        fun renderExperience(payload: String?) {
+            Log.d(TAG, "renderExperience: $payload")
+            runOnMainThread {
+                if (payload?.contains("preference", ignoreCase = true) == true) {
+                    ketchWebView.listener?.showPreferences()
+                } else {
+                    ketchWebView.listener?.showConsent()
+                }
+            }
         }
 
         @JavascriptInterface
@@ -387,7 +429,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
                     .setPrettyPrinting()
                     .create()
                     .fromJson(configJson, KetchConfig::class.java)
-                Log.d(TAG, "config: $config")
+                Log.d(TAG, "config parsed: experiences=${config?.experiences?.consent?.display}")
                 runOnMainThread {
                     ketchWebView.listener?.onConfigUpdated(config)
                 }
@@ -460,9 +502,23 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         }
     }
 
+    internal fun requestShowConsent(forceImmediate: Boolean = false) {
+        listener?.requestShowConsent(forceImmediate)
+    }
+
+    internal fun requestShowPreferences(forceImmediate: Boolean = false) {
+        listener?.requestShowPreferences(forceImmediate)
+    }
+
     interface WebViewListener {
         fun showConsent()
         fun showPreferences()
+        fun requestShowConsent(forceImmediate: Boolean = false) {
+            showConsent()
+        }
+        fun requestShowPreferences(forceImmediate: Boolean = false) {
+            showPreferences()
+        }
         fun onUSPrivacyUpdated(values: Map<String, Any?>)
         fun onTCFUpdated(values: Map<String, Any?>)
         fun onGPPUpdated(values: Map<String, Any?>)
@@ -474,7 +530,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         fun onConsentUpdated(consent: Consent)
         fun onError(errMsg: String?)
         fun changeDialog(display: ContentDisplay)
-        fun onClose(status: HideExperienceStatus, retainWebView: Boolean = true)
+        fun onClose(status: HideExperienceStatus, source: String = "hideExperience", retainWebView: Boolean = true)
         fun onWillShowExperience(experienceType: WillShowExperienceType)
         fun onHasShownExperience()
     }
@@ -484,7 +540,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         PREFERENCES;
 
         fun getUrlParameter(): String = when (this) {
-            CONSENT -> "cd"
+            CONSENT -> "consent"
             PREFERENCES -> "preferences"
         }
     }
