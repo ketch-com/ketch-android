@@ -170,6 +170,45 @@ class IntegrationTestApp : Application() {
         false
     }
 
+    fun getActiveWebViewIdentityHash(): Int? = try {
+        val field = ketch.javaClass.getDeclaredField("activeWebView")
+        field.isAccessible = true
+        System.identityHashCode(field.get(ketch))
+    } catch (e: Exception) {
+        Log.e(TAG, "Error reading activeWebView identity: ${e.message}")
+        null
+    }
+
+    fun getPageLoadCount(): Int = try {
+        val ketchClass = ketch.javaClass
+        val activeWebViewField = ketchClass.getDeclaredField("activeWebView")
+        activeWebViewField.isAccessible = true
+        val webView = activeWebViewField.get(ketch) as? com.ketch.android.ui.KetchWebView
+        webView?.pageLoadCount ?: 0
+    } catch (e: Exception) {
+        Log.e(TAG, "Error reading pageLoadCount: ${e.message}")
+        0
+    }
+
+    fun getLoadedSignature(): String? = try {
+        val field = ketch.javaClass.getDeclaredField("loadedSignature")
+        field.isAccessible = true
+        field.get(ketch) as? String
+    } catch (e: Exception) {
+        Log.e(TAG, "Error reading loadedSignature: ${e.message}")
+        null
+    }
+
+    fun hasTapOutsideBridgeMethod(): Boolean = try {
+        val ketchClass = ketch.javaClass
+        val activeWebViewField = ketchClass.getDeclaredField("activeWebView")
+        activeWebViewField.isAccessible = true
+        val webView = activeWebViewField.get(ketch) ?: return false
+        webView.javaClass.methods.any { it.name == "tapOutside" }
+    } catch (e: Exception) {
+        false
+    }
+
     fun updateIdentitiesWithUniqueValue() {
         val uniqueId = java.util.UUID.randomUUID().toString()
         ketch.setIdentities(mapOf("aaid" to uniqueId))
