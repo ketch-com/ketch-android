@@ -69,6 +69,27 @@ class NativeStorageTest {
     fun read_missingKey_returnsDefault() {
         assertEquals("fallback", NativeStorage.read("missing", "fallback"))
     }
+
+    @Test
+    fun remove_deletesWrittenKey() {
+        NativeStorage.write("gone", "bye")
+        NativeStorage.remove("gone")
+        assertEquals("missing", NativeStorage.read("gone", "missing"))
+    }
+
+    @Test
+    fun removeValues_removesOnlyPrefixMatchingKeys() {
+        NativeStorage.write("IABTCF_TCString", "abc")
+        NativeStorage.write("IABGPP_HDR_Version", "1")
+        NativeStorage.write("keep_me", "safe")
+
+        val removed = NativeStorage.removeValues(listOf("IABTCF", "IABGPP", "IABUS"))
+
+        assertEquals(2, removed)
+        assertEquals("missing", NativeStorage.read("IABTCF_TCString", "missing"))
+        assertEquals("missing", NativeStorage.read("IABGPP_HDR_Version", "missing"))
+        assertEquals("safe", NativeStorage.read("keep_me"))
+    }
 }
 
 private class MemorySharedPreferences : SharedPreferences {

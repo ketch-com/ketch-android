@@ -30,6 +30,20 @@ object NativeStorage {
         prefs().edit { putString(key, value) }
     }
 
+    fun remove(key: String) {
+        prefs().edit { remove(key) }
+    }
+
+    fun removeValues(prefixes: List<String>): Int {
+        val matching = prefs().all.keys.filter { key ->
+            prefixes.any { key.startsWith(it) }
+        }
+        prefs().edit {
+            matching.forEach { remove(it) }
+        }
+        return matching.size
+    }
+
     @VisibleForTesting
     internal fun bindPreferencesForTesting(prefs: SharedPreferences) {
         sharedPreferences = prefs
@@ -41,7 +55,7 @@ object NativeStorage {
     }
 
     private fun prefs(): SharedPreferences =
-        requireNotNull(sharedPreferences) {
+        checkNotNull(sharedPreferences) {
             "NativeStorage.initialize must be called before read/write"
         }
 }
