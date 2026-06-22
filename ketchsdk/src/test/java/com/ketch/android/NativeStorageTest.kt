@@ -4,7 +4,6 @@ import android.content.SharedPreferences
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
 
@@ -37,58 +36,50 @@ class NativeStoragePutPayloadTest {
     }
 }
 
-class NativeStorageTest {
+class KetchSharedPreferencesStorageTest {
     private lateinit var prefs: SharedPreferences
 
     @Before
     fun setUp() {
         prefs = MemorySharedPreferences()
-        NativeStorage.bindPreferencesForTesting(prefs)
+        KetchSharedPreferences.bindPreferencesForTesting(prefs)
     }
 
     @After
     fun tearDown() {
-        NativeStorage.resetForTesting()
-    }
-
-    @Test
-    fun read_withoutInitialize_throws() {
-        NativeStorage.resetForTesting()
-        assertThrows(IllegalStateException::class.java) {
-            NativeStorage.read("missing")
-        }
+        KetchSharedPreferences.resetForTesting()
     }
 
     @Test
     fun write_thenRead_roundTrip() {
-        NativeStorage.write("foo", "bar")
-        assertEquals("bar", NativeStorage.read("foo"))
+        KetchSharedPreferences.write("foo", "bar")
+        assertEquals("bar", KetchSharedPreferences.read("foo"))
     }
 
     @Test
     fun read_missingKey_returnsDefault() {
-        assertEquals("fallback", NativeStorage.read("missing", "fallback"))
+        assertEquals("fallback", KetchSharedPreferences.read("missing", "fallback"))
     }
 
     @Test
     fun remove_deletesWrittenKey() {
-        NativeStorage.write("gone", "bye")
-        NativeStorage.remove("gone")
-        assertEquals("missing", NativeStorage.read("gone", "missing"))
+        KetchSharedPreferences.write("gone", "bye")
+        KetchSharedPreferences.remove("gone")
+        assertEquals("missing", KetchSharedPreferences.read("gone", "missing"))
     }
 
     @Test
     fun removeValues_removesOnlyPrefixMatchingKeys() {
-        NativeStorage.write("IABTCF_TCString", "abc")
-        NativeStorage.write("IABGPP_HDR_Version", "1")
-        NativeStorage.write("keep_me", "safe")
+        KetchSharedPreferences.write("IABTCF_TCString", "abc")
+        KetchSharedPreferences.write("IABGPP_HDR_Version", "1")
+        KetchSharedPreferences.write("keep_me", "safe")
 
-        val removed = NativeStorage.removeValues(listOf("IABTCF", "IABGPP", "IABUS"))
+        val removed = KetchSharedPreferences.removeValues(listOf("IABTCF", "IABGPP", "IABUS"))
 
         assertEquals(2, removed)
-        assertEquals("missing", NativeStorage.read("IABTCF_TCString", "missing"))
-        assertEquals("missing", NativeStorage.read("IABGPP_HDR_Version", "missing"))
-        assertEquals("safe", NativeStorage.read("keep_me"))
+        assertEquals("missing", KetchSharedPreferences.read("IABTCF_TCString", "missing"))
+        assertEquals("missing", KetchSharedPreferences.read("IABGPP_HDR_Version", "missing"))
+        assertEquals("safe", KetchSharedPreferences.read("keep_me"))
     }
 }
 

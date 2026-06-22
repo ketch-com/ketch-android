@@ -23,7 +23,7 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonParseException
 import com.ketch.android.Ketch
-import com.ketch.android.NativeStorage
+import com.ketch.android.KetchSharedPreferences
 import com.ketch.android.parseNativeStoragePutPayload
 import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
@@ -51,7 +51,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
     private val localContentWebViewClient = LocalContentWebViewClient(shouldRetry)
 
     init {
-        NativeStorage.initialize(context)
+        KetchSharedPreferences.initialize(context)
         setBackgroundColor(Color.TRANSPARENT)
         webViewClient = localContentWebViewClient
 
@@ -459,7 +459,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
                 return
             }
             try {
-                NativeStorage.write(payload.key, payload.value)
+                KetchSharedPreferences.write(payload.key, payload.value)
                 Log.d(TAG, "nativeStoragePut: key=${payload.key}")
                 runOnMainThread {
                     ketchWebView.listener?.onNativeStoragePut(payload.key, payload.value)
