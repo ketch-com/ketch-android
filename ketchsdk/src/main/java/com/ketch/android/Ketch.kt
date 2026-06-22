@@ -17,7 +17,10 @@ import com.ketch.android.data.FullConfigurationRequest
 import com.ketch.android.data.GetProfileRequest
 import com.ketch.android.data.GetProfileResponse
 import com.ketch.android.data.HeadlessConfiguration
+import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.InvokeRightRequest
+import com.ketch.android.data.KetchConfig
+import com.ketch.android.data.LocationResponse
 import com.ketch.android.data.PreferenceQRRequest
 import com.ketch.android.data.PutProfileRequest
 import com.ketch.android.data.SubscriptionConfiguration
@@ -25,9 +28,6 @@ import com.ketch.android.data.SubscriptionConfigurationRequest
 import com.ketch.android.data.SubscriptionsRequest
 import com.ketch.android.data.SubscriptionsResponse
 import com.ketch.android.data.WebReportRequest
-import com.ketch.android.data.HideExperienceStatus
-import com.ketch.android.data.KetchConfig
-import com.ketch.android.data.LocationResponse
 import com.ketch.android.data.WillShowExperienceType
 import com.ketch.android.ui.KetchDialogFragment
 import com.ketch.android.ui.KetchWebView
@@ -345,7 +345,6 @@ class Ketch private constructor(
         val signature = buildLoadSignature(bottomPadding, topPadding)
         tryWarmWebView(signature, "showConsent")?.let { webView ->
             webView.showConsentExperience()
-            webView.requestShowConsent(forceImmediate = true)
             return true
         }
 
@@ -371,7 +370,6 @@ class Ketch private constructor(
             topPadding,
             cssStyle
         )
-        webView.requestShowConsent(forceImmediate = true)
         return true
     }
 
@@ -597,8 +595,7 @@ class Ketch private constructor(
             resolveFragmentManager()?.findFragmentByTag(KetchDialogFragment.TAG)?.let { existingFragment ->
                 try {
                     (existingFragment as? KetchDialogFragment)?.dismissAllowingStateLoss()
-                    Log.d(TAG, "onDismiss source=initCleanup status=Close")
-                    this@Ketch.listener?.onDismiss(HideExperienceStatus.Close)
+                    this@Ketch.listener?.onDismiss(HideExperienceStatus.None)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error dismissing existing dialog in init: ${e.message}")
                 }
@@ -832,24 +829,13 @@ class Ketch private constructor(
             webView.listener = object : KetchWebView.WebViewListener {
 
                 private var config: KetchConfig? = null
-                private var showConsentPending = false
-                private var allowShowBeforeConfig = false
-
-                override fun requestShowConsent(forceImmediate: Boolean) {
-                    if (forceImmediate) {
-                        allowShowBeforeConfig = true
-                    }
-                    showConsent()
-                }
+                private var showConsent: Boolean = false
 
                 override fun showConsent() {
-                    if (config == null && !allowShowBeforeConfig) {
-                        Log.d(TAG, "showConsent deferred until config loads")
-                        showConsentPending = true
+                    if (config == null) {
+                        showConsent = true
                         return
                     }
-                    allowShowBeforeConfig = false
-                    showConsentPending = false
                     showConsentPopup()
                 }
 
@@ -904,11 +890,13 @@ class Ketch private constructor(
 
                 override fun onConfigUpdated(config: KetchConfig?) {
                     this.config = config
+
                     this@Ketch.listener?.onConfigUpdated(config)
-                    if (showConsentPending) {
-                        showConsentPending = false
-                        showConsentPopup()
+
+                    if (!showConsent) {
+                        return
                     }
+                    showConsentPopup()
                 }
 
                 override fun onEnvironmentUpdated(environment: String?) {
@@ -999,7 +987,6 @@ class Ketch private constructor(
 
                             resolveFragmentManager()?.let { fm ->
                                 if (!fm.isDestroyed) {
-                                    Log.d(TAG, "showConsentPopup: showing dialog")
                                     dialog.show(manager = fm)
                                     isShowingExperience = true
                                     activeDialogFragment = WeakReference(dialog)
@@ -1015,10 +1002,11 @@ class Ketch private constructor(
                             }
                         } catch (e: Exception) {
                             isShowingExperience = false
-                            showConsentPending = false
                             Log.e(TAG, "Error showing dialog: ${e.message}")
                             this@Ketch.listener?.onError("Error showing dialog: ${e.message}")
                         }
+
+                        showConsent = false
                     }
                 }
 
@@ -1030,7 +1018,7 @@ class Ketch private constructor(
                             }
 
                             ContentDisplay.Banner -> {
-                                it.theme?.banner?.container?.backdrop?.disableContentInteractions == true
+                                it.theme?.modal?.container?.backdrop?.disableContentInteractions == true
                             }
                         }
                     } ?: false
