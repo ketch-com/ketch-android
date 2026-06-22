@@ -293,13 +293,9 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         fun hideExperience(status: String?) {
             // Determine the hideExperience event status
             val parsedStatus = parseHideExperienceStatus(status)
-            if (parsedStatus === HideExperienceStatus.None && !status.isNullOrBlank()) {
-                Log.w(TAG, "onDismiss source=hideExperience parseFallback rawStatus=$status")
-            } else {
-                Log.d(TAG, "onDismiss source=hideExperience status=${parsedStatus.name} rawStatus=$status")
-            }
+            Log.d(TAG, "hideExperience: $status = ${parsedStatus.name}")
             runOnMainThread {
-                ketchWebView.listener?.onClose(parsedStatus, "hideExperience")
+                ketchWebView.listener?.onClose(parsedStatus)
             }
         }
 
