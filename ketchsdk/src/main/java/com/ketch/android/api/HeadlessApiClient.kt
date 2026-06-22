@@ -393,12 +393,15 @@ class HeadlessApiClient(
         block: suspend () -> T,
     ) {
         scope.launch {
-            try {
-                callback(Result.success(block()))
+            val result = try {
+                Result.success(block())
             } catch (error: HeadlessException) {
-                callback(Result.failure(error))
+                Result.failure(error)
             } catch (error: Exception) {
-                callback(Result.failure(HeadlessException(error.message ?: "Headless API error", error)))
+                Result.failure(HeadlessException(error.message ?: "Headless API error", error))
+            }
+            withContext(Dispatchers.Main) {
+                callback(result)
             }
         }
     }

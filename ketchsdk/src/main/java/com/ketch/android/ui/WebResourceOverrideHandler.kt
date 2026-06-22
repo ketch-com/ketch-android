@@ -23,17 +23,32 @@ internal object WebResourceOverrideHandler {
     }
 
     private fun loadResponse(sourceUrl: String, destinationUrl: String): WebResourceResponse? {
+        var connection: HttpURLConnection? = null
         return try {
-            val connection = URL(destinationUrl).openConnection() as HttpURLConnection
-            connection.connect()
-            Log.d(TAG, "Redirected $sourceUrl -> $destinationUrl")
-            WebResourceResponse(
-                mimeTypeFor(destinationUrl),
-                connection.contentEncoding ?: "UTF-8",
-                connection.inputStream,
-            )
+            connection = URL(destinationUrl).openConnection() as HttpURLConnection
+            when (val responseCode = connection.responseCode) {
+                in 200..299 -> {
+                    Log.d(TAG, "Redirected $sourceUrl -> $destinationUrl")
+                    WebResourceResponse(
+                        mimeTypeFor(destinationUrl),
+                        connection.contentEncoding ?: "UTF-8",
+                        connection.inputStream,
+                    )
+                }
+                else -> {
+                    Log.e(
+                        TAG,
+                        "Override destination HTTP $responseCode for $sourceUrl -> $destinationUrl",
+                    )
+                    connection.errorStream?.close()
+                    connection.disconnect()
+                    connection = null
+                    null
+                }
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Failed override $sourceUrl -> $destinationUrl: ${e.message}", e)
+            connection?.disconnect()
             null
         }
     }

@@ -5,7 +5,7 @@ package com.ketch.android.sample.standard
  * Android emulator: use [forEmulator] (localhost when using simulator/port-forward).
  */
 object DevUrlOverrides {
-    const val ENABLED = true
+    const val ENABLED = false
 
     val forEmulator: Map<String, String> = mapOf(
         "https://cdn.uat.ketchjs.com/ketchtag/stable/v2.12/ketch-sdk.js" to "http://localhost:9000/ketch-sdk.js",
