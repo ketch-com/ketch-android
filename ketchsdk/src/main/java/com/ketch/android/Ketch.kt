@@ -987,6 +987,10 @@ class Ketch private constructor(
                     this@Ketch.listener?.onHasShownExperience()
                 }
 
+                override fun onTapOutside() {
+                    // No-op: not yet surfaced on the public Ketch.Listener API.
+                }
+
                 private fun showConsentPopup() {
                     synchronized(lock) {
                         if (isShowingExperience || findDialogFragment() != null) {

@@ -11,6 +11,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
+import com.ketch.android.Ketch
 import com.ketch.android.KetchSdk
 import com.ketch.android.data.Consent
 import com.ketch.android.data.FullConfigurationRequest

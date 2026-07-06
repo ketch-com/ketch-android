@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.ketch.android.Ketch
 import com.ketch.android.KetchSdk
 import com.ketch.android.data.Consent
 import com.ketch.android.data.FullConfigurationRequest
