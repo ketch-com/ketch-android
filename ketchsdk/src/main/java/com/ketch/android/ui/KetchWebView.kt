@@ -502,7 +502,6 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         fun onClose(status: HideExperienceStatus, retainWebView: Boolean = true)
         fun onWillShowExperience(experienceType: WillShowExperienceType)
         fun onHasShownExperience()
-        fun onTapOutside()
         fun onNativeStoragePut(key: String, value: String) {}
     }
 
