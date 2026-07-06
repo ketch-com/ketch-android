@@ -29,6 +29,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
+import java.util.concurrent.TimeUnit
 
 /**
  * Native HTTP client mirroring ketch-tag [KetchWebAPI] (web/v3).
@@ -36,12 +37,29 @@ import java.io.IOException
 class HeadlessApiClient(
     dataCenter: KetchDataCenter = KetchDataCenter.US,
     baseUrl: String? = null,
-    private val okHttpClient: OkHttpClient = OkHttpClient(),
+    private val okHttpClient: OkHttpClient = defaultOkHttpClient,
     private val gson: Gson = Gson(),
 ) {
     private val baseUrl = baseUrl ?: dataCenter.baseUrl
     private val jsonMediaType = "application/json".toMediaType()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    companion object {
+        private const val TIMEOUT_SECONDS = 30L
+
+        /**
+         * Shared client across [HeadlessApiClient] instances so per-call helpers (e.g. [com.ketch.android.KetchSdk]
+         * static methods) reuse connections/threads instead of allocating a fresh pool each call, and so
+         * requests fail fast on bad networks instead of hanging indefinitely.
+         */
+        private val defaultOkHttpClient: OkHttpClient by lazy {
+            OkHttpClient.Builder()
+                .connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .writeTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .build()
+        }
+    }
 
     fun fetchLocation(callback: (Result<LocationResponse>) -> Unit) {
         launchAsync(callback) { fetchLocation() }
@@ -96,7 +114,7 @@ class HeadlessApiClient(
 
     suspend fun fetchConsent(config: ConsentConfig): Consent = withContext(Dispatchers.IO) {
         val path = "/consent/${config.organizationCode}/get"
-        postConsent(path, ConsentConfigPayload.from(config), config)
+        postConsent(path, ConsentConfigPayload.from(config))
     }
 
     fun fetchProtocols(
@@ -270,9 +288,9 @@ class HeadlessApiClient(
         }
     }
 
-    private fun postConsent(path: String, body: ConsentConfigPayload, config: ConsentConfig): Consent {
+    private fun postConsent(path: String, body: ConsentConfigPayload): Consent {
         val request = buildConsentPostRequest(path, body)
-        return executeConsentFetch(request, config)
+        return executeConsentFetch(request)
     }
 
     private fun postSetConsent(path: String, body: SetConsentPayload, fallback: ConsentUpdate): Consent {
@@ -290,7 +308,7 @@ class HeadlessApiClient(
             .build()
     }
 
-    private fun executeConsentFetch(request: Request, config: ConsentConfig): Consent {
+    private fun executeConsentFetch(request: Request): Consent {
         try {
             okHttpClient.newCall(request).execute().use { response ->
                 val body = response.body?.string().orEmpty()
@@ -298,13 +316,13 @@ class HeadlessApiClient(
                     throw HeadlessException("HTTP ${response.code} for ${request.url}")
                 }
                 if (body.isBlank() || body == "null") {
-                    return emptyConsent(config)
+                    return emptyConsent()
                 }
                 val decoded = decodeConsent(body)
                 if (decoded != null && hasUsableConsentFields(decoded)) {
                     return decoded
                 }
-                return emptyConsent(config)
+                return emptyConsent()
             }
         } catch (error: HeadlessException) {
             throw error
@@ -378,9 +396,13 @@ class HeadlessApiClient(
         }
     }
 
-    private fun emptyConsent(config: ConsentConfig): Consent =
+    private fun emptyConsent(): Consent =
         Consent(purposes = emptyMap(), vendors = null, protocols = null)
 
+    // Fallback used when setConsent's HTTP response is 2xx but the body has no usable purposes/
+    // protocols (e.g. empty body). We build a Consent from the values in the request itself, so the
+    // caller sees the purposes they asked for as "on". This is a guess: we never confirmed the server
+    // actually stored them, since the response didn't tell us anything.
     private fun consentFromUpdate(update: ConsentUpdate): Consent {
         val purposes = update.purposes.mapValues { (_, basis) ->
             basis.allowed.equals("true", ignoreCase = true)
@@ -392,14 +414,17 @@ class HeadlessApiClient(
         callback: (Result<T>) -> Unit,
         block: suspend () -> T,
     ) {
+        // Network work runs on the IO dispatcher (scope + block's own withContext); the callback is
+        // delivered on Main to match the rest of the SDK's threading contract (see KetchWebView).
         scope.launch {
-            try {
-                callback(Result.success(block()))
+            val result = try {
+                Result.success(block())
             } catch (error: HeadlessException) {
-                callback(Result.failure(error))
+                Result.failure(error)
             } catch (error: Exception) {
-                callback(Result.failure(HeadlessException(error.message ?: "Headless API error", error)))
+                Result.failure(HeadlessException(error.message ?: "Headless API error", error))
             }
+            withContext(Dispatchers.Main) { callback(result) }
         }
     }
 

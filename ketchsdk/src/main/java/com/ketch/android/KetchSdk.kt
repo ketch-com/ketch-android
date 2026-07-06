@@ -44,7 +44,8 @@ object KetchSdk {
      * @param property - the property name
      * @param environment - the environment name.
      * @param listener - Ketch.Listener. Optional
-     * @param ketchUrl - Overrides the ketch url. Optional
+     * @param ketchUrl - Overrides the ketch url. Optional; defaults to [dataCenter] base URL.
+     * @param dataCenter - CDN region for headless and WebView API calls. Default US.
      * @param logLevel - the log level, can be TRACE, DEBUG, INFO, WARN, ERROR. Default is ERROR
      */
     fun create(
@@ -54,6 +55,7 @@ object KetchSdk {
         environment: String? = null,
         listener: Ketch.Listener? = null,
         ketchUrl: String? = null,
+        dataCenter: KetchDataCenter = KetchDataCenter.US,
         logLevel: Ketch.LogLevel = Ketch.LogLevel.ERROR
     ): Ketch {
         return Ketch.create(
@@ -63,6 +65,7 @@ object KetchSdk {
             environment = environment,
             listener = listener,
             ketchUrl = ketchUrl,
+            dataCenter = dataCenter,
             logLevel = logLevel,
         )
     }
@@ -84,7 +87,7 @@ object KetchSdk {
         message = "Ketch now tracks the foreground Activity automatically; the FragmentManager " +
             "argument is no longer required. Use create(context, organization, property, ...).",
         replaceWith = ReplaceWith(
-            "KetchSdk.create(context, organization, property, environment, listener, ketchUrl, logLevel)"
+            "KetchSdk.create(context, organization, property, environment, listener, ketchUrl, dataCenter, logLevel)"
         ),
         level = DeprecationLevel.WARNING,
     )
@@ -150,7 +153,10 @@ object KetchSdk {
         HeadlessApiClient(dataCenter).fetchConsent(config, callback)
     }
 
-    /** Protocol strings only (same endpoint as fetchConsent). */
+    /**
+     * Same endpoint as [fetchConsent], but drops `protocols` from the result if the server
+     * didn't return any (purposes/vendors from a plain consent response are still included).
+     */
     fun fetchProtocols(
         config: ConsentConfig,
         dataCenter: KetchDataCenter = KetchDataCenter.US,

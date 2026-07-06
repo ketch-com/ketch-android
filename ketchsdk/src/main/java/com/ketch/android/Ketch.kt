@@ -226,7 +226,10 @@ class Ketch private constructor(
     suspend fun fetchConsent(config: ConsentConfig): Consent =
         headlessApiClient.fetchConsent(config)
 
-    /** Protocol strings only (same endpoint as fetchConsent). */
+    /**
+     * Same endpoint as [fetchConsent], but drops `protocols` from the result if the server
+     * didn't return any (purposes/vendors from a plain consent response are still included).
+     */
     fun fetchProtocols(
         config: ConsentConfig,
         callback: (Result<Consent>) -> Unit,
@@ -728,7 +731,7 @@ class Ketch private constructor(
         listOf(
             orgCode,
             property,
-            ketchUrl ?: "",
+            effectiveKetchUrl,
             environment ?: "",
             language ?: "",
             jurisdiction ?: "",
