@@ -28,6 +28,8 @@ object KetchSdk {
      * @param listener - Ketch.Listener. Optional
      * @param ketchUrl - Overrides the ketch url. Optional
      * @param logLevel - the log level, can be TRACE, DEBUG, INFO, WARN, ERROR. Default is ERROR
+     * @param webResourceUrlOverrides - redirects exact-match WebView resource URLs (e.g. dev/staging
+     *   tag scripts) to local dev servers. Optional
      */
     fun create(
         context: Context,
@@ -36,7 +38,8 @@ object KetchSdk {
         environment: String? = null,
         listener: Ketch.Listener? = null,
         ketchUrl: String? = null,
-        logLevel: Ketch.LogLevel = Ketch.LogLevel.ERROR
+        logLevel: Ketch.LogLevel = Ketch.LogLevel.ERROR,
+        webResourceUrlOverrides: Map<String, String> = emptyMap(),
     ): Ketch {
         return Ketch.create(
             context = context,
@@ -46,6 +49,7 @@ object KetchSdk {
             listener = listener,
             ketchUrl = ketchUrl,
             logLevel = logLevel,
+            webResourceUrlOverrides = webResourceUrlOverrides,
         )
     }
 
@@ -77,7 +81,8 @@ object KetchSdk {
         environment: String? = null,
         listener: Ketch.Listener? = null,
         ketchUrl: String? = null,
-        logLevel: Ketch.LogLevel = Ketch.LogLevel.ERROR
+        logLevel: Ketch.LogLevel = Ketch.LogLevel.ERROR,
+        webResourceUrlOverrides: Map<String, String> = emptyMap(),
     ): Ketch {
         return Ketch.create(
             context = context,
@@ -87,7 +92,8 @@ object KetchSdk {
             environment = environment,
             listener = listener,
             ketchUrl = ketchUrl,
-            logLevel = logLevel
+            logLevel = logLevel,
+            webResourceUrlOverrides = webResourceUrlOverrides,
         )
     }
 }

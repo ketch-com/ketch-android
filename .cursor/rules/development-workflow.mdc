@@ -27,6 +27,11 @@ alwaysApply: true
 | `./gradlew dokkaHtmlMultiModule` | Generate API docs |
 | `./run-integration-tests.sh` | Clean build + full instrumented run (checks for a connected device) |
 
+`scripts/run-sample.sh` (via the `make run-*` targets above) always builds the samples against the
+local `:ketchsdk` project. To additionally test against a **published** `com.ketch.android:ketchsdk`
+Maven artifact (e.g. verifying a release), use the `/ketch-android-run-sample` skill instead —
+see `.cursor/skills/ketch-android-run-sample/SKILL.md`.
+
 ## Validation Checklist
 
 Run before considering any change complete:

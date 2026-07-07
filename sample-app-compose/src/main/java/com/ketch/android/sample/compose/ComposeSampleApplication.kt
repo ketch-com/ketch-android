@@ -14,20 +14,24 @@ class ComposeSampleApplication : Application() {
     lateinit var ketch: Ketch
         private set
 
+    val infoState = SampleInfoState()
+
     var logCallback: ((String) -> Unit)? = null
 
     override fun onCreate() {
         super.onCreate()
         ketch = KetchSdk.create(
             context = this,
-            organization = ORG_CODE,
-            property = PROPERTY,
-            environment = ENVIRONMENT,
+            organization = SampleConfig.ORG_CODE,
+            property = SampleConfig.PROPERTY,
+            environment = SampleConfig.ENVIRONMENT,
             listener = sharedListener,
-            ketchUrl = null,
+            ketchUrl = SampleConfig.dataCenter.baseUrl,
             logLevel = Ketch.LogLevel.DEBUG,
+            webResourceUrlOverrides = if (DevUrlOverrides.ENABLED) DevUrlOverrides.forEmulator else emptyMap(),
         )
-        ketch.setIdentities(mapOf("aaid" to "sample-test-123"))
+        ketch.setLanguage(SampleConfig.LANGUAGE)
+        ketch.setIdentities(SampleConfig.identities)
     }
 
     private val sharedListener = object : Ketch.Listener {
@@ -54,11 +58,13 @@ class ComposeSampleApplication : Application() {
         override fun onRegionInfoUpdated(regionInfo: String?) {
             Log.d(TAG, "onRegionInfoUpdated: $regionInfo")
             log("onRegionInfoUpdated: $regionInfo")
+            infoState.updateRegion(regionInfo)
         }
 
         override fun onJurisdictionUpdated(jurisdiction: String?) {
             Log.d(TAG, "onJurisdictionUpdated: $jurisdiction")
             log("onJurisdictionUpdated: $jurisdiction")
+            infoState.updateJurisdiction(jurisdiction)
         }
 
         override fun onIdentitiesUpdated(identities: String?) {
@@ -67,8 +73,9 @@ class ComposeSampleApplication : Application() {
         }
 
         override fun onConsentUpdated(consent: Consent) {
-            Log.d(TAG, "onConsentUpdated: purposes=${consent.purposes}")
-            log("onConsentUpdated: ${consent.purposes}")
+            val summary = formatConsent(consent)
+            Log.d(TAG, "onConsentUpdated: $summary")
+            log("onConsentUpdated: $summary")
         }
 
         override fun onError(errMsg: String?) {
@@ -108,8 +115,5 @@ class ComposeSampleApplication : Application() {
 
     companion object {
         private const val TAG = "KetchCompose"
-        const val ORG_CODE = "ketch_samples"
-        const val PROPERTY = "android"
-        const val ENVIRONMENT = "production"
     }
 }

@@ -47,6 +47,13 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
 
     var listener: WebViewListener? = null
     private val localContentWebViewClient = LocalContentWebViewClient(shouldRetry)
+    private var webResourceUrlOverrides: Map<String, String> = emptyMap()
+
+    /** Redirect exact-match WebView resource URLs (e.g. dev/staging tag scripts) to local dev servers. */
+    fun setWebResourceUrlOverrides(overrides: Map<String, String>) {
+        webResourceUrlOverrides = overrides
+        localContentWebViewClient.webResourceUrlOverrides = overrides
+    }
 
     init {
         setBackgroundColor(Color.TRANSPARENT)
@@ -121,6 +128,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
 
     class LocalContentWebViewClient(private var shouldRetry: Boolean = false) : WebViewClientCompat() {
 
+        var webResourceUrlOverrides: Map<String, String> = emptyMap()
+
         // Flag indicating if the webview has finished loading
         // We use atomic boolean here because we are using it within a coroutine
         private var isLoaded = AtomicBoolean(false)
@@ -138,6 +147,14 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             view.context.startActivity(intent)
             return true
+        }
+
+        override fun shouldInterceptRequest(
+            view: WebView,
+            request: WebResourceRequest,
+        ): WebResourceResponse? {
+            WebResourceOverrideHandler.intercept(webResourceUrlOverrides, request)?.let { return it }
+            return super.shouldInterceptRequest(view, request)
         }
 
         override fun onLoadResource(view: WebView?, url: String?) {
@@ -246,8 +263,10 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         ageUpper: Int?,
         bottomPadding: Int?,
         topPadding: Int?,
-        cssStyle: String?
+        cssStyle: String?,
+        webResourceUrlOverrides: Map<String, String> = emptyMap(),
     ) {
+        setWebResourceUrlOverrides(webResourceUrlOverrides)
         clearCache(true)
 
         // Convert padding values to string
@@ -280,7 +299,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             ageUpper = ageUpper,
             bottomPadding = bottomPaddingPx,
             topPadding = topPaddingPx,
-            cssStyleOverride = cssStyle
+            cssStyleOverride = cssStyle,
+            webResourceUrlOverrides = webResourceUrlOverrides,
         )
 
         loadDataWithBaseURL("http://localhost", indexHtml, "text/html", "UTF-8", null)

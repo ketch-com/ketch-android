@@ -26,8 +26,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -35,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -44,6 +47,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ketch.android.Ketch
 import com.ketch.android.sample.compose.ui.theme.DarkDivider
 import com.ketch.android.sample.compose.ui.theme.DarkLogBackground
 import com.ketch.android.sample.compose.ui.theme.DarkLogText
@@ -57,13 +61,35 @@ import com.ketch.android.sample.compose.ui.theme.LightToggleTrack
 
 @Composable
 fun KetchSampleApp(
+    orgCode: String,
+    property: String,
+    environment: String,
+    language: String,
+    jurisdiction: String,
+    region: String,
     logEntries: List<String>,
+    onReload: () -> Unit,
     onShowConsent: () -> Unit,
-    onShowPreferences: () -> Unit,
+    onShowPreferences: (allowedTabs: List<Ketch.PreferencesTab>, initialTab: Ketch.PreferencesTab) -> Unit,
+    onApplyCss: () -> Unit,
     onOpenSecondActivity: () -> Unit,
     onLogSharedPreferences: () -> Unit,
 ) {
     var isDarkMode by rememberSaveable { mutableStateOf(false) }
+
+    // Preference Options state (mirrors iOS/Flutter/RN samples' allowed-tabs + initial-tab pickers).
+    var showOverview by remember { mutableStateOf(true) }
+    var showConsents by remember { mutableStateOf(true) }
+    var showRights by remember { mutableStateOf(true) }
+    var showSubscriptions by remember { mutableStateOf(true) }
+    var initialTab by remember { mutableStateOf(Ketch.PreferencesTab.OVERVIEW) }
+
+    fun allowedTabs(): List<Ketch.PreferencesTab> = buildList {
+        if (showOverview) add(Ketch.PreferencesTab.OVERVIEW)
+        if (showConsents) add(Ketch.PreferencesTab.CONSENTS)
+        if (showRights) add(Ketch.PreferencesTab.RIGHTS)
+        if (showSubscriptions) add(Ketch.PreferencesTab.SUBSCRIPTIONS)
+    }
 
     KetchTheme(darkTheme = isDarkMode) {
         Column(
@@ -88,14 +114,58 @@ fun KetchSampleApp(
                     .verticalScroll(rememberScrollState())
                     .padding(20.dp)
             ) {
-                SectionHeader("Experience Functions")
+                SectionHeader("Info")
+                Spacer(Modifier.height(12.dp))
+                InfoPanel(
+                    orgCode = orgCode,
+                    property = property,
+                    environment = environment,
+                    language = language,
+                    jurisdiction = jurisdiction,
+                    region = region,
+                )
+                Spacer(Modifier.height(24.dp))
+                SectionHeader("Preference Options")
+                Spacer(Modifier.height(12.dp))
+                PreferenceOptions(
+                    showOverview = showOverview,
+                    onShowOverviewChange = { showOverview = it },
+                    showConsents = showConsents,
+                    onShowConsentsChange = { showConsents = it },
+                    showRights = showRights,
+                    onShowRightsChange = { showRights = it },
+                    showSubscriptions = showSubscriptions,
+                    onShowSubscriptionsChange = { showSubscriptions = it },
+                    initialTab = initialTab,
+                    onInitialTabChange = { initialTab = it },
+                )
+                Spacer(Modifier.height(24.dp))
+                SectionHeader("Actions")
                 Spacer(Modifier.height(16.dp))
                 CardsRow(
                     onShowConsent = onShowConsent,
-                    onShowPreferences = onShowPreferences
+                    onShowPreferences = { onShowPreferences(allowedTabs(), initialTab) }
                 )
+                Spacer(Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    ActionCard(
+                        title = "Reload",
+                        description = "Reload the SDK boot config and refresh privacy state.",
+                        onExecute = onReload,
+                        modifier = Modifier.weight(1f),
+                    )
+                    ActionCard(
+                        title = "Apply CSS",
+                        description = "Apply a sample CSS style override to the experience.",
+                        onExecute = onApplyCss,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
                 Spacer(Modifier.height(24.dp))
-                SectionHeader("Debug")
+                SectionHeader("Privacy Strings")
                 Spacer(Modifier.height(12.dp))
                 ActionCard(
                     title = "Shared Preferences",
@@ -124,6 +194,121 @@ fun KetchSampleApp(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun InfoPanel(
+    orgCode: String,
+    property: String,
+    environment: String,
+    language: String,
+    jurisdiction: String,
+    region: String,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                RoundedCornerShape(12.dp)
+            )
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(16.dp)
+    ) {
+        InfoRow("Org Code", orgCode)
+        InfoRow("Property", property)
+        InfoRow("Environment", environment)
+        InfoRow("Language", language)
+        InfoRow("Jurisdiction", jurisdiction)
+        InfoRow("Region", region)
+    }
+}
+
+@Composable
+private fun InfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+    ) {
+        Text(
+            text = label,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = value,
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+@Composable
+private fun PreferenceOptions(
+    showOverview: Boolean,
+    onShowOverviewChange: (Boolean) -> Unit,
+    showConsents: Boolean,
+    onShowConsentsChange: (Boolean) -> Unit,
+    showRights: Boolean,
+    onShowRightsChange: (Boolean) -> Unit,
+    showSubscriptions: Boolean,
+    onShowSubscriptionsChange: (Boolean) -> Unit,
+    initialTab: Ketch.PreferencesTab,
+    onInitialTabChange: (Ketch.PreferencesTab) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                RoundedCornerShape(12.dp)
+            )
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Allowed tabs",
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TabCheckbox("Overview", showOverview, onShowOverviewChange)
+        TabCheckbox("Consent", showConsents, onShowConsentsChange)
+        TabCheckbox("Rights", showRights, onShowRightsChange)
+        TabCheckbox("Subscriptions", showSubscriptions, onShowSubscriptionsChange)
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = "Initial tab",
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TabRadio("Overview", initialTab == Ketch.PreferencesTab.OVERVIEW) { onInitialTabChange(Ketch.PreferencesTab.OVERVIEW) }
+        TabRadio("Consent", initialTab == Ketch.PreferencesTab.CONSENTS) { onInitialTabChange(Ketch.PreferencesTab.CONSENTS) }
+        TabRadio("Rights", initialTab == Ketch.PreferencesTab.RIGHTS) { onInitialTabChange(Ketch.PreferencesTab.RIGHTS) }
+        TabRadio("Subscriptions", initialTab == Ketch.PreferencesTab.SUBSCRIPTIONS) { onInitialTabChange(Ketch.PreferencesTab.SUBSCRIPTIONS) }
+    }
+}
+
+@Composable
+private fun TabCheckbox(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Checkbox(checked = checked, onCheckedChange = onCheckedChange)
+        Text(label, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
+    }
+}
+
+@Composable
+private fun TabRadio(label: String, selected: Boolean, onClick: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        RadioButton(selected = selected, onClick = onClick)
+        Text(label, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
     }
 }
 

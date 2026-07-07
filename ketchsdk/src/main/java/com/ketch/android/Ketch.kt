@@ -30,7 +30,8 @@ class Ketch private constructor(
     private val environment: String?,
     private val listener: Listener?,
     private val ketchUrl: String?,
-    private val logLevel: LogLevel
+    private val logLevel: LogLevel,
+    private var webResourceUrlOverrides: Map<String, String> = emptyMap(),
 ) {
     // Use application context for non-UI operations to avoid memory leaks
     private val context: Context = context.applicationContext
@@ -157,7 +158,8 @@ class Ketch private constructor(
             ageUpper,
             bottomPadding,
             topPadding,
-            cssStyle
+            cssStyle,
+            webResourceUrlOverrides,
         )
         return true
     }
@@ -204,7 +206,8 @@ class Ketch private constructor(
             ageUpper,
             bottomPadding,
             topPadding,
-            cssStyle
+            cssStyle,
+            webResourceUrlOverrides,
         )
         return true
     }
@@ -251,7 +254,8 @@ class Ketch private constructor(
             ageUpper,
             bottomPadding,
             topPadding,
-            cssStyle
+            cssStyle,
+            webResourceUrlOverrides,
         )
         return true
     }
@@ -302,7 +306,8 @@ class Ketch private constructor(
             ageUpper,
             bottomPadding,
             topPadding,
-            cssStyle
+            cssStyle,
+            webResourceUrlOverrides,
         )
         return true
     }
@@ -371,6 +376,16 @@ class Ketch private constructor(
      */
     fun setCssStyle(cssStyle: String?) {
         this.cssStyle = validateCssStyle(cssStyle)
+    }
+
+    /**
+     * Redirect exact-match WebView resource URLs (e.g. dev/staging tag scripts) to local dev servers.
+     *
+     * @param overrides: map of source URL/path/filename pattern to destination URL
+     */
+    fun setWebResourceUrlOverrides(overrides: Map<String, String>) {
+        webResourceUrlOverrides = overrides.toMap()
+        activeWebView?.setWebResourceUrlOverrides(webResourceUrlOverrides)
     }
 
     /**
@@ -654,6 +669,7 @@ class Ketch private constructor(
             // foreground Activity is tracked (callbacks still resolve; display needs a host).
             val webViewContext = resolveWebViewContext()
             val webView = KetchWebView(webViewContext, shouldRetry)
+            webView.setWebResourceUrlOverrides(webResourceUrlOverrides)
 
             // Enable debug mode
             if (logLevel === LogLevel.DEBUG) {
@@ -975,6 +991,7 @@ class Ketch private constructor(
             listener: Listener?,
             ketchUrl: String?,
             logLevel: LogLevel,
+            webResourceUrlOverrides: Map<String, String> = emptyMap(),
         ) = Ketch(
             context = context,
             seedActivity = context as? FragmentActivity,
@@ -985,6 +1002,7 @@ class Ketch private constructor(
             listener = listener,
             ketchUrl = ketchUrl,
             logLevel = logLevel,
+            webResourceUrlOverrides = webResourceUrlOverrides,
         )
 
         fun create(
@@ -996,6 +1014,7 @@ class Ketch private constructor(
             listener: Listener?,
             ketchUrl: String?,
             logLevel: LogLevel,
+            webResourceUrlOverrides: Map<String, String> = emptyMap(),
         ) = Ketch(
             context = context,
             seedActivity = context as? FragmentActivity,
@@ -1006,6 +1025,7 @@ class Ketch private constructor(
             listener = listener,
             ketchUrl = ketchUrl,
             logLevel = logLevel,
+            webResourceUrlOverrides = webResourceUrlOverrides,
         )
     }
 }

@@ -23,6 +23,7 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "KetchSample"
         private val IAB_PREFERENCE_PREFIXES = listOf("IABTCF", "IABGPP", "IABUS")
+        private const val SAMPLE_CSS_OVERRIDE = "body { --ketch-brand-color: #6B4EE6; }"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,6 +37,7 @@ class MainActivity : AppCompatActivity() {
         app = application as SampleApplication
         ketch = app.ketch
         app.logCallback = { message -> appendLog(message) }
+        app.infoState.onChange = { runOnUiThread { renderInfoPanel() } }
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.rootLayout) { view, windowInsets ->
             val insets = windowInsets.getInsets(
@@ -52,6 +54,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupDarkModeToggle()
+        renderStaticInfo()
+        renderInfoPanel()
         initializeKetch()
         setupClickListeners()
     }
@@ -59,8 +63,21 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         if (isFinishing) {
             app.logCallback = null
+            app.infoState.onChange = null
         }
         super.onDestroy()
+    }
+
+    private fun renderStaticInfo() {
+        binding.infoOrgCodeValue.text = SampleConfig.ORG_CODE
+        binding.infoPropertyValue.text = SampleConfig.PROPERTY
+        binding.infoEnvironmentValue.text = SampleConfig.ENVIRONMENT
+        binding.infoLanguageValue.text = SampleConfig.LANGUAGE
+    }
+
+    private fun renderInfoPanel() {
+        binding.infoJurisdictionValue.text = app.infoState.jurisdiction
+        binding.infoRegionValue.text = app.infoState.region
     }
 
     private fun setupDarkModeToggle() {
@@ -89,9 +106,23 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.showPreferencesButton.setOnClickListener {
-            Log.d(TAG, "showPreferences() called")
-            appendLog("showPreferences() called")
-            ketch.showPreferences()
+            val allowedTabs = allowedTabs()
+            val initialTab = initialTab()
+            Log.d(TAG, "showPreferencesTab() called: tabs=$allowedTabs, initial=$initialTab")
+            appendLog("showPreferencesTab() called: tabs=$allowedTabs, initial=$initialTab")
+            ketch.showPreferencesTab(allowedTabs, initialTab)
+        }
+
+        binding.reloadButton.setOnClickListener {
+            Log.d(TAG, "load() called")
+            appendLog("load() called")
+            ketch.load()
+        }
+
+        binding.applyCssButton.setOnClickListener {
+            Log.d(TAG, "setCssStyle() called")
+            appendLog("setCssStyle() called")
+            ketch.setCssStyle(SAMPLE_CSS_OVERRIDE)
         }
 
         binding.openSecondActivityButton.setOnClickListener {
@@ -102,6 +133,20 @@ class MainActivity : AppCompatActivity() {
         binding.logSharedPreferencesButton.setOnClickListener {
             logSharedPreferences()
         }
+    }
+
+    private fun allowedTabs(): List<Ketch.PreferencesTab> = buildList {
+        if (binding.prefTabOverviewCheck.isChecked) add(Ketch.PreferencesTab.OVERVIEW)
+        if (binding.prefTabConsentCheck.isChecked) add(Ketch.PreferencesTab.CONSENTS)
+        if (binding.prefTabRightsCheck.isChecked) add(Ketch.PreferencesTab.RIGHTS)
+        if (binding.prefTabSubscriptionsCheck.isChecked) add(Ketch.PreferencesTab.SUBSCRIPTIONS)
+    }
+
+    private fun initialTab(): Ketch.PreferencesTab = when (binding.prefInitialTabGroup.checkedRadioButtonId) {
+        binding.prefTabConsentRadio.id -> Ketch.PreferencesTab.CONSENTS
+        binding.prefTabRightsRadio.id -> Ketch.PreferencesTab.RIGHTS
+        binding.prefTabSubscriptionsRadio.id -> Ketch.PreferencesTab.SUBSCRIPTIONS
+        else -> Ketch.PreferencesTab.OVERVIEW
     }
 
     private fun logSharedPreferences() {

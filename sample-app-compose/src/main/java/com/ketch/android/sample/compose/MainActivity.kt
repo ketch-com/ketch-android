@@ -19,6 +19,7 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "KetchCompose"
         private val IAB_PREFERENCE_PREFIXES = listOf("IABTCF", "IABGPP", "IABUS")
+        private const val SAMPLE_CSS_OVERRIDE = "body { --ketch-brand-color: #6B4EE6; }"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,16 +36,32 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             KetchSampleApp(
+                orgCode = SampleConfig.ORG_CODE,
+                property = SampleConfig.PROPERTY,
+                environment = SampleConfig.ENVIRONMENT,
+                language = SampleConfig.LANGUAGE,
+                jurisdiction = app.infoState.jurisdiction,
+                region = app.infoState.region,
                 logEntries = logEntries,
+                onReload = {
+                    Log.d(TAG, "load() called")
+                    logEntries.add("load() called")
+                    ketch.load()
+                },
                 onShowConsent = {
                     Log.d(TAG, "showConsent() called")
                     logEntries.add("showConsent() called")
                     ketch.showConsent()
                 },
-                onShowPreferences = {
-                    Log.d(TAG, "showPreferences() called")
-                    logEntries.add("showPreferences() called")
-                    ketch.showPreferences()
+                onShowPreferences = { allowedTabs, initialTab ->
+                    Log.d(TAG, "showPreferencesTab() called: tabs=$allowedTabs, initial=$initialTab")
+                    logEntries.add("showPreferencesTab() called: tabs=$allowedTabs, initial=$initialTab")
+                    ketch.showPreferencesTab(allowedTabs, initialTab)
+                },
+                onApplyCss = {
+                    Log.d(TAG, "setCssStyle() called")
+                    logEntries.add("setCssStyle() called")
+                    ketch.setCssStyle(SAMPLE_CSS_OVERRIDE)
                 },
                 onOpenSecondActivity = {
                     logEntries.add("Opening SecondActivity")
