@@ -23,6 +23,8 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonParseException
 import com.ketch.android.Ketch
+import com.ketch.android.KetchSharedPreferences
+import com.ketch.android.parseNativeStoragePutPayload
 import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.HideExperienceStatus
@@ -49,6 +51,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
     private val localContentWebViewClient = LocalContentWebViewClient(shouldRetry)
 
     init {
+        KetchSharedPreferences.initialize(context)
         setBackgroundColor(Color.TRANSPARENT)
         webViewClient = localContentWebViewClient
 
@@ -444,6 +447,28 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             }
         }
 
+        @JavascriptInterface
+        fun nativeStoragePut(payloadJson: String?) {
+            if (payloadJson.isNullOrBlank()) {
+                Log.e(TAG, "nativeStoragePut: empty payload")
+                return
+            }
+            val payload = parseNativeStoragePutPayload(payloadJson)
+            if (payload == null) {
+                Log.e(TAG, "nativeStoragePut: invalid payload")
+                return
+            }
+            try {
+                KetchSharedPreferences.write(payload.key, payload.value)
+                Log.d(TAG, "nativeStoragePut: key=${payload.key}")
+                runOnMainThread {
+                    ketchWebView.listener?.onNativeStoragePut(payload.key, payload.value)
+                }
+            } catch (ex: IllegalStateException) {
+                Log.e(TAG, "nativeStoragePut: ${ex.message}", ex)
+            }
+        }
+
         private fun parseIabTcfGpp(json: String): Map<String, String>? {
             val gson = GsonBuilder()
                 .create()
@@ -477,6 +502,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         fun onClose(status: HideExperienceStatus, retainWebView: Boolean = true)
         fun onWillShowExperience(experienceType: WillShowExperienceType)
         fun onHasShownExperience()
+        fun onNativeStoragePut(key: String, value: String) {}
     }
 
     internal enum class ExperienceType {
