@@ -3,6 +3,7 @@ package com.ketch.android
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import android.content.ContextWrapper
 import android.util.Log
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
@@ -67,6 +68,11 @@ class Ketch private constructor(
             }
         }
     }
+
+    // Host explicitly supplied via a show*(context = ...) call. Takes precedence over the
+    // tracked/seeded host; set at the start of each show* call and cleared once that
+    // experience is fully dismissed so it can't outlive the call that set it.
+    private var explicitHost: WeakReference<FragmentActivity>? = null
 
     private var identities: Map<String, String> = emptyMap()
     private var language: String? = null
@@ -273,9 +279,13 @@ class Ketch private constructor(
     /**
      * Display the consent, adding the fragment dialog to the given FragmentManager.
      *
+     * @param context: Optional host used to resolve the FragmentActivity/FragmentManager for
+     *   this call (e.g. `showConsent(context = LocalContext.current)`). Falls back to the
+     *   tracked foreground Activity when omitted.
      * @param bottomPadding: Pixels of padding to add to the bottom of the experience
      */
     fun showConsent(
+        context: Context? = null,
         shouldRetry: Boolean = false,
         synchronousPreferences: Boolean = false,
         bottomPadding: Int = 0,
@@ -285,6 +295,8 @@ class Ketch private constructor(
             Log.d(TAG, "Not showing consent as an experience is already being shown")
             return false
         }
+
+        explicitHost = context?.findFragmentActivity()?.let { WeakReference(it) }
 
         val signature = buildLoadSignature(bottomPadding, topPadding)
         tryWarmWebView(signature, "showConsent")?.let { webView ->
@@ -320,9 +332,13 @@ class Ketch private constructor(
     /**
      * Display the preferences, adding the fragment dialog to the given FragmentManager.
      *
+     * @param context: Optional host used to resolve the FragmentActivity/FragmentManager for
+     *   this call (e.g. `showPreferences(context = LocalContext.current)`). Falls back to the
+     *   tracked foreground Activity when omitted.
      * @param bottomPadding: Pixels of padding to add to the bottom of the experience
      */
     fun showPreferences(
+        context: Context? = null,
         shouldRetry: Boolean = false,
         synchronousPreferences: Boolean = false,
         bottomPadding: Int = 0,
@@ -332,6 +348,8 @@ class Ketch private constructor(
             Log.d(TAG, "Not showing preferences as an experience is already being shown")
             return false
         }
+
+        explicitHost = context?.findFragmentActivity()?.let { WeakReference(it) }
 
         val signature = buildLoadSignature(bottomPadding, topPadding)
         tryWarmWebView(signature, "showPreferences")?.let { webView ->
@@ -369,11 +387,15 @@ class Ketch private constructor(
      *
      * @param tabs: list of preferences tab
      * @param tab: the current tab
+     * @param context: Optional host used to resolve the FragmentActivity/FragmentManager for
+     *   this call (e.g. `showPreferencesTab(context = LocalContext.current)`). Falls back to
+     *   the tracked foreground Activity when omitted.
      * @param bottomPadding: Pixels of padding to add to the bottom of the experience
      */
     fun showPreferencesTab(
         tabs: List<PreferencesTab>,
         tab: PreferencesTab,
+        context: Context? = null,
         shouldRetry: Boolean = false,
         synchronousPreferences: Boolean = false,
         bottomPadding: Int = 0,
@@ -383,6 +405,8 @@ class Ketch private constructor(
             Log.d(TAG, "Not showing preferences tab as an experience is already being shown")
             return false
         }
+
+        explicitHost = context?.findFragmentActivity()?.let { WeakReference(it) }
 
         val signature = buildLoadSignature(bottomPadding, topPadding)
         tryWarmWebView(signature, "showPreferencesTab(tab=${tab.name})")?.let { webView ->
@@ -421,14 +445,19 @@ class Ketch private constructor(
      *
      * @param functionName: the custom function name configured on the backend rule
      * @param options: optional key/value trigger arguments
+     * @param context: Optional host used to resolve the FragmentActivity/FragmentManager for
+     *   this call (e.g. `trigger(context = LocalContext.current)`). Falls back to the tracked
+     *   foreground Activity when omitted.
      */
-    fun trigger(functionName: String, options: Map<String, Any?> = emptyMap()): Boolean {
+    fun trigger(functionName: String, options: Map<String, Any?> = emptyMap(), context: Context? = null): Boolean {
         val safeName = validateFunctionName(functionName) ?: return false
 
         if (isShowingExperience) {
             Log.d(TAG, "Not triggering '$safeName' as an experience is already being shown")
             return false
         }
+
+        explicitHost = context?.findFragmentActivity()?.let { WeakReference(it) }
 
         val optionsJson = JSONObject(options).toString()
         val signature = buildLoadSignature(0, 0)
@@ -609,7 +638,7 @@ class Ketch private constructor(
     }
 
     private fun resolveHost(): FragmentActivity? =
-        tracker?.current?.get() ?: seedActivity?.get()
+        explicitHost?.get() ?: tracker?.current?.get() ?: seedActivity?.get()
 
     private fun resolveFragmentManager(): FragmentManager? =
         resolveHost()?.supportFragmentManager ?: seedFragmentManager?.get()
@@ -713,6 +742,7 @@ class Ketch private constructor(
         isShowingExperience = false
         activeDialogFragment = null
         dialogHost = null
+        explicitHost = null
         this@Ketch.listener?.onDismiss(dismissStatus)
     }
 
@@ -722,6 +752,7 @@ class Ketch private constructor(
         isShowingExperience = false
         activeDialogFragment = null
         dialogHost = null
+        explicitHost = null
         if (retain) {
             activeWebView?.detachFromParent()
         } else {
@@ -1203,3 +1234,15 @@ private val TRIGGER_FUNCTION_NAME_REGEX = Regex("^[A-Za-z0-9_.-]+$")
 
 internal fun isValidTriggerFunctionName(functionName: String): Boolean =
     TRIGGER_FUNCTION_NAME_REGEX.matches(functionName)
+
+// Walks the ContextWrapper chain to find a hosting FragmentActivity. Returns null for a
+// pure-Compose ComponentActivity (no FragmentManager) or any other non-FragmentActivity host;
+// callers fall back to the tracked/seeded host in that case.
+private fun Context.findFragmentActivity(): FragmentActivity? {
+    var ctx: Context? = this
+    while (ctx is ContextWrapper) {
+        if (ctx is FragmentActivity) return ctx
+        ctx = ctx.baseContext
+    }
+    return null
+}

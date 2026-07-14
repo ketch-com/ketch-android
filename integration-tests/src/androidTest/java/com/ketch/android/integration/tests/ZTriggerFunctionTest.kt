@@ -7,6 +7,7 @@ import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.WillShowExperienceType
 import org.junit.After
 import org.junit.Assert.assertFalse
@@ -56,16 +57,40 @@ class ZTriggerFunctionTest {
     }
 
     private fun showConsentBannerAndWait() {
-        val showLatch = CountDownLatch(1)
+        val showLatch = CountDownLatch(2)
         app.setTestMode(object : IntegrationTestApp.TestEventListener {
             override fun onWillShowExperience(type: WillShowExperienceType) {
                 if (type == WillShowExperienceType.ConsentExperience) {
                     showLatch.countDown()
                 }
             }
+
+            override fun onHasShownExperience() {
+                showLatch.countDown()
+            }
         })
         onView(withId(R.id.showConsentButton)).perform(click())
         assertTrue("Consent banner should show within 30s", showLatch.await(30, TimeUnit.SECONDS))
+    }
+
+    // Dismisses via the tag's own primary button (a real consent submission), which retains the
+    // WebView warm (see ZWebViewRetentionTest) instead of destroying it like dismissDialog() does.
+    private fun dismissBannerViaPrimaryButton() {
+        val dismissLatch = CountDownLatch(1)
+        app.setTestMode(object : IntegrationTestApp.TestEventListener {
+            override fun onDismiss(status: HideExperienceStatus) {
+                dismissLatch.countDown()
+            }
+        })
+
+        val clickLatch = CountDownLatch(1)
+        scenario.onActivity { activity ->
+            activity.clickButtonById("ketch-banner-button-primary") { clicked ->
+                if (clicked) clickLatch.countDown()
+            }
+        }
+        assertTrue("Primary button should be clicked", clickLatch.await(15, TimeUnit.SECONDS))
+        assertTrue("Dismiss should fire after button click", dismissLatch.await(15, TimeUnit.SECONDS))
     }
 
     @Test
@@ -80,6 +105,7 @@ class ZTriggerFunctionTest {
     @Test
     fun warmWebView_dispatchesTriggerWithoutError() {
         showConsentBannerAndWait()
+        dismissBannerViaPrimaryButton()
 
         val errorLatch = CountDownLatch(1)
         app.setTestMode(object : IntegrationTestApp.TestEventListener {
