@@ -28,6 +28,11 @@ class SecondActivity : AppCompatActivity() {
             app.ketch.showPreferences()
         }
 
+        binding.triggerFunctionButton.setOnClickListener {
+            appendLog("trigger('demoFunction') called from SecondActivity")
+            app.ketch.trigger("demoFunction")
+        }
+
         appendLog("SecondActivity started (shared Ketch instance)")
     }
 

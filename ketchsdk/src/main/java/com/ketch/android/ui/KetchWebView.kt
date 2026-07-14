@@ -109,6 +109,13 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         }
     }
 
+    /** Imperatively fire a custom-function (onFunction) rule trigger on an already-booted page. */
+    fun trigger(functionName: String, optionsJson: String) {
+        evaluateJavascript("ketch('trigger', 'custom', '$functionName', $optionsJson)") { result ->
+            Log.d(TAG, "trigger result: $result")
+        }
+    }
+
     /** Number of page loads since this WebView was created (for testing warm re-show). */
     val pageLoadCount: Int
         get() = localContentWebViewClient.pageLoadCount

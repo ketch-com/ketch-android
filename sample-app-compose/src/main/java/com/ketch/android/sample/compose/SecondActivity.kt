@@ -33,6 +33,10 @@ class SecondActivity : AppCompatActivity() {
                         logEntries.add("showPreferences() called from SecondActivity")
                         app.ketch.showPreferences()
                     },
+                    onTriggerFunction = {
+                        logEntries.add("trigger('demoFunction') called from SecondActivity")
+                        app.ketch.trigger("demoFunction")
+                    },
                 )
             }
         }

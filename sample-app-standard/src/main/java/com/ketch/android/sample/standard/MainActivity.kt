@@ -94,6 +94,12 @@ class MainActivity : AppCompatActivity() {
             ketch.showPreferences()
         }
 
+        binding.triggerFunctionButton.setOnClickListener {
+            Log.d(TAG, "trigger('demoFunction') called")
+            appendLog("trigger('demoFunction') called")
+            ketch.trigger("demoFunction")
+        }
+
         binding.openSecondActivityButton.setOnClickListener {
             appendLog("Opening SecondActivity")
             startActivity(Intent(this, SecondActivity::class.java))

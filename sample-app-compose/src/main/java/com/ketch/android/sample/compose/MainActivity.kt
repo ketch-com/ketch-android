@@ -51,6 +51,11 @@ class MainActivity : AppCompatActivity() {
                     startActivity(Intent(this, SecondActivity::class.java))
                 },
                 onLogSharedPreferences = { logSharedPreferences() },
+                onTriggerFunction = {
+                    Log.d(TAG, "trigger('demoFunction') called")
+                    logEntries.add("trigger('demoFunction') called")
+                    ketch.trigger("demoFunction")
+                },
             )
         }
     }

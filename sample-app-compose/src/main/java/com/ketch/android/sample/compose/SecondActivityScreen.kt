@@ -41,6 +41,7 @@ fun SecondActivityScreen(
     logEntries: List<String>,
     onShowConsent: () -> Unit,
     onShowPreferences: () -> Unit,
+    onTriggerFunction: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -80,6 +81,15 @@ fun SecondActivityScreen(
             colors = ButtonDefaults.buttonColors(containerColor = KetchPurple),
         ) {
             Text("Show Preferences")
+        }
+        Spacer(Modifier.height(8.dp))
+        Button(
+            onClick = onTriggerFunction,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(8.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = KetchPurple),
+        ) {
+            Text("Trigger Custom Function")
         }
 
         Spacer(Modifier.height(24.dp))

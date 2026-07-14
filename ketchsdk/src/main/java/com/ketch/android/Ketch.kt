@@ -97,6 +97,10 @@ class Ketch private constructor(
     // When true, the next dialog dismissal retains the WebView instead of destroying it
     private var retainWebViewOnDismiss = false
 
+    // Deferred trigger() call, fired once a cold-booted WebView's tag finishes loading
+    @Volatile
+    private var pendingTrigger: PendingTrigger? = null
+
     // Lock object for synchronization
     private val lock = Any()
 
@@ -412,6 +416,55 @@ class Ketch private constructor(
     }
 
     /**
+     * Fire a custom-function (`onFunction`) rule trigger. If a matching backend rule shows an
+     * experience, the fragment dialog is displayed automatically.
+     *
+     * @param functionName: the custom function name configured on the backend rule
+     * @param options: optional key/value trigger arguments
+     */
+    fun trigger(functionName: String, options: Map<String, Any?> = emptyMap()): Boolean {
+        val safeName = validateFunctionName(functionName) ?: return false
+
+        if (isShowingExperience) {
+            Log.d(TAG, "Not triggering '$safeName' as an experience is already being shown")
+            return false
+        }
+
+        val optionsJson = JSONObject(options).toString()
+        val signature = buildLoadSignature(0, 0)
+
+        tryWarmWebView(signature, "trigger($safeName)")?.let { webView ->
+            webView.trigger(safeName, optionsJson)
+            return true
+        }
+
+        Log.d(TAG, "Cold WebView load for trigger($safeName)")
+        val webView = prepareColdWebView(false, false, signature) ?: return false
+        pendingTrigger = PendingTrigger(safeName, optionsJson)
+        webView.load(
+            orgCode,
+            property,
+            language,
+            jurisdiction,
+            region,
+            environment,
+            identities,
+            null,
+            emptyList(),
+            null,
+            effectiveKetchUrl,
+            logLevel,
+            age,
+            ageLower,
+            ageUpper,
+            0,
+            0,
+            cssStyle
+        )
+        return true
+    }
+
+    /**
      * Dismiss the dialog
      */
     fun dismissDialog() {
@@ -526,6 +579,18 @@ class Ketch private constructor(
     private fun containsHTMLTags(css: String?): Boolean = css?.contains(Regex("<[a-zA-Z]")) == true
 
     private fun isWithin1kb(css: String?): Boolean = (css?.toByteArray(Charsets.UTF_8)?.size ?: 0) <= 1024
+
+    private fun validateFunctionName(functionName: String): String? {
+        if (!isValidTriggerFunctionName(functionName)) {
+            Log.w(
+                TAG,
+                "[Ketch] trigger rejected: functionName must be non-blank and contain only " +
+                    "letters, digits, '_', '-', or '.'",
+            )
+            return null
+        }
+        return functionName
+    }
 
     init {
         getPreferences()
@@ -742,6 +807,7 @@ class Ketch private constructor(
         activeWebView?.kill()
         activeWebView = null
         loadedSignature = null
+        pendingTrigger = null
     }
 
     private fun createWebView(shouldRetry: Boolean = false, synchronousPreferences: Boolean = false): KetchWebView? {
@@ -832,6 +898,11 @@ class Ketch private constructor(
                     this.config = config
 
                     this@Ketch.listener?.onConfigUpdated(config)
+
+                    pendingTrigger?.let { pending ->
+                        pendingTrigger = null
+                        webView.trigger(pending.functionName, pending.optionsJson)
+                    }
 
                     if (!showConsent) {
                         return
@@ -1125,3 +1196,10 @@ class Ketch private constructor(
 
 private fun ConsentUpdate.withoutProtocols(): ConsentUpdate =
     copy(protocols = null)
+
+private data class PendingTrigger(val functionName: String, val optionsJson: String)
+
+private val TRIGGER_FUNCTION_NAME_REGEX = Regex("^[A-Za-z0-9_.-]+$")
+
+internal fun isValidTriggerFunctionName(functionName: String): Boolean =
+    TRIGGER_FUNCTION_NAME_REGEX.matches(functionName)
