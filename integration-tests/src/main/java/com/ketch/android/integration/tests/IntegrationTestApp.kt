@@ -199,6 +199,15 @@ class IntegrationTestApp : Application() {
         null
     }
 
+    fun hasPendingTrigger(): Boolean = try {
+        val field = ketch.javaClass.getDeclaredField("pendingTrigger")
+        field.isAccessible = true
+        field.get(ketch) != null
+    } catch (e: Exception) {
+        Log.e(TAG, "Error reading pendingTrigger: ${e.message}")
+        false
+    }
+
     fun hasTapOutsideBridgeMethod(): Boolean = try {
         val ketchClass = ketch.javaClass
         val activeWebViewField = ketchClass.getDeclaredField("activeWebView")

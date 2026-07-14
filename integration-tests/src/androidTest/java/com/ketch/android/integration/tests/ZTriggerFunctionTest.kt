@@ -125,4 +125,23 @@ class ZTriggerFunctionTest {
         assertTrue("trigger() should dispatch (cold boot) even with no warm WebView", dispatched)
         assertTrue("Cold-booted tag should finish loading within 30s", configLatch.await(30, TimeUnit.SECONDS))
     }
+
+    @Test
+    fun warmTrigger_clearsDeferredColdTrigger() {
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            app.ketch.dismissDialog()
+        }
+        Thread.sleep(500)
+        assertFalse("Precondition: no active WebView before cold trigger", app.hasActiveWebView())
+
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            assertTrue("Cold trigger should start WebView load", app.ketch.trigger("integrationTestFunction"))
+        }
+        assertTrue("Cold trigger should be deferred while tag loads", app.hasPendingTrigger())
+
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            assertTrue("Warm trigger should dispatch on the active WebView", app.ketch.trigger("integrationTestFunction"))
+        }
+        assertFalse("Warm trigger should clear the deferred cold trigger", app.hasPendingTrigger())
+    }
 }

@@ -434,6 +434,8 @@ class Ketch private constructor(
         val signature = buildLoadSignature(0, 0)
 
         tryWarmWebView(signature, "trigger($safeName)")?.let { webView ->
+            // Supersede any deferred cold trigger so onConfigUpdated does not re-fire it.
+            pendingTrigger = null
             webView.trigger(safeName, optionsJson)
             return true
         }
