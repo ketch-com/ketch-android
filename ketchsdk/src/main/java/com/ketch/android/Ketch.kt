@@ -305,7 +305,10 @@ class Ketch private constructor(
         }
 
         Log.d(TAG, "Cold WebView load for showConsent")
-        val webView = prepareColdWebView(shouldRetry, synchronousPreferences, signature) ?: return false
+        val webView = prepareColdWebView(shouldRetry, synchronousPreferences, signature) ?: run {
+            explicitHost = null
+            return false
+        }
         webView.load(
             orgCode,
             property,
@@ -358,7 +361,10 @@ class Ketch private constructor(
         }
 
         Log.d(TAG, "Cold WebView load for showPreferences")
-        val webView = prepareColdWebView(shouldRetry, synchronousPreferences, signature) ?: return false
+        val webView = prepareColdWebView(shouldRetry, synchronousPreferences, signature) ?: run {
+            explicitHost = null
+            return false
+        }
         webView.load(
             orgCode,
             property,
@@ -415,7 +421,10 @@ class Ketch private constructor(
         }
 
         Log.d(TAG, "Cold WebView load for showPreferencesTab(tab=${tab.name})")
-        val webView = prepareColdWebView(shouldRetry, synchronousPreferences, signature) ?: return false
+        val webView = prepareColdWebView(shouldRetry, synchronousPreferences, signature) ?: run {
+            explicitHost = null
+            return false
+        }
         webView.load(
             orgCode,
             property,
@@ -470,7 +479,10 @@ class Ketch private constructor(
         }
 
         Log.d(TAG, "Cold WebView load for trigger($safeName)")
-        val webView = prepareColdWebView(false, false, signature) ?: return false
+        val webView = prepareColdWebView(false, false, signature) ?: run {
+            explicitHost = null
+            return false
+        }
         pendingTrigger = PendingTrigger(safeName, optionsJson)
         webView.load(
             orgCode,
@@ -649,6 +661,7 @@ class Ketch private constructor(
 
     private fun reportNoHostError() {
         isShowingExperience = false
+        explicitHost = null
         Log.e(TAG, "No active Activity to host the Ketch experience")
         this@Ketch.listener?.onError("No active Activity to host the Ketch experience")
     }
@@ -898,6 +911,7 @@ class Ketch private constructor(
                                     this@Ketch.listener?.onShow()
                                 } else {
                                     isShowingExperience = false
+                                    explicitHost = null
                                     Log.e(TAG, "FragmentManager is destroyed, cannot show dialog")
                                     this@Ketch.listener?.onError("FragmentManager is destroyed, cannot show dialog")
                                 }
@@ -906,6 +920,7 @@ class Ketch private constructor(
                             }
                         } catch (e: Exception) {
                             isShowingExperience = false
+                            explicitHost = null
                             Log.e(TAG, "Error showing dialog: ${e.message}")
                             this@Ketch.listener?.onError("Error showing dialog: ${e.message}")
                         }
@@ -1038,6 +1053,7 @@ class Ketch private constructor(
                                     this@Ketch.listener?.onShow()
                                 } else {
                                     isShowingExperience = false
+                                    explicitHost = null
                                     Log.e(TAG, "FragmentManager is destroyed, cannot show dialog")
                                     this@Ketch.listener?.onError("FragmentManager is destroyed, cannot show dialog")
                                 }
@@ -1046,6 +1062,7 @@ class Ketch private constructor(
                             }
                         } catch (e: Exception) {
                             isShowingExperience = false
+                            explicitHost = null
                             Log.e(TAG, "Error showing dialog: ${e.message}")
                             this@Ketch.listener?.onError("Error showing dialog: ${e.message}")
                         }
