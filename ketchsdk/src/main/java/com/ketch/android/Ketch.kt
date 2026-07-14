@@ -14,20 +14,14 @@ import com.ketch.android.data.ConsentConfig
 import com.ketch.android.data.ConsentUpdate
 import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.FullConfigurationRequest
-import com.ketch.android.data.GetProfileRequest
-import com.ketch.android.data.GetProfileResponse
 import com.ketch.android.data.HeadlessConfiguration
 import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.InvokeRightRequest
 import com.ketch.android.data.KetchConfig
 import com.ketch.android.data.LocationResponse
 import com.ketch.android.data.PreferenceQRRequest
-import com.ketch.android.data.PutProfileRequest
-import com.ketch.android.data.SubscriptionConfiguration
-import com.ketch.android.data.SubscriptionConfigurationRequest
 import com.ketch.android.data.SubscriptionsRequest
 import com.ketch.android.data.SubscriptionsResponse
-import com.ketch.android.data.WebReportRequest
 import com.ketch.android.data.WillShowExperienceType
 import com.ketch.android.ui.KetchDialogFragment
 import com.ketch.android.ui.KetchWebView
@@ -188,57 +182,43 @@ class Ketch private constructor(
     fun getDataCenter(): KetchDataCenter = dataCenter
 
     /** GeoIP / jurisdiction hint (`GET /ip`). */
-    fun fetchLocation(callback: (Result<LocationResponse>) -> Unit) {
-        headlessApiClient.fetchLocation(callback)
+    fun getLocation(callback: (Result<LocationResponse>) -> Unit) {
+        headlessApiClient.getLocation(callback)
     }
 
-    suspend fun fetchLocation(): LocationResponse = headlessApiClient.fetchLocation()
+    suspend fun getLocation(): LocationResponse = headlessApiClient.getLocation()
 
     /** Minimal config (`GET .../boot.json`). */
-    fun fetchBootstrapConfiguration(
+    fun getBootstrapConfiguration(
         callback: (Result<HeadlessConfiguration>) -> Unit,
     ) {
-        headlessApiClient.fetchBootstrapConfiguration(orgCode, property, callback)
+        headlessApiClient.getBootstrapConfiguration(orgCode, property, callback)
     }
 
-    suspend fun fetchBootstrapConfiguration(): HeadlessConfiguration =
-        headlessApiClient.fetchBootstrapConfiguration(orgCode, property)
+    suspend fun getBootstrapConfiguration(): HeadlessConfiguration =
+        headlessApiClient.getBootstrapConfiguration(orgCode, property)
 
     /** Full config with optional env / jurisdiction / language and hash query param. */
-    fun fetchFullConfiguration(
+    fun getFullConfiguration(
         request: FullConfigurationRequest,
         callback: (Result<HeadlessConfiguration>) -> Unit,
     ) {
-        headlessApiClient.fetchFullConfiguration(request, callback)
+        headlessApiClient.getFullConfiguration(request, callback)
     }
 
-    suspend fun fetchFullConfiguration(request: FullConfigurationRequest): HeadlessConfiguration =
-        headlessApiClient.fetchFullConfiguration(request)
+    suspend fun getFullConfiguration(request: FullConfigurationRequest): HeadlessConfiguration =
+        headlessApiClient.getFullConfiguration(request)
 
     /** Server consent including `protocols` (`POST .../consent/{org}/get`). */
-    fun fetchConsent(
+    fun getConsent(
         config: ConsentConfig,
         callback: (Result<Consent>) -> Unit,
     ) {
-        headlessApiClient.fetchConsent(config, callback)
+        headlessApiClient.getConsent(config, callback)
     }
 
-    suspend fun fetchConsent(config: ConsentConfig): Consent =
-        headlessApiClient.fetchConsent(config)
-
-    /**
-     * Same endpoint as [fetchConsent], but drops `protocols` from the result if the server
-     * didn't return any (purposes/vendors from a plain consent response are still included).
-     */
-    fun fetchProtocols(
-        config: ConsentConfig,
-        callback: (Result<Consent>) -> Unit,
-    ) {
-        headlessApiClient.fetchProtocols(config, callback)
-    }
-
-    suspend fun fetchProtocols(config: ConsentConfig): Consent =
-        headlessApiClient.fetchProtocols(config)
+    suspend fun getConsent(config: ConsentConfig): Consent =
+        headlessApiClient.getConsent(config)
 
     /** Updates consent; returns server response with computed `protocols`. */
     fun setConsent(
@@ -260,27 +240,6 @@ class Ketch private constructor(
     }
 
     suspend fun invokeRight(request: InvokeRightRequest) = headlessApiClient.invokeRight(request)
-
-    /** Gets profile preferences (`POST .../profile/{org}/get`). */
-    fun getProfile(
-        request: GetProfileRequest,
-        callback: (Result<GetProfileResponse>) -> Unit,
-    ) {
-        headlessApiClient.getProfile(request, callback)
-    }
-
-    suspend fun getProfile(request: GetProfileRequest): GetProfileResponse =
-        headlessApiClient.getProfile(request)
-
-    /** Updates profile preferences (`POST .../profile/{org}/put`). */
-    fun putProfile(
-        request: PutProfileRequest,
-        callback: (Result<Unit>) -> Unit,
-    ) {
-        headlessApiClient.putProfile(request, callback)
-    }
-
-    suspend fun putProfile(request: PutProfileRequest) = headlessApiClient.putProfile(request)
 
     /** Gets subscription topics/controls (`POST .../subscriptions/{org}/get`). */
     fun getSubscriptions(
@@ -304,30 +263,8 @@ class Ketch private constructor(
     suspend fun setSubscriptions(request: SubscriptionsRequest) =
         headlessApiClient.setSubscriptions(request)
 
-    fun fetchSubscriptionsConfiguration(
-        request: SubscriptionConfigurationRequest,
-        callback: (Result<SubscriptionConfiguration>) -> Unit,
-    ) {
-        headlessApiClient.fetchSubscriptionsConfiguration(request, callback)
-    }
-
-    suspend fun fetchSubscriptionsConfiguration(
-        request: SubscriptionConfigurationRequest,
-    ): SubscriptionConfiguration = headlessApiClient.fetchSubscriptionsConfiguration(request)
-
     fun preferenceQRUrl(request: PreferenceQRRequest): String =
         headlessApiClient.preferenceQRUrl(request)
-
-    fun webReport(
-        channel: String,
-        request: WebReportRequest,
-        callback: (Result<Unit>) -> Unit,
-    ) {
-        headlessApiClient.webReport(channel, request, callback)
-    }
-
-    suspend fun webReport(channel: String, request: WebReportRequest) =
-        headlessApiClient.webReport(channel, request)
 
     /**
      * Display the consent, adding the fragment dialog to the given FragmentManager.

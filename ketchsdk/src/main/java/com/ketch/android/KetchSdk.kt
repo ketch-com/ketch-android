@@ -8,18 +8,12 @@ import com.ketch.android.data.Consent
 import com.ketch.android.data.ConsentConfig
 import com.ketch.android.data.ConsentUpdate
 import com.ketch.android.data.FullConfigurationRequest
-import com.ketch.android.data.GetProfileRequest
-import com.ketch.android.data.GetProfileResponse
 import com.ketch.android.data.HeadlessConfiguration
 import com.ketch.android.data.InvokeRightRequest
 import com.ketch.android.data.LocationResponse
 import com.ketch.android.data.PreferenceQRRequest
-import com.ketch.android.data.PutProfileRequest
-import com.ketch.android.data.SubscriptionConfiguration
-import com.ketch.android.data.SubscriptionConfigurationRequest
 import com.ketch.android.data.SubscriptionsRequest
 import com.ketch.android.data.SubscriptionsResponse
-import com.ketch.android.data.WebReportRequest
 
 /**
  * Factory to create the Ketch object.
@@ -118,51 +112,39 @@ object KetchSdk {
     // MARK: - Headless API (static, web/v3)
 
     /** GeoIP / jurisdiction hint (`GET /ip`). */
-    fun fetchLocation(
+    fun getLocation(
         dataCenter: KetchDataCenter = KetchDataCenter.US,
         callback: (Result<LocationResponse>) -> Unit,
     ) {
-        HeadlessApiClient(dataCenter).fetchLocation(callback)
+        HeadlessApiClient(dataCenter).getLocation(callback)
     }
 
     /** Minimal config (`GET .../boot.json`). */
-    fun fetchBootstrapConfiguration(
+    fun getBootstrapConfiguration(
         organization: String,
         property: String,
         dataCenter: KetchDataCenter = KetchDataCenter.US,
         callback: (Result<HeadlessConfiguration>) -> Unit,
     ) {
-        HeadlessApiClient(dataCenter).fetchBootstrapConfiguration(organization, property, callback)
+        HeadlessApiClient(dataCenter).getBootstrapConfiguration(organization, property, callback)
     }
 
     /** Full config with optional env / jurisdiction / language and hash query param. */
-    fun fetchFullConfiguration(
+    fun getFullConfiguration(
         request: FullConfigurationRequest,
         dataCenter: KetchDataCenter = KetchDataCenter.US,
         callback: (Result<HeadlessConfiguration>) -> Unit,
     ) {
-        HeadlessApiClient(dataCenter).fetchFullConfiguration(request, callback)
+        HeadlessApiClient(dataCenter).getFullConfiguration(request, callback)
     }
 
     /** Server consent including `protocols` (`POST .../consent/{org}/get`). */
-    fun fetchConsent(
+    fun getConsent(
         config: ConsentConfig,
         dataCenter: KetchDataCenter = KetchDataCenter.US,
         callback: (Result<Consent>) -> Unit,
     ) {
-        HeadlessApiClient(dataCenter).fetchConsent(config, callback)
-    }
-
-    /**
-     * Same endpoint as [fetchConsent], but drops `protocols` from the result if the server
-     * didn't return any (purposes/vendors from a plain consent response are still included).
-     */
-    fun fetchProtocols(
-        config: ConsentConfig,
-        dataCenter: KetchDataCenter = KetchDataCenter.US,
-        callback: (Result<Consent>) -> Unit,
-    ) {
-        HeadlessApiClient(dataCenter).fetchProtocols(config, callback)
+        HeadlessApiClient(dataCenter).getConsent(config, callback)
     }
 
     /** Updates consent; returns server response with computed `protocols`. */
@@ -185,22 +167,6 @@ object KetchSdk {
         HeadlessApiClient(dataCenter).invokeRight(request, callback)
     }
 
-    fun getProfile(
-        request: GetProfileRequest,
-        dataCenter: KetchDataCenter = KetchDataCenter.US,
-        callback: (Result<GetProfileResponse>) -> Unit,
-    ) {
-        HeadlessApiClient(dataCenter).getProfile(request, callback)
-    }
-
-    fun putProfile(
-        request: PutProfileRequest,
-        dataCenter: KetchDataCenter = KetchDataCenter.US,
-        callback: (Result<Unit>) -> Unit,
-    ) {
-        HeadlessApiClient(dataCenter).putProfile(request, callback)
-    }
-
     fun getSubscriptions(
         request: SubscriptionsRequest,
         dataCenter: KetchDataCenter = KetchDataCenter.US,
@@ -217,25 +183,8 @@ object KetchSdk {
         HeadlessApiClient(dataCenter).setSubscriptions(request, callback)
     }
 
-    fun fetchSubscriptionsConfiguration(
-        request: SubscriptionConfigurationRequest,
-        dataCenter: KetchDataCenter = KetchDataCenter.US,
-        callback: (Result<SubscriptionConfiguration>) -> Unit,
-    ) {
-        HeadlessApiClient(dataCenter).fetchSubscriptionsConfiguration(request, callback)
-    }
-
     fun preferenceQRUrl(
         request: PreferenceQRRequest,
         dataCenter: KetchDataCenter = KetchDataCenter.US,
     ): String = HeadlessApiClient(dataCenter).preferenceQRUrl(request)
-
-    fun webReport(
-        channel: String,
-        request: WebReportRequest,
-        dataCenter: KetchDataCenter = KetchDataCenter.US,
-        callback: (Result<Unit>) -> Unit,
-    ) {
-        HeadlessApiClient(dataCenter).webReport(channel, request, callback)
-    }
 }

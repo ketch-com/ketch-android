@@ -17,7 +17,7 @@ data class IPInfo(
     @SerializedName("timezone") val timezone: String? = null,
 )
 
-/** Response from headless `fetchLocation()`. */
+/** Response from headless `getLocation()`. */
 data class LocationResponse(
     @SerializedName("location") val location: IPInfo? = null,
 )
@@ -142,79 +142,6 @@ data class InvokeRightRequest(
     val isAuthenticated: Boolean? = null,
 )
 
-/** ketch-types `ProfilePreferencesIdentity` */
-data class ProfilePreferencesIdentity(
-    @SerializedName("identitySpace") val identitySpace: String,
-    @SerializedName("identityValue") val identityValue: String,
-)
-
-/** ketch-types `ProfilePreferencesAttribute` */
-data class ProfilePreferencesAttribute(
-    @SerializedName("attributeCode") val attributeCode: String,
-    @SerializedName("attributeValue") val attributeValue: String? = null,
-    @SerializedName("source") val source: String,
-)
-
-/** ketch-types `ProfilePreferencesContext` */
-data class ProfilePreferencesContext(
-    @SerializedName("source") val source: String,
-    @SerializedName("updatedAt") val updatedAt: Long? = null,
-    @SerializedName("configId") val configId: String? = null,
-)
-
-/** ketch-types `GetProfileRequest` */
-data class GetProfileRequest(
-    val organizationCode: String,
-    val propertyCode: String,
-    val jurisdictionCode: String,
-    val languageCode: String,
-    val identities: List<ProfilePreferencesIdentity>,
-    val controllerCode: String? = null,
-    val environmentCode: String? = null,
-    @SerializedName("accountID") val accountId: String? = null,
-    val regionCode: String? = null,
-)
-
-/** ketch-types `GetProfileResponse` */
-data class GetProfileResponse(
-    val controllerCode: String? = null,
-    val propertyCode: String? = null,
-    val environmentCode: String? = null,
-    val jurisdictionCode: String? = null,
-    val regionCode: String? = null,
-    val attributes: List<ProfilePreferencesAttribute>? = null,
-)
-
-/** ketch-types `PutProfileRequest` */
-data class PutProfileRequest(
-    val organizationCode: String,
-    val propertyCode: String,
-    val jurisdictionCode: String,
-    val languageCode: String,
-    val identities: List<ProfilePreferencesIdentity>,
-    val context: ProfilePreferencesContext,
-    val controllerCode: String? = null,
-    val environmentCode: String? = null,
-    val attributes: List<ProfilePreferencesAttribute>? = null,
-    val accountId: String? = null,
-    val regionCode: String? = null,
-)
-
-/** ketch-types `GetSubscriptionConfigurationRequest` */
-data class SubscriptionConfigurationRequest(
-    val organizationCode: String,
-    val propertyCode: String,
-    val languageCode: String,
-    val experienceCode: String,
-)
-
-/** Subset of ketch-types `SubscriptionConfiguration` */
-data class SubscriptionConfiguration(
-    val identities: Map<String, String>? = null,
-    val controls: List<Map<String, Any>>? = null,
-    val topics: List<Map<String, Any>>? = null,
-)
-
 /** ketch-types `GetPreferenceQRRequest` */
 data class PreferenceQRRequest(
     val organizationCode: String,
@@ -225,15 +152,6 @@ data class PreferenceQRRequest(
     val backgroundColor: String? = null,
     val foregroundColor: String? = null,
     val parameters: Map<String, String> = emptyMap(),
-)
-
-/** ketch-types `WebReportRequest` */
-data class WebReportRequest(
-    val type: String,
-    val age: Int,
-    val url: String,
-    @SerializedName("user_agent") val userAgent: String,
-    val body: Map<String, String>,
 )
 
 /** ketch-types `GetSubscriptionsRequest` / `SetSubscriptionsRequest` */

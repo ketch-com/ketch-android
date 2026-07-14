@@ -89,7 +89,7 @@ Reports: `integration-tests/build/reports/androidTests/connected/`.
 
 | Suite | Class | What it validates |
 | ----- | ----- | ----------------- |
-| **Headless CDN** | `KetchHeadlessIntegrationTest` | `fetchLocation`, bootstrap, full config, consent get/set |
+| **Headless CDN** | `KetchHeadlessIntegrationTest` | `getLocation`, bootstrap, full config, consent get/set |
 | **WebView** | `KetchSdkIntegrationTest` | SDK init, UI buttons, WebView experience load |
 
 The current test suite covers:

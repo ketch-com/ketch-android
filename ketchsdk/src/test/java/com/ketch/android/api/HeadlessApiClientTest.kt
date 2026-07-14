@@ -60,14 +60,10 @@ class HeadlessApiClientTest {
     }
 
     @Test
-    fun buildUrl_rightsProfileSubscriptions() {
+    fun buildUrl_rightsSubscriptions() {
         assertEquals(
             "https://global.ketchcdn.com/web/v3/rights/switchbitcorp/invoke",
             client.buildUrl("/rights/switchbitcorp/invoke"),
-        )
-        assertEquals(
-            "https://global.ketchcdn.com/web/v3/profile/acme/get",
-            client.buildUrl("/profile/acme/get"),
         )
         assertEquals(
             "https://global.ketchcdn.com/web/v3/subscriptions/acme/update",

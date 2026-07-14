@@ -5,19 +5,13 @@ import com.ketch.android.data.Consent
 import com.ketch.android.data.ConsentConfig
 import com.ketch.android.data.ConsentUpdate
 import com.ketch.android.data.FullConfigurationRequest
-import com.ketch.android.data.GetProfileRequest
-import com.ketch.android.data.GetProfileResponse
 import com.ketch.android.data.HeadlessConfiguration
 import com.ketch.android.data.HeadlessException
 import com.ketch.android.data.InvokeRightRequest
 import com.ketch.android.data.LocationResponse
 import com.ketch.android.data.PreferenceQRRequest
-import com.ketch.android.data.PutProfileRequest
-import com.ketch.android.data.SubscriptionConfiguration
-import com.ketch.android.data.SubscriptionConfigurationRequest
 import com.ketch.android.data.SubscriptionsRequest
 import com.ketch.android.data.SubscriptionsResponse
-import com.ketch.android.data.WebReportRequest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -61,37 +55,37 @@ class HeadlessApiClient(
         }
     }
 
-    fun fetchLocation(callback: (Result<LocationResponse>) -> Unit) {
-        launchAsync(callback) { fetchLocation() }
+    fun getLocation(callback: (Result<LocationResponse>) -> Unit) {
+        launchAsync(callback) { getLocation() }
     }
 
-    suspend fun fetchLocation(): LocationResponse = withContext(Dispatchers.IO) {
+    suspend fun getLocation(): LocationResponse = withContext(Dispatchers.IO) {
         get("/ip", LocationResponse::class.java)
     }
 
-    fun fetchBootstrapConfiguration(
+    fun getBootstrapConfiguration(
         organization: String,
         property: String,
         callback: (Result<HeadlessConfiguration>) -> Unit,
     ) {
-        launchAsync(callback) { fetchBootstrapConfiguration(organization, property) }
+        launchAsync(callback) { getBootstrapConfiguration(organization, property) }
     }
 
-    suspend fun fetchBootstrapConfiguration(
+    suspend fun getBootstrapConfiguration(
         organization: String,
         property: String,
     ): HeadlessConfiguration = withContext(Dispatchers.IO) {
         get("/config/$organization/$property/boot.json", HeadlessConfiguration::class.java)
     }
 
-    fun fetchFullConfiguration(
+    fun getFullConfiguration(
         request: FullConfigurationRequest,
         callback: (Result<HeadlessConfiguration>) -> Unit,
     ) {
-        launchAsync(callback) { fetchFullConfiguration(request) }
+        launchAsync(callback) { getFullConfiguration(request) }
     }
 
-    suspend fun fetchFullConfiguration(request: FullConfigurationRequest): HeadlessConfiguration =
+    suspend fun getFullConfiguration(request: FullConfigurationRequest): HeadlessConfiguration =
         withContext(Dispatchers.IO) {
             var path = "/config/${request.organizationCode}/${request.propertyCode}"
             if (request.environmentCode != null &&
@@ -105,36 +99,16 @@ class HeadlessApiClient(
             get(path, HeadlessConfiguration::class.java, query)
         }
 
-    fun fetchConsent(
+    fun getConsent(
         config: ConsentConfig,
         callback: (Result<Consent>) -> Unit,
     ) {
-        launchAsync(callback) { fetchConsent(config) }
+        launchAsync(callback) { getConsent(config) }
     }
 
-    suspend fun fetchConsent(config: ConsentConfig): Consent = withContext(Dispatchers.IO) {
+    suspend fun getConsent(config: ConsentConfig): Consent = withContext(Dispatchers.IO) {
         val path = "/consent/${config.organizationCode}/get"
         postConsent(path, ConsentConfigPayload.from(config))
-    }
-
-    fun fetchProtocols(
-        config: ConsentConfig,
-        callback: (Result<Consent>) -> Unit,
-    ) {
-        launchAsync(callback) { fetchProtocols(config) }
-    }
-
-    suspend fun fetchProtocols(config: ConsentConfig): Consent = withContext(Dispatchers.IO) {
-        val response = fetchConsent(config)
-        if (response.protocols.isNullOrEmpty()) {
-            Consent(
-                purposes = response.purposes,
-                vendors = response.vendors,
-                protocols = null,
-            )
-        } else {
-            response
-        }
     }
 
     fun setConsent(
@@ -160,28 +134,6 @@ class HeadlessApiClient(
         postVoid("/rights/${request.organizationCode}/invoke", request)
     }
 
-    fun getProfile(
-        request: GetProfileRequest,
-        callback: (Result<GetProfileResponse>) -> Unit,
-    ) {
-        launchAsync(callback) { getProfile(request) }
-    }
-
-    suspend fun getProfile(request: GetProfileRequest): GetProfileResponse = withContext(Dispatchers.IO) {
-        post("/profile/${request.organizationCode}/get", request, GetProfileResponse::class.java)
-    }
-
-    fun putProfile(
-        request: PutProfileRequest,
-        callback: (Result<Unit>) -> Unit,
-    ) {
-        launchAsync(callback) { putProfile(request) }
-    }
-
-    suspend fun putProfile(request: PutProfileRequest): Unit = withContext(Dispatchers.IO) {
-        postVoid("/profile/${request.organizationCode}/put", request)
-    }
-
     fun getSubscriptions(
         request: SubscriptionsRequest,
         callback: (Result<SubscriptionsResponse>) -> Unit,
@@ -205,20 +157,6 @@ class HeadlessApiClient(
         postVoid("/subscriptions/${request.organizationCode}/update", request)
     }
 
-    fun fetchSubscriptionsConfiguration(
-        request: SubscriptionConfigurationRequest,
-        callback: (Result<SubscriptionConfiguration>) -> Unit,
-    ) {
-        launchAsync(callback) { fetchSubscriptionsConfiguration(request) }
-    }
-
-    suspend fun fetchSubscriptionsConfiguration(
-        request: SubscriptionConfigurationRequest,
-    ): SubscriptionConfiguration = withContext(Dispatchers.IO) {
-        val path = "/config/${request.organizationCode}/${request.propertyCode}/${request.languageCode}/${request.experienceCode}/subscriptions.json"
-        get(path, SubscriptionConfiguration::class.java)
-    }
-
     fun preferenceQRUrl(request: PreferenceQRRequest): String {
         val query = linkedMapOf<String, String>()
         request.environmentCode?.let { query["env"] = it }
@@ -232,19 +170,6 @@ class HeadlessApiClient(
             query,
         )
     }
-
-    fun webReport(
-        channel: String,
-        request: WebReportRequest,
-        callback: (Result<Unit>) -> Unit,
-    ) {
-        launchAsync(callback) { webReport(channel, request) }
-    }
-
-    suspend fun webReport(channel: String, request: WebReportRequest): Unit =
-        withContext(Dispatchers.IO) {
-            postVoid("/report/$channel", request)
-        }
 
     /** Builds an absolute CDN URL for unit tests and debugging. */
     fun buildUrl(path: String, query: Map<String, String> = emptyMap()): String {

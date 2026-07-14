@@ -33,13 +33,13 @@ class HeadlessConsentTest {
     }
 
     @Test
-    fun fetchConsentPropagatesHttpFailure() = runBlocking {
+    fun getConsentPropagatesHttpFailure() = runBlocking {
         mockWebServer.enqueue(MockResponse().setResponseCode(HttpURLConnection.HTTP_INTERNAL_ERROR))
 
         val client = headlessClient()
         try {
-            client.fetchConsent(sampleConsentConfig())
-            fail("Expected fetchConsent to fail on HTTP 500")
+            client.getConsent(sampleConsentConfig())
+            fail("Expected getConsent to fail on HTTP 500")
         } catch (error: HeadlessException) {
             assertTrue(error.message?.contains("HTTP 500") == true)
         }
@@ -65,7 +65,7 @@ class HeadlessConsentTest {
     }
 
     @Test
-    fun fetchConsentReturnsEmptyConsentOn200NullBody() = runBlocking {
+    fun getConsentReturnsEmptyConsentOn200NullBody() = runBlocking {
         mockWebServer.enqueue(
             MockResponse()
                 .setResponseCode(HttpURLConnection.HTTP_OK)
@@ -74,28 +74,11 @@ class HeadlessConsentTest {
         )
 
         val client = headlessClient()
-        val consent = client.fetchConsent(sampleConsentConfig())
+        val consent = client.getConsent(sampleConsentConfig())
 
         assertEquals(emptyMap<String, Boolean>(), consent.purposes)
         assertNull(consent.vendors)
         assertNull(consent.protocols)
-    }
-
-    @Test
-    fun fetchProtocolsPreservesPurposesWhenProtocolsMissing() = runBlocking {
-        mockWebServer.enqueue(
-            MockResponse()
-                .setResponseCode(HttpURLConnection.HTTP_OK)
-                .setBody("""{"purposes":{"analytics":true,"marketing":false}}""")
-                .addHeader("Content-Type", "application/json"),
-        )
-
-        val client = headlessClient()
-        val consent = client.fetchProtocols(sampleConsentConfig())
-
-        assertNull(consent.protocols)
-        assertEquals(true, consent.purposes?.get("analytics"))
-        assertEquals(false, consent.purposes?.get("marketing"))
     }
 
     @Test

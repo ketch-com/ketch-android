@@ -25,9 +25,9 @@ import org.junit.runner.RunWith
 class KetchHeadlessIntegrationTest {
 
     @Test
-    fun testFetchLocationReturnsGeoIP() {
+    fun testGetLocationReturnsGeoIP() {
         val location = awaitHeadless { callback ->
-            KetchSdk.fetchLocation(dataCenter, callback)
+            KetchSdk.getLocation(dataCenter, callback)
         }
         assertNotNull("Expected location payload", location.location)
         assertFalse(
@@ -37,9 +37,9 @@ class KetchHeadlessIntegrationTest {
     }
 
     @Test
-    fun testFetchBootstrapConfiguration() {
+    fun testGetBootstrapConfiguration() {
         val boot = awaitHeadless { callback ->
-            KetchSdk.fetchBootstrapConfiguration(ORG_CODE, PROPERTY, dataCenter, callback)
+            KetchSdk.getBootstrapConfiguration(ORG_CODE, PROPERTY, dataCenter, callback)
         }
         assertTrue(
             "Bootstrap should include experiences metadata",
@@ -52,15 +52,15 @@ class KetchHeadlessIntegrationTest {
         val identities = uniqueEmailIdentity()
 
         awaitHeadless { callback ->
-            KetchSdk.fetchLocation(dataCenter, callback)
+            KetchSdk.getLocation(dataCenter, callback)
         }
 
         val boot = awaitHeadless { callback ->
-            KetchSdk.fetchBootstrapConfiguration(ORG_CODE, PROPERTY, dataCenter, callback)
+            KetchSdk.getBootstrapConfiguration(ORG_CODE, PROPERTY, dataCenter, callback)
         }
 
         val fullConfig = awaitHeadless { callback ->
-            KetchSdk.fetchFullConfiguration(
+            KetchSdk.getFullConfiguration(
                 FullConfigurationRequest(
                     organizationCode = ORG_CODE,
                     propertyCode = PROPERTY,
@@ -73,7 +73,7 @@ class KetchHeadlessIntegrationTest {
         val consentConfig = consentConfigFrom(fullConfig, identities)
 
         val consent = awaitHeadless { callback ->
-            KetchSdk.fetchConsent(consentConfig, dataCenter, callback)
+            KetchSdk.getConsent(consentConfig, dataCenter, callback)
         }
         assertTrue(
             "CDN consent get should return protocols and/or purposes",
