@@ -183,8 +183,8 @@ object KetchSdk {
         HeadlessApiClient(dataCenter).setSubscriptions(request, callback)
     }
 
-    fun preferenceQRUrl(
+    fun getPreferenceQRUrl(
         request: PreferenceQRRequest,
         dataCenter: KetchDataCenter = KetchDataCenter.US,
-    ): String = HeadlessApiClient(dataCenter).preferenceQRUrl(request)
+    ): String = HeadlessApiClient(dataCenter).getPreferenceQRUrl(request)
 }

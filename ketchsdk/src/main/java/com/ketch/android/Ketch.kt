@@ -343,8 +343,8 @@ class Ketch private constructor(
     suspend fun setSubscriptions(request: SubscriptionsRequest) =
         headlessApiClient.setSubscriptions(request)
 
-    fun preferenceQRUrl(request: PreferenceQRRequest): String =
-        headlessApiClient.preferenceQRUrl(request)
+    fun getPreferenceQRUrl(request: PreferenceQRRequest): String =
+        headlessApiClient.getPreferenceQRUrl(request)
 
     /**
      * Display the consent, adding the fragment dialog to the given FragmentManager.

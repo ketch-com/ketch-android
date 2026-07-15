@@ -40,8 +40,8 @@ class HeadlessApiClientTest {
     }
 
     @Test
-    fun preferenceQRUrl_matchesContractFixture() {
-        val url = client.preferenceQRUrl(
+    fun getPreferenceQRUrl_matchesContractFixture() {
+        val url = client.getPreferenceQRUrl(
             com.ketch.android.data.PreferenceQRRequest(
                 organizationCode = "switchbitcorp",
                 propertyCode = "switchbit",

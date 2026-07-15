@@ -156,7 +156,7 @@ class HeadlessApiClient(
         postVoid("/subscriptions/${request.organizationCode}/update", request)
     }
 
-    fun preferenceQRUrl(request: PreferenceQRRequest): String {
+    fun getPreferenceQRUrl(request: PreferenceQRRequest): String {
         val query = linkedMapOf<String, String>()
         request.environmentCode?.let { query["env"] = it }
         request.imageSize?.let { query["size"] = it.toString() }
