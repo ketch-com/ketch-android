@@ -38,6 +38,23 @@ data class FullConfigurationRequest(
     val hash: String? = null,
 )
 
+/**
+ * The env/jurisdiction/language segment appended to the full-config path, or null if any of the
+ * three is absent or blank — matching ketch-tag, which treats a blank value the same as unset.
+ * The single source of truth for this so the actual HTTP path (see [HeadlessApiClient]) and any
+ * cache keyed on it (see `Ketch.buildConfigCacheKey`) can never disagree about what "the same
+ * request" means.
+ */
+fun FullConfigurationRequest.configPathSegment(): Triple<String, String, String>? {
+    val env = environmentCode?.takeIf { it.isNotBlank() } ?: return null
+    val jurisdiction = jurisdictionCode?.takeIf { it.isNotBlank() } ?: return null
+    val language = languageCode?.takeIf { it.isNotBlank() } ?: return null
+    return Triple(env, jurisdiction, language)
+}
+
+/** Non-blank hash, or null — a blank hash is treated the same as an absent one. */
+fun FullConfigurationRequest.normalizedHash(): String? = hash?.takeIf { it.isNotBlank() }
+
 /** Request body for `POST /consent/{org}/get`. */
 data class ConsentConfig(
     val organizationCode: String,

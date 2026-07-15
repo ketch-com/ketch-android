@@ -23,6 +23,8 @@ import com.ketch.android.data.PreferenceQRRequest
 import com.ketch.android.data.SubscriptionsRequest
 import com.ketch.android.data.SubscriptionsResponse
 import com.ketch.android.data.WillShowExperienceType
+import com.ketch.android.data.configPathSegment
+import com.ketch.android.data.normalizedHash
 import com.ketch.android.data.toRegionCode
 import com.ketch.android.ui.KetchDialogFragment
 import com.ketch.android.ui.KetchWebView
@@ -852,16 +854,20 @@ class Ketch private constructor(
             logLevel.name,
         ).joinToString("|")
 
-    // Cache key for getFullConfiguration() — only the fields that affect the config URL path.
-    private fun buildConfigCacheKey(request: FullConfigurationRequest): String =
-        listOf(
+    // Cache key for getFullConfiguration() — mirrors HeadlessApiClient's path-building exactly
+    // (blank treated as absent) via configPathSegment()/normalizedHash(), so requests that hit
+    // the same URL always share a key and requests that hit different URLs never collide.
+    private fun buildConfigCacheKey(request: FullConfigurationRequest): String {
+        val (env, jurisdiction, language) = request.configPathSegment() ?: Triple("", "", "")
+        return listOf(
             request.organizationCode,
             request.propertyCode,
-            request.environmentCode ?: "",
-            request.jurisdictionCode ?: "",
-            request.languageCode ?: "",
-            request.hash ?: "",
+            env,
+            jurisdiction,
+            language,
+            request.normalizedHash() ?: "",
         ).joinToString("|")
+    }
 
     private fun buildPreferenceOptionsJson(
         tabs: List<PreferencesTab> = emptyList(),

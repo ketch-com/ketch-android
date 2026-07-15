@@ -41,4 +41,52 @@ class HeadlessModelsTest {
         val ipInfo = IPInfo(countryCode = "", regionCode = "")
         assertNull(ipInfo.toRegionCode())
     }
+
+    @Test
+    fun configPathSegment_allPresent() {
+        val request = FullConfigurationRequest(
+            organizationCode = "org",
+            propertyCode = "prop",
+            environmentCode = "production",
+            jurisdictionCode = "us-ca",
+            languageCode = "en-US",
+        )
+        assertEquals(Triple("production", "us-ca", "en-US"), request.configPathSegment())
+    }
+
+    @Test
+    fun configPathSegment_nullEnvironment_isAbsent() {
+        val request = FullConfigurationRequest(
+            organizationCode = "org",
+            propertyCode = "prop",
+            environmentCode = null,
+            jurisdictionCode = "us-ca",
+            languageCode = "en-US",
+        )
+        assertNull(request.configPathSegment())
+    }
+
+    @Test
+    fun configPathSegment_blankEnvironment_treatedSameAsNull() {
+        val request = FullConfigurationRequest(
+            organizationCode = "org",
+            propertyCode = "prop",
+            environmentCode = "",
+            jurisdictionCode = "us-ca",
+            languageCode = "en-US",
+        )
+        assertNull(request.configPathSegment())
+    }
+
+    @Test
+    fun normalizedHash_blankIsNull() {
+        assertNull(
+            FullConfigurationRequest(organizationCode = "org", propertyCode = "prop", hash = "").normalizedHash(),
+        )
+        assertEquals(
+            "abc123",
+            FullConfigurationRequest(organizationCode = "org", propertyCode = "prop", hash = "abc123")
+                .normalizedHash(),
+        )
+    }
 }
