@@ -58,11 +58,13 @@ import com.ketch.android.sample.compose.ui.theme.LightToggleTrack
 @Composable
 fun KetchSampleApp(
     logEntries: List<String>,
+    onLoadExperience: () -> Unit,
     onShowConsent: () -> Unit,
     onShowPreferences: () -> Unit,
     onOpenSecondActivity: () -> Unit,
     onLogSharedPreferences: () -> Unit,
     onTriggerFunction: () -> Unit,
+    onGetJurisdiction: () -> Unit,
 ) {
     var isDarkMode by rememberSaveable { mutableStateOf(false) }
 
@@ -89,6 +91,17 @@ fun KetchSampleApp(
                     .verticalScroll(rememberScrollState())
                     .padding(20.dp)
             ) {
+                SectionHeader("Deployment Plan")
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = onLoadExperience,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = KetchPurple),
+                ) {
+                    Text("Load Experience", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                }
+                Spacer(Modifier.height(24.dp))
                 SectionHeader("Experience Functions")
                 Spacer(Modifier.height(16.dp))
                 CardsRow(
@@ -100,6 +113,15 @@ fun KetchSampleApp(
                     title = "Trigger Custom Function",
                     description = "Fire an onFunction rule trigger by custom function name.",
                     onExecute = onTriggerFunction,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(24.dp))
+                SectionHeader("Headless SDK")
+                Spacer(Modifier.height(12.dp))
+                ActionCard(
+                    title = "Get Jurisdiction",
+                    description = "Call the headless API (getFullConfiguration) and log the resolved jurisdiction.",
+                    onExecute = onGetJurisdiction,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(24.dp))
@@ -193,7 +215,7 @@ private fun CardsRow(
     ) {
         ActionCard(
             title = "Privacy Preference Unknown",
-            description = "Trigger the consent banner. This triggers automatically for new users.",
+            description = "Trigger the consent banner. Tap \"Load Experience\" above first to load it.",
             onExecute = onShowConsent,
             modifier = Modifier.weight(1f),
         )

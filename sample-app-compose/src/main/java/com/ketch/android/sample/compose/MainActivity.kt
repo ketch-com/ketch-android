@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.mutableStateListOf
 import com.ketch.android.Ketch
 import com.ketch.android.TriggerName
+import com.ketch.android.data.FullConfigurationRequest
 
 class MainActivity : AppCompatActivity() {
 
@@ -37,6 +38,11 @@ class MainActivity : AppCompatActivity() {
         setContent {
             KetchSampleApp(
                 logEntries = logEntries,
+                onLoadExperience = {
+                    Log.d(TAG, "load() called")
+                    logEntries.add("load() called")
+                    ketch.load()
+                },
                 onShowConsent = {
                     Log.d(TAG, "showConsent() called")
                     logEntries.add("showConsent() called")
@@ -57,6 +63,25 @@ class MainActivity : AppCompatActivity() {
                     logEntries.add("trigger('demoFunction') called")
                     ketch.trigger(TriggerName.CUSTOM, "demoFunction")
                 },
+                onGetJurisdiction = {
+                    Log.d(TAG, "getFullConfiguration() called")
+                    logEntries.add("getFullConfiguration() called")
+                    val request = FullConfigurationRequest(
+                        organizationCode = ComposeSampleApplication.ORG_CODE,
+                        propertyCode = ComposeSampleApplication.PROPERTY,
+                    )
+                    ketch.getFullConfiguration(request) { result ->
+                        result.onSuccess { config ->
+                            val message = "Jurisdiction: ${config.jurisdiction?.code ?: "?"} " +
+                                "(default: ${config.jurisdiction?.defaultJurisdictionCode ?: "?"})"
+                            Log.d(TAG, message)
+                            logEntries.add(message)
+                        }.onFailure { error ->
+                            Log.e(TAG, "getFullConfiguration() failed", error)
+                            logEntries.add("Headless error: ${error.message}")
+                        }
+                    }
+                },
             )
         }
     }
@@ -70,8 +95,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun initializeKetch() {
         logEntries.add("Ketch initialized in Application")
-        ketch.load()
-        logEntries.add("load() called from MainActivity")
     }
 
     private fun logSharedPreferences() {
