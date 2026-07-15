@@ -6,6 +6,8 @@ import com.ketch.android.data.ConsentConfig
 import com.ketch.android.data.ConsentUpdate
 import com.ketch.android.data.FullConfigurationRequest
 import com.ketch.android.data.HeadlessConfiguration
+import com.ketch.android.data.configPathSegment
+import com.ketch.android.data.normalizedHash
 import com.ketch.android.data.HeadlessException
 import com.ketch.android.data.InvokeRightRequest
 import com.ketch.android.data.LocationResponse
@@ -88,14 +90,11 @@ class HeadlessApiClient(
     suspend fun getFullConfiguration(request: FullConfigurationRequest): HeadlessConfiguration =
         withContext(Dispatchers.IO) {
             var path = "/config/${request.organizationCode}/${request.propertyCode}"
-            if (request.environmentCode != null &&
-                request.jurisdictionCode != null &&
-                request.languageCode != null
-            ) {
-                path += "/${request.environmentCode}/${request.jurisdictionCode}/${request.languageCode}"
+            request.configPathSegment()?.let { (env, jurisdiction, language) ->
+                path += "/$env/$jurisdiction/$language"
             }
             path += "/config.json"
-            val query = request.hash?.let { mapOf("hash" to it) } ?: emptyMap()
+            val query = request.normalizedHash()?.let { mapOf("hash" to it) } ?: emptyMap()
             get(path, HeadlessConfiguration::class.java, query)
         }
 
