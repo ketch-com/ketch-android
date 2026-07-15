@@ -5,6 +5,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.mutableStateListOf
+import com.ketch.android.TriggerName
 import com.ketch.android.sample.compose.ui.theme.KetchTheme
 
 class SecondActivity : AppCompatActivity() {
@@ -35,7 +36,7 @@ class SecondActivity : AppCompatActivity() {
                     },
                     onTriggerFunction = {
                         logEntries.add("trigger('demoFunction') called from SecondActivity")
-                        app.ketch.trigger("demoFunction")
+                        app.ketch.trigger(TriggerName.CUSTOM, "demoFunction")
                     },
                 )
             }

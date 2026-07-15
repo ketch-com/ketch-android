@@ -7,6 +7,7 @@ import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.ketch.android.TriggerName
 import com.ketch.android.data.WillShowExperienceType
 import org.junit.After
 import org.junit.Assert.assertFalse
@@ -72,7 +73,7 @@ class ZTriggerFunctionTest {
     fun invalidFunctionName_isRejectedWithoutDispatch() {
         var result: Boolean? = null
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            result = app.ketch.trigger("not a valid name!")
+            result = app.ketch.trigger(TriggerName.CUSTOM, "not a valid name!")
         }
         assertFalse("trigger() should reject an invalid functionName", result!!)
     }
@@ -90,7 +91,7 @@ class ZTriggerFunctionTest {
 
         var dispatched = false
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            dispatched = app.ketch.trigger("integrationTestFunction", mapOf("source" to "androidTest"))
+            dispatched = app.ketch.trigger(TriggerName.CUSTOM, "integrationTestFunction", mapOf("source" to "androidTest"))
         }
         assertTrue("trigger() should dispatch on a warm WebView", dispatched)
 
@@ -120,7 +121,7 @@ class ZTriggerFunctionTest {
 
         var dispatched = false
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            dispatched = app.ketch.trigger("integrationTestFunction")
+            dispatched = app.ketch.trigger(TriggerName.CUSTOM, "integrationTestFunction")
         }
         assertTrue("trigger() should dispatch (cold boot) even with no warm WebView", dispatched)
         assertTrue("Cold-booted tag should finish loading within 30s", configLatch.await(30, TimeUnit.SECONDS))
@@ -135,12 +136,12 @@ class ZTriggerFunctionTest {
         assertFalse("Precondition: no active WebView before cold trigger", app.hasActiveWebView())
 
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            assertTrue("Cold trigger should start WebView load", app.ketch.trigger("integrationTestFunction"))
+            assertTrue("Cold trigger should start WebView load", app.ketch.trigger(TriggerName.CUSTOM, "integrationTestFunction"))
         }
         assertTrue("Cold trigger should be deferred while tag loads", app.hasPendingTrigger())
 
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            assertTrue("Warm trigger should dispatch on the active WebView", app.ketch.trigger("integrationTestFunction"))
+            assertTrue("Warm trigger should dispatch on the active WebView", app.ketch.trigger(TriggerName.CUSTOM, "integrationTestFunction"))
         }
         assertFalse("Warm trigger should clear the deferred cold trigger", app.hasPendingTrigger())
     }

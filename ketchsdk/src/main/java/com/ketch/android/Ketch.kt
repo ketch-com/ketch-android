@@ -419,10 +419,18 @@ class Ketch private constructor(
      * Fire a custom-function (`onFunction`) rule trigger. If a matching backend rule shows an
      * experience, the fragment dialog is displayed automatically.
      *
+     * @param triggerName: the trigger name; `TriggerName.CUSTOM` is the only supported value today
      * @param functionName: the custom function name configured on the backend rule
      * @param options: optional key/value trigger arguments
      */
-    fun trigger(functionName: String, options: Map<String, Any?> = emptyMap()): Boolean {
+    fun trigger(
+        triggerName: TriggerName,
+        functionName: String,
+        options: Map<String, Any?> = emptyMap(),
+    ): Boolean {
+        val triggerNameValue = when (triggerName) {
+            TriggerName.CUSTOM -> triggerName.value
+        }
         val safeName = validateFunctionName(functionName) ?: return false
 
         if (isShowingExperience) {
@@ -436,13 +444,13 @@ class Ketch private constructor(
         tryWarmWebView(signature, "trigger($safeName)")?.let { webView ->
             // Supersede any deferred cold trigger so onConfigUpdated does not re-fire it.
             pendingTrigger = null
-            webView.trigger(safeName, optionsJson)
+            webView.trigger(triggerNameValue, safeName, optionsJson)
             return true
         }
 
         Log.d(TAG, "Cold WebView load for trigger($safeName)")
         val webView = prepareColdWebView(false, false, signature) ?: return false
-        pendingTrigger = PendingTrigger(safeName, optionsJson)
+        pendingTrigger = PendingTrigger(triggerNameValue, safeName, optionsJson)
         webView.load(
             orgCode,
             property,
@@ -903,7 +911,7 @@ class Ketch private constructor(
 
                     pendingTrigger?.let { pending ->
                         pendingTrigger = null
-                        webView.trigger(pending.functionName, pending.optionsJson)
+                        webView.trigger(pending.triggerName, pending.functionName, pending.optionsJson)
                     }
 
                     if (!showConsent) {
@@ -1199,7 +1207,7 @@ class Ketch private constructor(
 private fun ConsentUpdate.withoutProtocols(): ConsentUpdate =
     copy(protocols = null)
 
-private data class PendingTrigger(val functionName: String, val optionsJson: String)
+private data class PendingTrigger(val triggerName: String, val functionName: String, val optionsJson: String)
 
 private val TRIGGER_FUNCTION_NAME_REGEX = Regex("^[A-Za-z0-9_.-]+$")
 
