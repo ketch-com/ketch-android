@@ -9,6 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.mutableStateListOf
 import com.ketch.android.Ketch
+import com.ketch.android.TriggerName
 
 class MainActivity : AppCompatActivity() {
 
@@ -51,6 +52,11 @@ class MainActivity : AppCompatActivity() {
                     startActivity(Intent(this, SecondActivity::class.java))
                 },
                 onLogSharedPreferences = { logSharedPreferences() },
+                onTriggerFunction = {
+                    Log.d(TAG, "trigger('demoFunction') called")
+                    logEntries.add("trigger('demoFunction') called")
+                    ketch.trigger(TriggerName.CUSTOM, "demoFunction")
+                },
             )
         }
     }

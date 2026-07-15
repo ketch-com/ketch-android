@@ -167,6 +167,41 @@
 
             </LinearLayout>
 
+            <!-- Trigger custom function card -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/card_background"
+                android:padding="16dp"
+                android:layout_marginBottom="24dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Trigger Custom Function"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Fire an onFunction rule trigger by custom function name."
+                    android:textSize="13sp"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginBottom="12dp" />
+
+                <Button
+                    android:id="@+id/triggerFunctionButton"
+                    style="@style/Widget.KetchSample.Button.Execute"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="Execute" />
+
+            </LinearLayout>
+
             <!-- Debug section -->
             <TextView
                 android:layout_width="match_parent"

@@ -3,6 +3,7 @@ package com.ketch.android.sample.standard
 import android.os.Bundle
 import android.widget.ScrollView
 import androidx.appcompat.app.AppCompatActivity
+import com.ketch.android.TriggerName
 import com.ketch.android.sample.standard.databinding.ActivitySecondBinding
 
 class SecondActivity : AppCompatActivity() {
@@ -26,6 +27,11 @@ class SecondActivity : AppCompatActivity() {
         binding.showPreferencesButton.setOnClickListener {
             appendLog("showPreferences() called from SecondActivity")
             app.ketch.showPreferences()
+        }
+
+        binding.triggerFunctionButton.setOnClickListener {
+            appendLog("trigger('demoFunction') called from SecondActivity")
+            app.ketch.trigger(TriggerName.CUSTOM, "demoFunction")
         }
 
         appendLog("SecondActivity started (shared Ketch instance)")

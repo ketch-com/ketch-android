@@ -12,6 +12,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import com.ketch.android.Ketch
+import com.ketch.android.TriggerName
 import com.ketch.android.sample.standard.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -92,6 +93,12 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, "showPreferences() called")
             appendLog("showPreferences() called")
             ketch.showPreferences()
+        }
+
+        binding.triggerFunctionButton.setOnClickListener {
+            Log.d(TAG, "trigger('demoFunction') called")
+            appendLog("trigger('demoFunction') called")
+            ketch.trigger(TriggerName.CUSTOM, "demoFunction")
         }
 
         binding.openSecondActivityButton.setOnClickListener {

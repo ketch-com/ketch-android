@@ -62,6 +62,7 @@ fun KetchSampleApp(
     onShowPreferences: () -> Unit,
     onOpenSecondActivity: () -> Unit,
     onLogSharedPreferences: () -> Unit,
+    onTriggerFunction: () -> Unit,
 ) {
     var isDarkMode by rememberSaveable { mutableStateOf(false) }
 
@@ -93,6 +94,13 @@ fun KetchSampleApp(
                 CardsRow(
                     onShowConsent = onShowConsent,
                     onShowPreferences = onShowPreferences
+                )
+                Spacer(Modifier.height(16.dp))
+                ActionCard(
+                    title = "Trigger Custom Function",
+                    description = "Fire an onFunction rule trigger by custom function name.",
+                    onExecute = onTriggerFunction,
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(24.dp))
                 SectionHeader("Debug")
