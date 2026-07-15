@@ -23,6 +23,7 @@ import com.ketch.android.data.PreferenceQRRequest
 import com.ketch.android.data.SubscriptionsRequest
 import com.ketch.android.data.SubscriptionsResponse
 import com.ketch.android.data.WillShowExperienceType
+import com.ketch.android.data.toRegionCode
 import com.ketch.android.ui.KetchDialogFragment
 import com.ketch.android.ui.KetchWebView
 import org.json.JSONObject
@@ -93,6 +94,13 @@ class Ketch private constructor(
 
     // Cache key for the config/presentation inputs baked into the boot HTML (excludes show type/tabs)
     private var loadedSignature: String? = null
+
+    // Headless getFullConfiguration() cache — avoids re-fetching when the config URL path is unchanged
+    private var cachedConfig: HeadlessConfiguration? = null
+    private var cachedConfigKey: String? = null
+
+    // Headless getLocation() cache — GET /ip takes no path params, so it never needs invalidation
+    private var cachedLocation: LocationResponse? = null
 
     // When true, the next dialog dismissal retains the WebView instead of destroying it
     private var retainWebViewOnDismiss = false
@@ -185,12 +193,33 @@ class Ketch private constructor(
     /** CDN region used for headless and WebView API calls. */
     fun getDataCenter(): KetchDataCenter = dataCenter
 
-    /** GeoIP / jurisdiction hint (`GET /ip`). */
+    /** GeoIP region (`GET /ip`). Result is cached on this instance; see [getRegion]. */
     fun getLocation(callback: (Result<LocationResponse>) -> Unit) {
-        headlessApiClient.getLocation(callback)
+        synchronized(lock) {
+            cachedLocation?.let {
+                callback(Result.success(it))
+                return
+            }
+        }
+        headlessApiClient.getLocation { result ->
+            result.onSuccess { location -> synchronized(lock) { cachedLocation = location } }
+            callback(result)
+        }
     }
 
-    suspend fun getLocation(): LocationResponse = headlessApiClient.getLocation()
+    suspend fun getLocation(): LocationResponse {
+        synchronized(lock) { cachedLocation?.let { return it } }
+        val location = headlessApiClient.getLocation()
+        synchronized(lock) { cachedLocation = location }
+        return location
+    }
+
+    /** Combined ISO region code (e.g. "US-CA") derived from [getLocation]. */
+    fun getRegion(callback: (Result<String?>) -> Unit) {
+        getLocation { result -> callback(result.map { it.location?.toRegionCode() }) }
+    }
+
+    suspend fun getRegion(): String? = getLocation().location?.toRegionCode()
 
     /** Minimal config (`GET .../boot.json`). */
     fun getBootstrapConfiguration(
@@ -202,16 +231,68 @@ class Ketch private constructor(
     suspend fun getBootstrapConfiguration(): HeadlessConfiguration =
         headlessApiClient.getBootstrapConfiguration(orgCode, property)
 
-    /** Full config with optional env / jurisdiction / language and hash query param. */
+    /**
+     * Full config with optional env / jurisdiction / language and hash query param.
+     *
+     * Cached on this instance, keyed on the request's URL-path-affecting fields. A cache hit
+     * skips the network call entirely; [setJurisdiction] and [setLanguage] clear the cache since
+     * they change the config URL path.
+     */
     fun getFullConfiguration(
         request: FullConfigurationRequest,
         callback: (Result<HeadlessConfiguration>) -> Unit,
     ) {
-        headlessApiClient.getFullConfiguration(request, callback)
+        val key = buildConfigCacheKey(request)
+        synchronized(lock) {
+            if (cachedConfigKey == key) {
+                cachedConfig?.let {
+                    callback(Result.success(it))
+                    return
+                }
+            }
+        }
+        headlessApiClient.getFullConfiguration(request) { result ->
+            result.onSuccess { config -> synchronized(lock) { cachedConfig = config; cachedConfigKey = key } }
+            callback(result)
+        }
     }
 
-    suspend fun getFullConfiguration(request: FullConfigurationRequest): HeadlessConfiguration =
-        headlessApiClient.getFullConfiguration(request)
+    suspend fun getFullConfiguration(request: FullConfigurationRequest): HeadlessConfiguration {
+        val key = buildConfigCacheKey(request)
+        synchronized(lock) {
+            if (cachedConfigKey == key) {
+                cachedConfig?.let { return it }
+            }
+        }
+        val config = headlessApiClient.getFullConfiguration(request)
+        synchronized(lock) { cachedConfig = config; cachedConfigKey = key }
+        return config
+    }
+
+    /**
+     * Resolved jurisdiction code for this instance's current org/property/environment/
+     * jurisdiction/language, e.g. from a prior [setJurisdiction] call. Backed by the same cache
+     * as [getFullConfiguration].
+     */
+    fun getJurisdiction(callback: (Result<String?>) -> Unit) {
+        getFullConfiguration(buildJurisdictionConfigRequest()) { result ->
+            callback(result.map { it.jurisdiction?.code ?: it.jurisdiction?.defaultJurisdictionCode })
+        }
+    }
+
+    suspend fun getJurisdiction(): String? {
+        val config = getFullConfiguration(buildJurisdictionConfigRequest())
+        return config.jurisdiction?.code ?: config.jurisdiction?.defaultJurisdictionCode
+    }
+
+    private fun buildJurisdictionConfigRequest(): FullConfigurationRequest =
+        FullConfigurationRequest(
+            organizationCode = orgCode,
+            propertyCode = property,
+            environmentCode = environment,
+            jurisdictionCode = jurisdiction,
+            languageCode = language,
+        )
 
     /** Server consent including `protocols` (`POST .../consent/{org}/get`). */
     fun getConsent(
@@ -513,6 +594,7 @@ class Ketch private constructor(
      */
     fun setLanguage(language: String?) {
         this.language = language
+        clearConfigCache()
     }
 
     /**
@@ -522,6 +604,7 @@ class Ketch private constructor(
      */
     fun setJurisdiction(jurisdiction: String?) {
         this.jurisdiction = jurisdiction
+        clearConfigCache()
     }
 
     /**
@@ -531,6 +614,17 @@ class Ketch private constructor(
      */
     fun setRegion(region: String?) {
         this.region = region
+        // Not a config URL path component (see buildConfigCacheKey) — the config cache is
+        // intentionally left intact.
+    }
+
+    // Invalidates the getFullConfiguration() cache; called whenever a config URL path
+    // component (jurisdiction, language) changes on this instance.
+    private fun clearConfigCache() {
+        synchronized(lock) {
+            cachedConfig = null
+            cachedConfigKey = null
+        }
     }
 
     /**
@@ -756,6 +850,17 @@ class Ketch private constructor(
             bottomPadding.toString(),
             topPadding.toString(),
             logLevel.name,
+        ).joinToString("|")
+
+    // Cache key for getFullConfiguration() — only the fields that affect the config URL path.
+    private fun buildConfigCacheKey(request: FullConfigurationRequest): String =
+        listOf(
+            request.organizationCode,
+            request.propertyCode,
+            request.environmentCode ?: "",
+            request.jurisdictionCode ?: "",
+            request.languageCode ?: "",
+            request.hash ?: "",
         ).joinToString("|")
 
     private fun buildPreferenceOptionsJson(

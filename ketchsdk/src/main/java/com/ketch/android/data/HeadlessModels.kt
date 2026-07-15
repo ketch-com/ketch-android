@@ -22,6 +22,12 @@ data class LocationResponse(
     @SerializedName("location") val location: IPInfo? = null,
 )
 
+/** Combined ISO region code, e.g. "US-CA", or "US" when no subdivision is known. */
+fun IPInfo.toRegionCode(): String? {
+    val country = countryCode?.takeIf { it.isNotBlank() } ?: return regionCode?.takeIf { it.isNotBlank() }
+    return regionCode?.takeIf { it.isNotBlank() }?.let { "$country-$it" } ?: country
+}
+
 /** Parameters for v3 `getFullConfiguration` (ketch-types `GetFullConfigurationRequest`). */
 data class FullConfigurationRequest(
     val organizationCode: String,

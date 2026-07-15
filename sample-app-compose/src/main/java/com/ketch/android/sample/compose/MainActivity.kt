@@ -10,7 +10,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.mutableStateListOf
 import com.ketch.android.Ketch
 import com.ketch.android.TriggerName
-import com.ketch.android.data.FullConfigurationRequest
 
 class MainActivity : AppCompatActivity() {
 
@@ -64,20 +63,29 @@ class MainActivity : AppCompatActivity() {
                     ketch.trigger(TriggerName.CUSTOM, "demoFunction")
                 },
                 onGetJurisdiction = {
-                    Log.d(TAG, "getFullConfiguration() called")
-                    logEntries.add("getFullConfiguration() called")
-                    val request = FullConfigurationRequest(
-                        organizationCode = ComposeSampleApplication.ORG_CODE,
-                        propertyCode = ComposeSampleApplication.PROPERTY,
-                    )
-                    ketch.getFullConfiguration(request) { result ->
-                        result.onSuccess { config ->
-                            val message = "Jurisdiction: ${config.jurisdiction?.code ?: "?"} " +
-                                "(default: ${config.jurisdiction?.defaultJurisdictionCode ?: "?"})"
+                    Log.d(TAG, "getJurisdiction() called")
+                    logEntries.add("getJurisdiction() called")
+                    ketch.getJurisdiction { result ->
+                        result.onSuccess { jurisdiction ->
+                            val message = "Jurisdiction: ${jurisdiction ?: "?"}"
                             Log.d(TAG, message)
                             logEntries.add(message)
                         }.onFailure { error ->
-                            Log.e(TAG, "getFullConfiguration() failed", error)
+                            Log.e(TAG, "getJurisdiction() failed", error)
+                            logEntries.add("Headless error: ${error.message}")
+                        }
+                    }
+                },
+                onGetRegion = {
+                    Log.d(TAG, "getRegion() called")
+                    logEntries.add("getRegion() called")
+                    ketch.getRegion { result ->
+                        result.onSuccess { region ->
+                            val message = "Region: ${region ?: "?"}"
+                            Log.d(TAG, message)
+                            logEntries.add(message)
+                        }.onFailure { error ->
+                            Log.e(TAG, "getRegion() failed", error)
                             logEntries.add("Headless error: ${error.message}")
                         }
                     }

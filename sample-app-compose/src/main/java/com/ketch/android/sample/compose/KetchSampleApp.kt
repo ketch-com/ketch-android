@@ -65,6 +65,7 @@ fun KetchSampleApp(
     onLogSharedPreferences: () -> Unit,
     onTriggerFunction: () -> Unit,
     onGetJurisdiction: () -> Unit,
+    onGetRegion: () -> Unit,
 ) {
     var isDarkMode by rememberSaveable { mutableStateOf(false) }
 
@@ -122,6 +123,13 @@ fun KetchSampleApp(
                     title = "Get Jurisdiction",
                     description = "Call the headless API (getFullConfiguration) and log the resolved jurisdiction.",
                     onExecute = onGetJurisdiction,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(16.dp))
+                ActionCard(
+                    title = "Get Region",
+                    description = "Call the headless API (getLocation) and log the resolved GeoIP region.",
+                    onExecute = onGetRegion,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(24.dp))
