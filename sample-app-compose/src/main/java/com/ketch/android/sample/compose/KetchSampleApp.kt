@@ -128,7 +128,7 @@ fun KetchSampleApp(
                 Spacer(Modifier.height(16.dp))
                 ActionCard(
                     title = "Get Region",
-                    description = "Call the headless API (getLocation) and log the resolved GeoIP region.",
+                    description = "Call the headless API (getRegion) and log the resolved GeoIP region.",
                     onExecute = onGetRegion,
                     modifier = Modifier.fillMaxWidth(),
                 )

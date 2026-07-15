@@ -195,33 +195,26 @@ class Ketch private constructor(
     /** CDN region used for headless and WebView API calls. */
     fun getDataCenter(): KetchDataCenter = dataCenter
 
-    /** GeoIP region (`GET /ip`). Result is cached on this instance; see [getRegion]. */
-    fun getLocation(callback: (Result<LocationResponse>) -> Unit) {
+    /** Combined ISO region code (e.g. "US-CA") from GeoIP (`GET /ip`). Cached on this instance. */
+    fun getRegion(callback: (Result<String?>) -> Unit) {
         synchronized(lock) {
             cachedLocation?.let {
-                callback(Result.success(it))
+                callback(Result.success(it.location?.toRegionCode()))
                 return
             }
         }
         headlessApiClient.getLocation { result ->
             result.onSuccess { location -> synchronized(lock) { cachedLocation = location } }
-            callback(result)
+            callback(result.map { it.location?.toRegionCode() })
         }
     }
 
-    suspend fun getLocation(): LocationResponse {
-        synchronized(lock) { cachedLocation?.let { return it } }
+    suspend fun getRegion(): String? {
+        synchronized(lock) { cachedLocation?.let { return it.location?.toRegionCode() } }
         val location = headlessApiClient.getLocation()
         synchronized(lock) { cachedLocation = location }
-        return location
+        return location.location?.toRegionCode()
     }
-
-    /** Combined ISO region code (e.g. "US-CA") derived from [getLocation]. */
-    fun getRegion(callback: (Result<String?>) -> Unit) {
-        getLocation { result -> callback(result.map { it.location?.toRegionCode() }) }
-    }
-
-    suspend fun getRegion(): String? = getLocation().location?.toRegionCode()
 
     /** Minimal config (`GET .../boot.json`). */
     fun getBootstrapConfiguration(
