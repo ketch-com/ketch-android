@@ -158,8 +158,9 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             }
 
             (view as? KetchWebView)?.let { ketchWebView ->
+                Log.w(TAG, "onDismiss source=rendererCrash status=None")
                 ketchWebView.kill()
-                ketchWebView.listener?.onClose(HideExperienceStatus.None, retainWebView = false)
+                ketchWebView.listener?.onClose(HideExperienceStatus.None, source = "rendererCrash", retainWebView = false)
             }
 
             return true
@@ -499,7 +500,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         fun onConsentUpdated(consent: Consent)
         fun onError(errMsg: String?)
         fun changeDialog(display: ContentDisplay)
-        fun onClose(status: HideExperienceStatus, retainWebView: Boolean = true)
+        fun onClose(status: HideExperienceStatus, source: String = "hideExperience", retainWebView: Boolean = true)
         fun onWillShowExperience(experienceType: WillShowExperienceType)
         fun onHasShownExperience()
         fun onNativeStoragePut(key: String, value: String) {}

@@ -7,10 +7,21 @@ import android.util.Log
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
+import com.ketch.android.api.HeadlessApiClient
+import com.ketch.android.api.KetchDataCenter
 import com.ketch.android.data.Consent
+import com.ketch.android.data.ConsentConfig
+import com.ketch.android.data.ConsentUpdate
 import com.ketch.android.data.ContentDisplay
+import com.ketch.android.data.FullConfigurationRequest
+import com.ketch.android.data.HeadlessConfiguration
 import com.ketch.android.data.HideExperienceStatus
+import com.ketch.android.data.InvokeRightRequest
 import com.ketch.android.data.KetchConfig
+import com.ketch.android.data.LocationResponse
+import com.ketch.android.data.PreferenceQRRequest
+import com.ketch.android.data.SubscriptionsRequest
+import com.ketch.android.data.SubscriptionsResponse
 import com.ketch.android.data.WillShowExperienceType
 import com.ketch.android.ui.KetchDialogFragment
 import com.ketch.android.ui.KetchWebView
@@ -30,8 +41,13 @@ class Ketch private constructor(
     private val environment: String?,
     private val listener: Listener?,
     private val ketchUrl: String?,
-    private val logLevel: LogLevel
+    private val dataCenter: KetchDataCenter,
+    private val logLevel: LogLevel,
+    private val headlessApiClient: HeadlessApiClient,
 ) {
+    // Falls back to the CDN region's base URL when no explicit ketchUrl override is provided.
+    private val effectiveKetchUrl: String = ketchUrl ?: dataCenter.baseUrl
+
     // Use application context for non-UI operations to avoid memory leaks
     private val context: Context = context.applicationContext
 
@@ -150,7 +166,7 @@ class Ketch private constructor(
             null,
             emptyList(),
             null,
-            ketchUrl,
+            effectiveKetchUrl,
             logLevel,
             age,
             ageLower,
@@ -161,6 +177,94 @@ class Ketch private constructor(
         )
         return true
     }
+
+    /** CDN region used for headless and WebView API calls. */
+    fun getDataCenter(): KetchDataCenter = dataCenter
+
+    /** GeoIP / jurisdiction hint (`GET /ip`). */
+    fun getLocation(callback: (Result<LocationResponse>) -> Unit) {
+        headlessApiClient.getLocation(callback)
+    }
+
+    suspend fun getLocation(): LocationResponse = headlessApiClient.getLocation()
+
+    /** Minimal config (`GET .../boot.json`). */
+    fun getBootstrapConfiguration(
+        callback: (Result<HeadlessConfiguration>) -> Unit,
+    ) {
+        headlessApiClient.getBootstrapConfiguration(orgCode, property, callback)
+    }
+
+    suspend fun getBootstrapConfiguration(): HeadlessConfiguration =
+        headlessApiClient.getBootstrapConfiguration(orgCode, property)
+
+    /** Full config with optional env / jurisdiction / language and hash query param. */
+    fun getFullConfiguration(
+        request: FullConfigurationRequest,
+        callback: (Result<HeadlessConfiguration>) -> Unit,
+    ) {
+        headlessApiClient.getFullConfiguration(request, callback)
+    }
+
+    suspend fun getFullConfiguration(request: FullConfigurationRequest): HeadlessConfiguration =
+        headlessApiClient.getFullConfiguration(request)
+
+    /** Server consent including `protocols` (`POST .../consent/{org}/get`). */
+    fun getConsent(
+        config: ConsentConfig,
+        callback: (Result<Consent>) -> Unit,
+    ) {
+        headlessApiClient.getConsent(config, callback)
+    }
+
+    suspend fun getConsent(config: ConsentConfig): Consent =
+        headlessApiClient.getConsent(config)
+
+    /** Updates consent; returns server response with computed `protocols`. */
+    fun setConsent(
+        update: ConsentUpdate,
+        callback: (Result<Consent>) -> Unit,
+    ) {
+        headlessApiClient.setConsent(update.withoutProtocols(), callback)
+    }
+
+    suspend fun setConsent(update: ConsentUpdate): Consent =
+        headlessApiClient.setConsent(update.withoutProtocols())
+
+    /** Invokes a data subject right (`POST .../rights/{org}/invoke`). */
+    fun invokeRight(
+        request: InvokeRightRequest,
+        callback: (Result<Unit>) -> Unit,
+    ) {
+        headlessApiClient.invokeRight(request, callback)
+    }
+
+    suspend fun invokeRight(request: InvokeRightRequest) = headlessApiClient.invokeRight(request)
+
+    /** Gets subscription topics/controls (`POST .../subscriptions/{org}/get`). */
+    fun getSubscriptions(
+        request: SubscriptionsRequest,
+        callback: (Result<SubscriptionsResponse>) -> Unit,
+    ) {
+        headlessApiClient.getSubscriptions(request, callback)
+    }
+
+    suspend fun getSubscriptions(request: SubscriptionsRequest): SubscriptionsResponse =
+        headlessApiClient.getSubscriptions(request)
+
+    /** Updates subscription topics/controls (`POST .../subscriptions/{org}/update`). */
+    fun setSubscriptions(
+        request: SubscriptionsRequest,
+        callback: (Result<Unit>) -> Unit,
+    ) {
+        headlessApiClient.setSubscriptions(request, callback)
+    }
+
+    suspend fun setSubscriptions(request: SubscriptionsRequest) =
+        headlessApiClient.setSubscriptions(request)
+
+    fun preferenceQRUrl(request: PreferenceQRRequest): String =
+        headlessApiClient.preferenceQRUrl(request)
 
     /**
      * Display the consent, adding the fragment dialog to the given FragmentManager.
@@ -197,7 +301,7 @@ class Ketch private constructor(
             KetchWebView.ExperienceType.CONSENT,
             emptyList(),
             null,
-            ketchUrl,
+            effectiveKetchUrl,
             logLevel,
             age,
             ageLower,
@@ -244,7 +348,7 @@ class Ketch private constructor(
             KetchWebView.ExperienceType.PREFERENCES,
             emptyList(),
             null,
-            ketchUrl,
+            effectiveKetchUrl,
             logLevel,
             age,
             ageLower,
@@ -295,7 +399,7 @@ class Ketch private constructor(
             KetchWebView.ExperienceType.PREFERENCES,
             tabs,
             tab,
-            ketchUrl,
+            effectiveKetchUrl,
             logLevel,
             age,
             ageLower,
@@ -320,9 +424,11 @@ class Ketch private constructor(
                 } catch (e: Exception) {
                     Log.e(TAG, "Error dismissing dialog: ${e.message}")
                 } finally {
+                    Log.d(TAG, "onDismiss source=dismissDialog status=None")
                     resetShowingState(HideExperienceStatus.None)
                 }
             } else if (isShowingExperience || activeWebView != null) {
+                Log.d(TAG, "onDismiss source=dismissDialog status=None")
                 resetShowingState(HideExperienceStatus.None)
             }
         }
@@ -562,7 +668,7 @@ class Ketch private constructor(
         listOf(
             orgCode,
             property,
-            ketchUrl ?: "",
+            effectiveKetchUrl,
             environment ?: "",
             language ?: "",
             jurisdiction ?: "",
@@ -765,7 +871,7 @@ class Ketch private constructor(
                     }
                 }
 
-                override fun onClose(status: HideExperienceStatus, retainWebView: Boolean) {
+                override fun onClose(status: HideExperienceStatus, source: String, retainWebView: Boolean) {
                     synchronized(lock) {
                         if (!retainWebView) {
                             activeWebView = null
@@ -789,6 +895,7 @@ class Ketch private constructor(
                         } else {
                             handleDialogDismissed()
                         }
+                        Log.d(TAG, "onDismiss source=$source status=${status.name}")
                         this@Ketch.listener?.onDismiss(status)
                     }
                 }
@@ -974,6 +1081,7 @@ class Ketch private constructor(
             environment: String?,
             listener: Listener?,
             ketchUrl: String?,
+            dataCenter: KetchDataCenter = KetchDataCenter.US,
             logLevel: LogLevel,
         ) = Ketch(
             context = context,
@@ -984,7 +1092,9 @@ class Ketch private constructor(
             environment = environment,
             listener = listener,
             ketchUrl = ketchUrl,
+            dataCenter = dataCenter,
             logLevel = logLevel,
+            headlessApiClient = HeadlessApiClient(dataCenter),
         )
 
         fun create(
@@ -995,6 +1105,7 @@ class Ketch private constructor(
             environment: String?,
             listener: Listener?,
             ketchUrl: String?,
+            dataCenter: KetchDataCenter = KetchDataCenter.US,
             logLevel: LogLevel,
         ) = Ketch(
             context = context,
@@ -1005,7 +1116,12 @@ class Ketch private constructor(
             environment = environment,
             listener = listener,
             ketchUrl = ketchUrl,
+            dataCenter = dataCenter,
             logLevel = logLevel,
+            headlessApiClient = HeadlessApiClient(dataCenter),
         )
     }
 }
+
+private fun ConsentUpdate.withoutProtocols(): ConsentUpdate =
+    copy(protocols = null)
