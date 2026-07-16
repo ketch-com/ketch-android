@@ -24,6 +24,7 @@ import com.ketch.android.data.SubscriptionsRequest
 import com.ketch.android.data.SubscriptionsResponse
 import com.ketch.android.data.WillShowExperienceType
 import com.ketch.android.data.configPathSegment
+import com.ketch.android.data.jurisdictionCode
 import com.ketch.android.data.normalizedHash
 import com.ketch.android.data.toRegionCode
 import com.ketch.android.ui.KetchDialogFragment
@@ -271,14 +272,12 @@ class Ketch private constructor(
      */
     fun getJurisdiction(callback: (Result<String?>) -> Unit) {
         getFullConfiguration(buildJurisdictionConfigRequest()) { result ->
-            callback(result.map { it.jurisdiction?.code ?: it.jurisdiction?.defaultJurisdictionCode })
+            callback(result.map { it.jurisdictionCode() })
         }
     }
 
-    suspend fun getJurisdiction(): String? {
-        val config = getFullConfiguration(buildJurisdictionConfigRequest())
-        return config.jurisdiction?.code ?: config.jurisdiction?.defaultJurisdictionCode
-    }
+    suspend fun getJurisdiction(): String? =
+        getFullConfiguration(buildJurisdictionConfigRequest()).jurisdictionCode()
 
     private fun buildJurisdictionConfigRequest(): FullConfigurationRequest =
         FullConfigurationRequest(

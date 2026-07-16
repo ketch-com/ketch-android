@@ -10,10 +10,11 @@ import com.ketch.android.data.ConsentUpdate
 import com.ketch.android.data.FullConfigurationRequest
 import com.ketch.android.data.HeadlessConfiguration
 import com.ketch.android.data.InvokeRightRequest
-import com.ketch.android.data.LocationResponse
 import com.ketch.android.data.PreferenceQRRequest
 import com.ketch.android.data.SubscriptionsRequest
 import com.ketch.android.data.SubscriptionsResponse
+import com.ketch.android.data.jurisdictionCode
+import com.ketch.android.data.toRegionCode
 
 /**
  * Factory to create the Ketch object.
@@ -111,12 +112,14 @@ object KetchSdk {
 
     // MARK: - Headless API (static, web/v3)
 
-    /** GeoIP / jurisdiction hint (`GET /ip`). */
-    fun getLocation(
+    /** Combined ISO region code (e.g. "US-CA") from GeoIP (`GET /ip`). */
+    fun getRegion(
         dataCenter: KetchDataCenter = KetchDataCenter.US,
-        callback: (Result<LocationResponse>) -> Unit,
+        callback: (Result<String?>) -> Unit,
     ) {
-        HeadlessApiClient(dataCenter).getLocation(callback)
+        HeadlessApiClient(dataCenter).getLocation { result ->
+            callback(result.map { it.location?.toRegionCode() })
+        }
     }
 
     /** Minimal config (`GET .../boot.json`). */
@@ -136,6 +139,17 @@ object KetchSdk {
         callback: (Result<HeadlessConfiguration>) -> Unit,
     ) {
         HeadlessApiClient(dataCenter).getFullConfiguration(request, callback)
+    }
+
+    /** Resolved jurisdiction code from full config (`GET .../config.json`). */
+    fun getJurisdiction(
+        request: FullConfigurationRequest,
+        dataCenter: KetchDataCenter = KetchDataCenter.US,
+        callback: (Result<String?>) -> Unit,
+    ) {
+        HeadlessApiClient(dataCenter).getFullConfiguration(request) { result ->
+            callback(result.map { it.jurisdictionCode() })
+        }
     }
 
     /** Server consent including `protocols` (`POST .../consent/{org}/get`). */

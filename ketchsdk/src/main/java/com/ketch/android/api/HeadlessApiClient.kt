@@ -57,11 +57,11 @@ class HeadlessApiClient(
         }
     }
 
-    fun getLocation(callback: (Result<LocationResponse>) -> Unit) {
+    internal fun getLocation(callback: (Result<LocationResponse>) -> Unit) {
         launchAsync(callback) { getLocation() }
     }
 
-    suspend fun getLocation(): LocationResponse = withContext(Dispatchers.IO) {
+    internal suspend fun getLocation(): LocationResponse = withContext(Dispatchers.IO) {
         get("/ip", LocationResponse::class.java)
     }
 

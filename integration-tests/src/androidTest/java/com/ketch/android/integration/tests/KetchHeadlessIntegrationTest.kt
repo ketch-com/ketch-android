@@ -25,15 +25,16 @@ import org.junit.runner.RunWith
 class KetchHeadlessIntegrationTest {
 
     @Test
-    fun testGetLocationReturnsGeoIP() {
-        val location = awaitHeadless { callback ->
-            KetchSdk.getLocation(dataCenter, callback)
-        }
-        assertNotNull("Expected location payload", location.location)
-        assertFalse(
-            "Expected countryCode from CDN",
-            location.location?.countryCode.isNullOrBlank(),
-        )
+    fun testGetRegionReturnsRegionCode() {
+        val region = awaitHeadless { callback -> KetchSdk.getRegion(dataCenter, callback) }
+        assertFalse("Expected a region code from CDN GeoIP lookup", region.isNullOrBlank())
+    }
+
+    @Test
+    fun testGetJurisdictionReturnsJurisdictionCode() {
+        val request = FullConfigurationRequest(organizationCode = ORG_CODE, propertyCode = PROPERTY)
+        val jurisdiction = awaitHeadless { callback -> KetchSdk.getJurisdiction(request, dataCenter, callback) }
+        assertFalse("Expected a jurisdiction code from CDN full config", jurisdiction.isNullOrBlank())
     }
 
     @Test
@@ -51,9 +52,7 @@ class KetchHeadlessIntegrationTest {
     fun testHeadlessColdStartConsentRoundTrip() {
         val identities = uniqueEmailIdentity()
 
-        awaitHeadless { callback ->
-            KetchSdk.getLocation(dataCenter, callback)
-        }
+        awaitHeadless { callback -> KetchSdk.getRegion(dataCenter, callback) }
 
         val boot = awaitHeadless { callback ->
             KetchSdk.getBootstrapConfiguration(ORG_CODE, PROPERTY, dataCenter, callback)

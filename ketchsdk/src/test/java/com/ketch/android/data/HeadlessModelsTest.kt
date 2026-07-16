@@ -89,4 +89,26 @@ class HeadlessModelsTest {
                 .normalizedHash(),
         )
     }
+
+    @Test
+    fun jurisdictionCode_prefersSpecificOverDefault() {
+        val config = HeadlessConfiguration(
+            jurisdiction = ConfigurationJurisdiction(code = "us-ca", defaultJurisdictionCode = "us"),
+        )
+        assertEquals("us-ca", config.jurisdictionCode())
+    }
+
+    @Test
+    fun jurisdictionCode_fallsBackToDefault_whenCodeAbsent() {
+        val config = HeadlessConfiguration(
+            jurisdiction = ConfigurationJurisdiction(code = null, defaultJurisdictionCode = "us"),
+        )
+        assertEquals("us", config.jurisdictionCode())
+    }
+
+    @Test
+    fun jurisdictionCode_null_whenJurisdictionAbsent() {
+        val config = HeadlessConfiguration(jurisdiction = null)
+        assertNull(config.jurisdictionCode())
+    }
 }

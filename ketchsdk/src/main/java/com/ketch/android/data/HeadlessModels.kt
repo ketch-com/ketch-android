@@ -129,6 +129,10 @@ data class ConfigurationJurisdiction(
     @SerializedName("defaultJurisdictionCode") val defaultJurisdictionCode: String? = null,
 )
 
+/** Resolved jurisdiction code: the CDN's specific jurisdiction if set, else its default. */
+fun HeadlessConfiguration.jurisdictionCode(): String? =
+    jurisdiction?.code ?: jurisdiction?.defaultJurisdictionCode
+
 data class ConfigurationPurpose(
     @SerializedName("code") val code: String? = null,
     @SerializedName("legalBasisCode") val legalBasisCode: String? = null,
