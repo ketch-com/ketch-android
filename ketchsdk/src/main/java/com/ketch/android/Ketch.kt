@@ -196,8 +196,15 @@ class Ketch private constructor(
     /** CDN region used for headless and WebView API calls. */
     fun getDataCenter(): KetchDataCenter = dataCenter
 
-    /** Combined ISO region code (e.g. "US-CA") from GeoIP (`GET /ip`). Cached on this instance. */
+    /**
+     * Combined ISO region code (e.g. "US-CA"). Returns the value from [setRegion] if one is set
+     * on this instance; otherwise falls back to GeoIP (`GET /ip`), cached on this instance.
+     */
     fun getRegion(callback: (Result<String?>) -> Unit) {
+        region?.let {
+            callback(Result.success(it))
+            return
+        }
         synchronized(lock) {
             cachedLocation?.let {
                 callback(Result.success(it.location?.toRegionCode()))
@@ -211,6 +218,7 @@ class Ketch private constructor(
     }
 
     suspend fun getRegion(): String? {
+        region?.let { return it }
         synchronized(lock) { cachedLocation?.let { return it.location?.toRegionCode() } }
         val location = headlessApiClient.getLocation()
         synchronized(lock) { cachedLocation = location }
@@ -266,18 +274,23 @@ class Ketch private constructor(
     }
 
     /**
-     * Resolved jurisdiction code for this instance's current org/property/environment/
-     * jurisdiction/language, e.g. from a prior [setJurisdiction] call. Backed by the same cache
-     * as [getFullConfiguration].
+     * Resolved jurisdiction code. Returns the value from [setJurisdiction] if one is set on this
+     * instance; otherwise falls back to the server-resolved code from [getFullConfiguration].
      */
     fun getJurisdiction(callback: (Result<String?>) -> Unit) {
+        jurisdiction?.let {
+            callback(Result.success(it))
+            return
+        }
         getFullConfiguration(buildJurisdictionConfigRequest()) { result ->
             callback(result.map { it.jurisdictionCode() })
         }
     }
 
-    suspend fun getJurisdiction(): String? =
-        getFullConfiguration(buildJurisdictionConfigRequest()).jurisdictionCode()
+    suspend fun getJurisdiction(): String? {
+        jurisdiction?.let { return it }
+        return getFullConfiguration(buildJurisdictionConfigRequest()).jurisdictionCode()
+    }
 
     private fun buildJurisdictionConfigRequest(): FullConfigurationRequest =
         FullConfigurationRequest(
