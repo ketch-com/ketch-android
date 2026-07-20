@@ -1,5 +1,6 @@
 package com.ketch.android.integration.tests
 
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ketch.android.KetchSdk
 import com.ketch.android.data.ConsentUpdate
@@ -11,6 +12,7 @@ import com.ketch.android.integration.tests.HeadlessIntegrationSupport.awaitHeadl
 import com.ketch.android.integration.tests.HeadlessIntegrationSupport.consentConfigFrom
 import com.ketch.android.integration.tests.HeadlessIntegrationSupport.dataCenter
 import com.ketch.android.integration.tests.HeadlessIntegrationSupport.uniqueEmailIdentity
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -35,6 +37,36 @@ class KetchHeadlessIntegrationTest {
         val request = FullConfigurationRequest(organizationCode = ORG_CODE, propertyCode = PROPERTY)
         val jurisdiction = awaitHeadless { callback -> KetchSdk.getJurisdiction(request, dataCenter, callback) }
         assertFalse("Expected a jurisdiction code from CDN full config", jurisdiction.isNullOrBlank())
+    }
+
+    @Test
+    fun testGetJurisdictionPrefersLocallySetValue() {
+        val ketch = KetchSdk.create(
+            context = ApplicationProvider.getApplicationContext(),
+            organization = ORG_CODE,
+            property = PROPERTY,
+            environment = ENVIRONMENT,
+        )
+        ketch.setJurisdiction("locally_set_jurisdiction")
+
+        val jurisdiction = awaitHeadless { callback -> ketch.getJurisdiction(callback) }
+
+        assertEquals("locally_set_jurisdiction", jurisdiction)
+    }
+
+    @Test
+    fun testGetRegionPrefersLocallySetValue() {
+        val ketch = KetchSdk.create(
+            context = ApplicationProvider.getApplicationContext(),
+            organization = ORG_CODE,
+            property = PROPERTY,
+            environment = ENVIRONMENT,
+        )
+        ketch.setRegion("ZZ-FAKE")
+
+        val region = awaitHeadless { callback -> ketch.getRegion(callback) }
+
+        assertEquals("ZZ-FAKE", region)
     }
 
     @Test
