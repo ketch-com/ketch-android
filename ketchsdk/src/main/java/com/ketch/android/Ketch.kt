@@ -95,6 +95,10 @@ class Ketch private constructor(
     // Reference to the active webView to prevent multiple webView instances existence
     private var activeWebView: KetchWebView? = null
 
+    // The Activity whose context built activeWebView, if any. Used by onHostDestroyed
+    // to avoid tearing down a WebView owned by an Activity other than the one being destroyed.
+    private var activeWebViewHost: WeakReference<FragmentActivity>? = null
+
     // Cache key for the config/presentation inputs baked into the boot HTML (excludes show type/tabs)
     private var loadedSignature: String? = null
 
@@ -725,8 +729,6 @@ class Ketch private constructor(
     private fun resolveFragmentManager(): FragmentManager? =
         resolveHost()?.supportFragmentManager ?: seedFragmentManager?.get()
 
-    private fun resolveWebViewContext(): Context = resolveHost() ?: context
-
     private fun reportNoHostError() {
         isShowingExperience = false
         Log.e(TAG, "No active Activity to host the Ketch experience")
@@ -796,7 +798,7 @@ class Ketch private constructor(
         if (isChangingConfigurations) {
             if (!isShowingExperience) {
                 synchronized(lock) {
-                    cleanupWebView()
+                    tearDownWebViewIfOwnedBy(destroyedActivity)
                 }
             }
             return
@@ -804,9 +806,7 @@ class Ketch private constructor(
 
         if (!isShowingExperience) {
             synchronized(lock) {
-                if (activeWebView != null) {
-                    cleanupWebView()
-                }
+                tearDownWebViewIfOwnedBy(destroyedActivity)
             }
             return
         }
@@ -816,6 +816,14 @@ class Ketch private constructor(
         synchronized(lock) {
             resetShowingState(HideExperienceStatus.None)
         }
+    }
+
+    // An unrelated Activity's destroy must not kill a WebView tied to a different, still-alive host
+    private fun tearDownWebViewIfOwnedBy(destroyedActivity: Activity) {
+        val host = activeWebViewHost?.get() ?: return
+        if (host !== destroyedActivity) return
+        Log.d(TAG, "onHostDestroyed: tearing down WebView owned by ${host.javaClass.simpleName}")
+        cleanupWebView()
     }
 
     private fun resetShowingState(dismissStatus: HideExperienceStatus) {
@@ -932,6 +940,7 @@ class Ketch private constructor(
     private fun cleanupWebView() {
         activeWebView?.kill()
         activeWebView = null
+        activeWebViewHost = null
         loadedSignature = null
         pendingTrigger = null
     }
@@ -950,7 +959,8 @@ class Ketch private constructor(
             // Use Activity context for WebView so native popups (e.g., <select> dropdowns)
             // can obtain a valid window token. Falls back to applicationContext when no
             // foreground Activity is tracked (callbacks still resolve; display needs a host).
-            val webViewContext = resolveWebViewContext()
+            val webViewHost = resolveHost()
+            val webViewContext = webViewHost ?: context
             val webView = KetchWebView(webViewContext, shouldRetry)
 
             // Enable debug mode
@@ -1072,6 +1082,7 @@ class Ketch private constructor(
                     synchronized(lock) {
                         if (!retainWebView) {
                             activeWebView = null
+                            activeWebViewHost = null
                             loadedSignature = null
                         } else {
                             retainWebViewOnDismiss = true
@@ -1162,6 +1173,7 @@ class Ketch private constructor(
             }
 
             activeWebView = webView
+            activeWebViewHost = webViewHost?.let { WeakReference(it) }
 
             return activeWebView
         }
