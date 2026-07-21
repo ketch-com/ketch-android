@@ -755,15 +755,29 @@ class Ketch private constructor(
      * foreground (i.e. the integrator navigated to another screen), the orphaned experience is
      * auto-dismissed so the SDK does not get stuck and the new Activity can show experiences.
      *
+     * When nothing is showing but a WebView was retained after dismiss (`hideExperience` / onClose),
+     * the same different-foreground check releases that WebView (and its Activity context) without
+     * waiting for [android.app.Activity.onDestroy], which back-stack navigation may never trigger.
+     *
      * Backgrounding (Home/recents) is intentionally ignored: in that case the foreground
-     * Activity is still the host, so the dialog is preserved for when the user returns.
-     * Configuration changes (e.g. rotation) are also ignored.
+     * Activity is still the host, so the dialog and any retained WebView are preserved for when
+     * the user returns. Configuration changes (e.g. rotation) are also ignored.
      *
      * When auto-dismiss fires, [Listener.onDismiss] is called with [HideExperienceStatus.ActivityChanged].
      */
     internal fun onHostStopped(stoppedActivity: Activity, isChangingConfigurations: Boolean) {
         if (isChangingConfigurations) return
-        if (!isShowingExperience) return
+
+        if (!isShowingExperience) {
+            // Release a retained WebView (and its Activity context) when its owner leaves for another
+            // Activity, rather than waiting for onDestroy. A plain background keeps the same foreground.
+            val foreground = tracker?.current?.get()
+            if (foreground != null && foreground !== stoppedActivity) {
+                synchronized(lock) { tearDownWebViewIfOwnedBy(stoppedActivity) }
+            }
+            return
+        }
+
         val host = dialogHost?.get() ?: return
         if (host !== stoppedActivity) return
 
@@ -822,7 +836,7 @@ class Ketch private constructor(
     private fun tearDownWebViewIfOwnedBy(destroyedActivity: Activity) {
         val host = activeWebViewHost?.get() ?: return
         if (host !== destroyedActivity) return
-        Log.d(TAG, "onHostDestroyed: tearing down WebView owned by ${host.javaClass.simpleName}")
+        Log.d(TAG, "Tearing down WebView owned by ${host.javaClass.simpleName}")
         cleanupWebView()
     }
 

@@ -45,6 +45,7 @@ The SDK is created with an application context and resolves its UI host lazily a
 Implemented in `Ketch.onHostStopped` / `onHostDestroyed` / `onHostResumed`, invoked by `KetchLifecycleTracker`:
 
 - **Navigate to another Activity while showing** → `autoDismissOnHostGone()` → `onDismiss(HideExperienceStatus.ActivityChanged)`. Detected when the host stops and a *different* activity is foreground.
+- **Navigate to another Activity while idle-retained** (after `hideExperience`) → `onHostStopped` → `tearDownWebViewIfOwnedBy` so the stopped Activity’s context is not held on the back stack.
 - **Rotation / configuration change** → preserved. Guarded by `isChangingConfigurations`. `KetchDialogFragment.onDestroyView` and `onDetach` also skip WebView release while `isChangingConfigurations`.
 - **Backgrounding (Home/recents/screen off)** → preserved. The same host returns to foreground, so no different-activity condition is met.
 - **Host Activity destroyed** (e.g. `finish()`) → `onHostDestroyed` resets state with `onDismiss(HideExperienceStatus.None)` when showing; idle retained WebViews are also cleaned up.
