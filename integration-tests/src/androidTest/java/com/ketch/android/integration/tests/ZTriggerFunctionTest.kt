@@ -8,6 +8,7 @@ import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.ketch.android.TriggerName
+import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.WillShowExperienceType
 import org.junit.After
 import org.junit.Assert.assertFalse
@@ -81,6 +82,25 @@ class ZTriggerFunctionTest {
     @Test
     fun warmWebView_dispatchesTriggerWithoutError() {
         showConsentBannerAndWait()
+
+        // trigger() intentionally refuses to dispatch while an experience is showing
+        // (Ketch.kt) — dismiss via a banner button (setConsent) first, which retains the
+        // WebView (unlike dismissDialog(), which destroys it), so it stays warm.
+        val dismissLatch = CountDownLatch(1)
+        app.setTestMode(object : IntegrationTestApp.TestEventListener {
+            override fun onDismiss(status: HideExperienceStatus) {
+                dismissLatch.countDown()
+            }
+        })
+        val clickLatch = CountDownLatch(1)
+        scenario.onActivity { activity ->
+            activity.clickButtonById("ketch-banner-button-primary") { clicked ->
+                if (clicked) clickLatch.countDown()
+            }
+        }
+        assertTrue("Banner button should be clicked", clickLatch.await(10, TimeUnit.SECONDS))
+        assertTrue("Banner should dismiss within 10s", dismissLatch.await(10, TimeUnit.SECONDS))
+        assertTrue("WebView should be retained after dismiss", app.hasActiveWebView())
 
         val errorLatch = CountDownLatch(1)
         app.setTestMode(object : IntegrationTestApp.TestEventListener {
