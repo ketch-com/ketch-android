@@ -62,6 +62,7 @@ fun KetchSampleApp(
     onShowConsent: () -> Unit,
     onShowPreferences: () -> Unit,
     onOpenSecondActivity: () -> Unit,
+    onOpenTransientLoadActivity: () -> Unit,
     onLogSharedPreferences: () -> Unit,
     onTriggerFunction: () -> Unit,
     onGetJurisdiction: () -> Unit,
@@ -152,6 +153,15 @@ fun KetchSampleApp(
                     colors = ButtonDefaults.buttonColors(containerColor = KetchPurple),
                 ) {
                     Text("Open Second Activity", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                }
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = onOpenTransientLoadActivity,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = KetchPurple),
+                ) {
+                    Text("Repro: Transient Activity Load", fontSize = 14.sp, fontWeight = FontWeight.Medium)
                 }
                 Spacer(Modifier.height(24.dp))
                 SectionHeader("Event Log")

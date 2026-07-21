@@ -56,6 +56,10 @@ class MainActivity : AppCompatActivity() {
                     logEntries.add("Opening SecondActivity")
                     startActivity(Intent(this, SecondActivity::class.java))
                 },
+                onOpenTransientLoadActivity = {
+                    logEntries.add("Opening TransientLoadActivity")
+                    startActivity(Intent(this, TransientLoadActivity::class.java))
+                },
                 onLogSharedPreferences = { logSharedPreferences() },
                 onTriggerFunction = {
                     Log.d(TAG, "trigger('demoFunction') called")

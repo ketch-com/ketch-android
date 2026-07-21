@@ -32,6 +32,10 @@
             android:name=".SecondActivity"
             android:exported="false"
             android:theme="@style/Theme.KetchIntegrationTests" />
+        <activity
+            android:name=".TransientLoadActivity"
+            android:exported="false"
+            android:theme="@style/Theme.KetchIntegrationTests" />
     </application>
 
 </manifest> 

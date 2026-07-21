@@ -31,6 +31,10 @@
             android:name=".SecondActivity"
             android:exported="false"
             android:theme="@style/Theme.KetchCompose" />
+        <activity
+            android:name=".TransientLoadActivity"
+            android:exported="false"
+            android:theme="@style/Theme.KetchCompose" />
     </application>
 
 </manifest>
