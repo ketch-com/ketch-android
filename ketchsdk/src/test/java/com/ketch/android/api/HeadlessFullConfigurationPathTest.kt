@@ -10,18 +10,20 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import java.net.HttpURLConnection
+import java.util.Locale
 
 /**
- * Regression coverage for the actual URL getFullConfiguration() requests: a blank
- * environmentCode/jurisdictionCode/languageCode/hash must be treated the same as a null one
- * (matching ketch-tag), since Ketch's config cache key relies on this to never disagree with
- * the real request the HTTP client makes.
+ * Regression coverage for the actual URL getFullConfiguration() requests, including device-locale
+ * language defaulting on the short path — the JVM default locale is pinned per test.
  */
 class HeadlessFullConfigurationPathTest {
     private lateinit var mockWebServer: MockWebServer
+    private lateinit var originalLocale: Locale
 
     @Before
     fun setUp() {
+        originalLocale = Locale.getDefault()
+        Locale.setDefault(Locale.forLanguageTag("en-US"))
         mockWebServer = MockWebServer()
         mockWebServer.start()
         mockWebServer.enqueue(
@@ -35,6 +37,7 @@ class HeadlessFullConfigurationPathTest {
     @After
     fun tearDown() {
         mockWebServer.shutdown()
+        Locale.setDefault(originalLocale)
     }
 
     @Test
@@ -52,7 +55,7 @@ class HeadlessFullConfigurationPathTest {
     }
 
     @Test
-    fun nullEnvironment_omitsSegmentEntirely() = runBlocking {
+    fun nullEnvironment_omitsSegmentEntirely_includesDefaultedLanguage() = runBlocking {
         client().getFullConfiguration(
             FullConfigurationRequest(
                 organizationCode = "org",
@@ -62,7 +65,10 @@ class HeadlessFullConfigurationPathTest {
                 languageCode = "en-US",
             ),
         )
-        assertEquals("/web/v3/config/org/prop/config.json", mockWebServer.takeRequest().path)
+        assertEquals(
+            "/web/v3/config/org/prop/config.json?language=en-US&jurisdiction=us-ca",
+            mockWebServer.takeRequest().path,
+        )
     }
 
     @Test
@@ -76,7 +82,10 @@ class HeadlessFullConfigurationPathTest {
                 languageCode = "en-US",
             ),
         )
-        assertEquals("/web/v3/config/org/prop/config.json", mockWebServer.takeRequest().path)
+        assertEquals(
+            "/web/v3/config/org/prop/config.json?language=en-US&jurisdiction=us-ca",
+            mockWebServer.takeRequest().path,
+        )
     }
 
     @Test
@@ -84,7 +93,7 @@ class HeadlessFullConfigurationPathTest {
         client().getFullConfiguration(
             FullConfigurationRequest(organizationCode = "org", propertyCode = "prop", hash = ""),
         )
-        assertEquals("/web/v3/config/org/prop/config.json", mockWebServer.takeRequest().path)
+        assertEquals("/web/v3/config/org/prop/config.json?language=en-US", mockWebServer.takeRequest().path)
     }
 
     @Test
@@ -92,7 +101,56 @@ class HeadlessFullConfigurationPathTest {
         client().getFullConfiguration(
             FullConfigurationRequest(organizationCode = "org", propertyCode = "prop", hash = "abc123"),
         )
-        assertEquals("/web/v3/config/org/prop/config.json?hash=abc123", mockWebServer.takeRequest().path)
+        assertEquals(
+            "/web/v3/config/org/prop/config.json?language=en-US&hash=abc123",
+            mockWebServer.takeRequest().path,
+        )
+    }
+
+    @Test
+    fun nothingSet_shortPath_includesDeviceLanguage() = runBlocking {
+        client().getFullConfiguration(
+            FullConfigurationRequest(organizationCode = "org", propertyCode = "prop"),
+        )
+        assertEquals("/web/v3/config/org/prop/config.json?language=en-US", mockWebServer.takeRequest().path)
+    }
+
+    @Test
+    fun jurisdictionOnly_shortPath_includesJurisdictionAndDeviceLanguage() = runBlocking {
+        client().getFullConfiguration(
+            FullConfigurationRequest(organizationCode = "org", propertyCode = "prop", jurisdictionCode = "us-ca"),
+        )
+        assertEquals(
+            "/web/v3/config/org/prop/config.json?language=en-US&jurisdiction=us-ca",
+            mockWebServer.takeRequest().path,
+        )
+    }
+
+    @Test
+    fun regionOnly_shortPath_includesRegionAndDeviceLanguage() = runBlocking {
+        client().getFullConfiguration(
+            FullConfigurationRequest(organizationCode = "org", propertyCode = "prop", regionCode = "US-CA"),
+        )
+        assertEquals(
+            "/web/v3/config/org/prop/config.json?language=en-US&region=US-CA",
+            mockWebServer.takeRequest().path,
+        )
+    }
+
+    @Test
+    fun explicitLanguage_winsOverDeviceLocale() = runBlocking {
+        client().getFullConfiguration(
+            FullConfigurationRequest(organizationCode = "org", propertyCode = "prop", languageCode = "de-DE"),
+        )
+        assertEquals("/web/v3/config/org/prop/config.json?language=de-DE", mockWebServer.takeRequest().path)
+    }
+
+    @Test
+    fun shortPath_includesAcceptLanguageHeaderFromDeviceLocale() = runBlocking {
+        client().getFullConfiguration(
+            FullConfigurationRequest(organizationCode = "org", propertyCode = "prop"),
+        )
+        assertEquals("en-US", mockWebServer.takeRequest().getHeader("Accept-Language"))
     }
 
     private fun client(): HeadlessApiClient {

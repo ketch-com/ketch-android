@@ -111,4 +111,111 @@ class HeadlessModelsTest {
         val config = HeadlessConfiguration(jurisdiction = null)
         assertNull(config.jurisdictionCode())
     }
+
+    @Test
+    fun formatLanguageTag_underscoreSeparator_becomesHyphenWithUppercaseDialect() {
+        assertEquals("fr-CA", formatLanguageTag("fr_CA"))
+    }
+
+    @Test
+    fun formatLanguageTag_lowercaseDialect_isUppercased() {
+        assertEquals("fr-CA", formatLanguageTag("fr-ca"))
+    }
+
+    @Test
+    fun formatLanguageTag_rootOnly_isLowercased() {
+        assertEquals("en", formatLanguageTag("EN"))
+    }
+
+    @Test
+    fun formatLanguageTag_blank_fallsBackToEnglish() {
+        assertEquals("en", formatLanguageTag(""))
+    }
+
+    @Test
+    fun configQueryParams_allPresent_onlyIncludesHash() {
+        val request = FullConfigurationRequest(
+            organizationCode = "org",
+            propertyCode = "prop",
+            environmentCode = "production",
+            jurisdictionCode = "us-ca",
+            languageCode = "en-US",
+            hash = "abc123",
+        )
+        assertEquals(mapOf("hash" to "abc123"), request.configQueryParams { "fr-CA" })
+    }
+
+    @Test
+    fun configQueryParams_allPresent_noHash_isEmpty() {
+        val request = FullConfigurationRequest(
+            organizationCode = "org",
+            propertyCode = "prop",
+            environmentCode = "production",
+            jurisdictionCode = "us-ca",
+            languageCode = "en-US",
+        )
+        assertEquals(emptyMap<String, String>(), request.configQueryParams { "fr-CA" })
+    }
+
+    @Test
+    fun configQueryParams_nothingSet_defaultsLanguageFromDevice() {
+        val request = FullConfigurationRequest(organizationCode = "org", propertyCode = "prop")
+        assertEquals(mapOf("language" to "fr-CA"), request.configQueryParams { "fr-CA" })
+    }
+
+    @Test
+    fun configQueryParams_explicitLanguage_winsOverDeviceLocale() {
+        val request = FullConfigurationRequest(
+            organizationCode = "org",
+            propertyCode = "prop",
+            languageCode = "de-DE",
+        )
+        assertEquals(mapOf("language" to "de-DE"), request.configQueryParams { "fr-CA" })
+    }
+
+    @Test
+    fun configQueryParams_jurisdictionOnly_includesJurisdictionAndDefaultedLanguage() {
+        val request = FullConfigurationRequest(
+            organizationCode = "org",
+            propertyCode = "prop",
+            jurisdictionCode = "us-ca",
+        )
+        assertEquals(mapOf("language" to "fr-CA", "jurisdiction" to "us-ca"), request.configQueryParams { "fr-CA" })
+    }
+
+    @Test
+    fun configQueryParams_regionOnly_includesRegionAndDefaultedLanguage() {
+        val request = FullConfigurationRequest(
+            organizationCode = "org",
+            propertyCode = "prop",
+            regionCode = "US-CA",
+        )
+        assertEquals(mapOf("language" to "fr-CA", "region" to "US-CA"), request.configQueryParams { "fr-CA" })
+    }
+
+    @Test
+    fun configQueryParams_blankFieldsTreatedAsAbsent() {
+        val request = FullConfigurationRequest(
+            organizationCode = "org",
+            propertyCode = "prop",
+            jurisdictionCode = "",
+            regionCode = "",
+            hash = "",
+        )
+        assertEquals(mapOf("language" to "fr-CA"), request.configQueryParams { "fr-CA" })
+    }
+
+    @Test
+    fun configQueryParams_shortPath_includesHashWhenPresent() {
+        val request = FullConfigurationRequest(
+            organizationCode = "org",
+            propertyCode = "prop",
+            jurisdictionCode = "us-ca",
+            hash = "abc123",
+        )
+        assertEquals(
+            mapOf("language" to "fr-CA", "jurisdiction" to "us-ca", "hash" to "abc123"),
+            request.configQueryParams { "fr-CA" },
+        )
+    }
 }

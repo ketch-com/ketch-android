@@ -24,8 +24,8 @@ import com.ketch.android.data.SubscriptionsRequest
 import com.ketch.android.data.SubscriptionsResponse
 import com.ketch.android.data.WillShowExperienceType
 import com.ketch.android.data.configPathSegment
+import com.ketch.android.data.configQueryParams
 import com.ketch.android.data.jurisdictionCode
-import com.ketch.android.data.normalizedHash
 import com.ketch.android.data.toRegionCode
 import com.ketch.android.ui.KetchDialogFragment
 import com.ketch.android.ui.KetchWebView
@@ -303,6 +303,7 @@ class Ketch private constructor(
             environmentCode = environment,
             jurisdictionCode = jurisdiction,
             languageCode = language,
+            regionCode = region,
         )
 
     /** Server consent including `protocols` (`POST .../consent/{org}/get`). */
@@ -625,12 +626,11 @@ class Ketch private constructor(
      */
     fun setRegion(region: String?) {
         this.region = region
-        // Not a config URL path component (see buildConfigCacheKey) — the config cache is
-        // intentionally left intact.
+        clearConfigCache()
     }
 
-    // Invalidates the getFullConfiguration() cache; called whenever a config URL path
-    // component (jurisdiction, language) changes on this instance.
+    // Invalidates the getFullConfiguration() cache; called whenever a config URL path or query
+    // component (jurisdiction, language, region) changes on this instance.
     private fun clearConfigCache() {
         synchronized(lock) {
             cachedConfig = null
@@ -881,18 +881,20 @@ class Ketch private constructor(
             logLevel.name,
         ).joinToString("|")
 
-    // Cache key for getFullConfiguration() — mirrors HeadlessApiClient's path-building exactly
-    // (blank treated as absent) via configPathSegment()/normalizedHash(), so requests that hit
-    // the same URL always share a key and requests that hit different URLs never collide.
+    // Cache key for getFullConfiguration() — mirrors HeadlessApiClient's path- and query-building
+    // exactly via configPathSegment()/configQueryParams(), so requests that hit the same URL
+    // always share a key and requests that hit different URLs never collide.
     private fun buildConfigCacheKey(request: FullConfigurationRequest): String {
         val (env, jurisdiction, language) = request.configPathSegment() ?: Triple("", "", "")
-        return listOf(
-            request.organizationCode,
-            request.propertyCode,
-            env,
-            jurisdiction,
-            language,
-            request.normalizedHash() ?: "",
+        val query = request.configQueryParams().entries.map { (key, value) -> "$key=$value" }
+        return (
+            listOf(
+                request.organizationCode,
+                request.propertyCode,
+                env,
+                jurisdiction,
+                language,
+            ) + query
         ).joinToString("|")
     }
 

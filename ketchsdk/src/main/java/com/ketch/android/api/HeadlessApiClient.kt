@@ -7,7 +7,7 @@ import com.ketch.android.data.ConsentUpdate
 import com.ketch.android.data.FullConfigurationRequest
 import com.ketch.android.data.HeadlessConfiguration
 import com.ketch.android.data.configPathSegment
-import com.ketch.android.data.normalizedHash
+import com.ketch.android.data.configQueryParams
 import com.ketch.android.data.HeadlessException
 import com.ketch.android.data.InvokeRightRequest
 import com.ketch.android.data.LocationResponse
@@ -25,6 +25,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 /**
@@ -90,12 +91,19 @@ class HeadlessApiClient(
     suspend fun getFullConfiguration(request: FullConfigurationRequest): HeadlessConfiguration =
         withContext(Dispatchers.IO) {
             var path = "/config/${request.organizationCode}/${request.propertyCode}"
-            request.configPathSegment()?.let { (env, jurisdiction, language) ->
+            val fullSegment = request.configPathSegment()
+            fullSegment?.let { (env, jurisdiction, language) ->
                 path += "/$env/$jurisdiction/$language"
             }
             path += "/config.json"
-            val query = request.normalizedHash()?.let { mapOf("hash" to it) } ?: emptyMap()
-            get(path, HeadlessConfiguration::class.java, query)
+            val query = request.configQueryParams()
+            // Belt-and-suspenders: the `language` query param is what the server actually reads.
+            val headers = if (fullSegment == null) {
+                mapOf("Accept-Language" to Locale.getDefault().toLanguageTag())
+            } else {
+                emptyMap()
+            }
+            get(path, HeadlessConfiguration::class.java, query, headers)
         }
 
     fun getConsent(
@@ -182,14 +190,19 @@ class HeadlessApiClient(
         return httpUrl.build().toString()
     }
 
-    private fun <T> get(path: String, type: Class<T>, query: Map<String, String> = emptyMap()): T {
+    private fun <T> get(
+        path: String,
+        type: Class<T>,
+        query: Map<String, String> = emptyMap(),
+        headers: Map<String, String> = emptyMap(),
+    ): T {
         val url = buildUrl(path, query)
-        val request = Request.Builder()
+        val builder = Request.Builder()
             .url(url)
             .header("Accept", "application/json")
             .get()
-            .build()
-        return execute(request, type)
+        headers.forEach { (key, value) -> builder.header(key, value) }
+        return execute(builder.build(), type)
     }
 
     private fun <T> execute(request: Request, type: Class<T>): T {

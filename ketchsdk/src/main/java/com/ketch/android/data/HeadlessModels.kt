@@ -36,6 +36,7 @@ data class FullConfigurationRequest(
     val jurisdictionCode: String? = null,
     val languageCode: String? = null,
     val hash: String? = null,
+    val regionCode: String? = null,
 )
 
 /**
@@ -54,6 +55,23 @@ fun FullConfigurationRequest.configPathSegment(): Triple<String, String, String>
 
 /** Non-blank hash, or null — a blank hash is treated the same as an absent one. */
 fun FullConfigurationRequest.normalizedHash(): String? = hash?.takeIf { it.isNotBlank() }
+
+/**
+ * Query params for `getFullConfiguration`. On the short path (see [configPathSegment]), OkHttp
+ * doesn't send `Accept-Language`, so a missing [languageCode] defaults to [deviceLanguage] rather
+ * than silently resolving to "en" server-side. Shared with `Ketch.buildConfigCacheKey`.
+ */
+fun FullConfigurationRequest.configQueryParams(deviceLanguage: () -> String = DeviceLocale::languageTag): Map<String, String> {
+    val query = linkedMapOf<String, String>()
+    if (configPathSegment() == null) {
+        val language = languageCode?.takeIf { it.isNotBlank() } ?: deviceLanguage()
+        query["language"] = language
+        jurisdictionCode?.takeIf { it.isNotBlank() }?.let { query["jurisdiction"] = it }
+        regionCode?.takeIf { it.isNotBlank() }?.let { query["region"] = it }
+    }
+    normalizedHash()?.let { query["hash"] = it }
+    return query
+}
 
 /** Request body for `POST /consent/{org}/get`. */
 data class ConsentConfig(
