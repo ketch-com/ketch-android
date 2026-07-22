@@ -11,6 +11,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.ketch.android.data.HideExperienceStatus
 import com.ketch.android.data.WillShowExperienceType
+import leakcanary.LeakAssertions
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -28,7 +29,7 @@ import java.util.concurrent.TimeUnit
  * Android does not guarantee. Runs after core suite (Z prefix).
  */
 @RunWith(AndroidJUnit4::class)
-class ZWebViewLeakOnStopTest {
+class ZWebViewLeakOnStopTest : LeakCheckedInstrumentedTest() {
 
     private lateinit var app: IntegrationTestApp
     private lateinit var scenario: ActivityScenario<MainActivity>
@@ -125,5 +126,13 @@ class ZWebViewLeakOnStopTest {
         )
         assertFalse("WebView should be released", app.hasActiveWebView())
         assertNull("Loaded signature should be cleared", app.getLoadedSignature())
+
+        // Heap-verify the WebView is actually collectible now. Deliberately does not capture the
+        // WebView instance in a local: a named local stays live on this method's stack for the
+        // rest of the call, which would itself be a GC root and mask a real release with a false
+        // "still reachable" positive. LeakCanary's automatic FragmentWatcher (KetchDialogFragment
+        // owns the WebView as a child view) already watches this instance with no test code
+        // needed; this assertion just forces the heap dump/analysis at this exact checkpoint.
+        LeakAssertions.assertNoLeaks()
     }
 }

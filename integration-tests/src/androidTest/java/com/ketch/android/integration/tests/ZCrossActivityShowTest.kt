@@ -23,7 +23,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
-class ZCrossActivityShowTest {
+class ZCrossActivityShowTest : LeakCheckedInstrumentedTest() {
 
     private lateinit var app: IntegrationTestApp
     private lateinit var mainScenario: ActivityScenario<MainActivity>

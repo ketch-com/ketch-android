@@ -21,7 +21,8 @@ buildscript {
             'gson'        : '2.13.2',
             'okhttp'      : '4.12.0',
             'coroutines'  : '1.10.2',
-            'webkit'      : '1.15.0'
+            'webkit'      : '1.15.0',
+            'leakcanary'  : '2.14'
     ]
     repositories {
         google()

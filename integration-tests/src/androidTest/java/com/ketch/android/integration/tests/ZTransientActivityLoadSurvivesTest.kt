@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit
  * Verifies the boot survives the transient Activity's destroy instead of being killed.
  */
 @RunWith(AndroidJUnit4::class)
-class ZTransientActivityLoadSurvivesTest {
+class ZTransientActivityLoadSurvivesTest : LeakCheckedInstrumentedTest() {
 
     private lateinit var app: IntegrationTestApp
     private lateinit var mainScenario: ActivityScenario<MainActivity>

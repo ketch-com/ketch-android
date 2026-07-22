@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference
  * cache invalidation, and teardown paths. Runs after core suite (Z prefix).
  */
 @RunWith(AndroidJUnit4::class)
-class ZWebViewRetentionTest {
+class ZWebViewRetentionTest : LeakCheckedInstrumentedTest() {
 
     private lateinit var app: IntegrationTestApp
     private lateinit var scenario: ActivityScenario<MainActivity>

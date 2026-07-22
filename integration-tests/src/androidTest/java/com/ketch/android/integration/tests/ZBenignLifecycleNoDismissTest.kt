@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit
  * an active experience or kill the WebView.
  */
 @RunWith(AndroidJUnit4::class)
-class ZBenignLifecycleNoDismissTest {
+class ZBenignLifecycleNoDismissTest : LeakCheckedInstrumentedTest() {
 
     private lateinit var app: IntegrationTestApp
     private lateinit var mainScenario: ActivityScenario<MainActivity>

@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicReference
  * leaves the SDK able to show experiences from the new Activity.
  */
 @RunWith(AndroidJUnit4::class)
-class ZAutoDismissOnNavigationTest {
+class ZAutoDismissOnNavigationTest : LeakCheckedInstrumentedTest() {
 
     private lateinit var app: IntegrationTestApp
     private lateinit var mainScenario: ActivityScenario<MainActivity>
