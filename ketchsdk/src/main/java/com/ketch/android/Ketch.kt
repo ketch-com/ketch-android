@@ -77,6 +77,7 @@ class Ketch private constructor(
     private var jurisdiction: String? = null
     private var region: String? = null
     private var cssStyle: String? = null
+    private var webResourceUrlOverrides: Map<String, String>? = null
     private var age: Int? = null
     private var ageLower: Int? = null
     private var ageUpper: Int? = null
@@ -192,7 +193,8 @@ class Ketch private constructor(
             ageUpper,
             bottomPadding,
             topPadding,
-            cssStyle
+            cssStyle,
+            webResourceUrlOverridesJson()
         )
         return true
     }
@@ -405,7 +407,8 @@ class Ketch private constructor(
             ageUpper,
             bottomPadding,
             topPadding,
-            cssStyle
+            cssStyle,
+            webResourceUrlOverridesJson()
         )
         return true
     }
@@ -452,7 +455,8 @@ class Ketch private constructor(
             ageUpper,
             bottomPadding,
             topPadding,
-            cssStyle
+            cssStyle,
+            webResourceUrlOverridesJson()
         )
         return true
     }
@@ -503,7 +507,8 @@ class Ketch private constructor(
             ageUpper,
             bottomPadding,
             topPadding,
-            cssStyle
+            cssStyle,
+            webResourceUrlOverridesJson()
         )
         return true
     }
@@ -562,7 +567,8 @@ class Ketch private constructor(
             ageUpper,
             0,
             0,
-            cssStyle
+            cssStyle,
+            webResourceUrlOverridesJson()
         )
         return true
     }
@@ -628,6 +634,22 @@ class Ketch private constructor(
         this.region = region
         clearConfigCache()
     }
+
+    /**
+     * Set Web Resource URL Overrides
+     *
+     * Rewrites resource URLs the tag requests, so specific assets can be served from
+     * another host. Applies on the next load.
+     *
+     * @param overrides: map of matched URL or path fragment to replacement URL
+     */
+    fun setWebResourceUrlOverrides(overrides: Map<String, String>?) {
+        this.webResourceUrlOverrides = overrides?.takeIf { it.isNotEmpty() }
+    }
+
+    // Serialized for injection into the WebView's host page.
+    private fun webResourceUrlOverridesJson(): String? =
+        webResourceUrlOverrides?.let { JSONObject(it as Map<*, *>).toString() }
 
     /**
      * Set Environment
@@ -897,6 +919,7 @@ class Ketch private constructor(
             ageLower?.toString() ?: "",
             ageUpper?.toString() ?: "",
             cssStyle ?: "",
+            webResourceUrlOverridesJson() ?: "",
             bottomPadding.toString(),
             topPadding.toString(),
             logLevel.name,

@@ -257,7 +257,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         ageUpper: Int?,
         bottomPadding: Int?,
         topPadding: Int?,
-        cssStyle: String?
+        cssStyle: String?,
+        webResourceUrlOverrides: String? = null
     ) {
         clearCache(true)
 
@@ -291,7 +292,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             ageUpper = ageUpper,
             bottomPadding = bottomPaddingPx,
             topPadding = topPaddingPx,
-            cssStyleOverride = cssStyle
+            cssStyleOverride = cssStyle,
+            webResourceUrlOverrides = webResourceUrlOverrides
         )
 
         loadDataWithBaseURL("http://localhost", indexHtml, "text/html", "UTF-8", null)
