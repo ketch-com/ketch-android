@@ -42,11 +42,11 @@ class Ketch private constructor(
     seedFragmentManager: FragmentManager?,
     private val orgCode: String,
     private val property: String,
-    private val environment: String?,
+    private var environment: String?,
     private val listener: Listener?,
     private val ketchUrl: String?,
     private val dataCenter: KetchDataCenter,
-    private val logLevel: LogLevel,
+    private var logLevel: LogLevel,
     private val headlessApiClient: HeadlessApiClient,
 ) {
     // Falls back to the CDN region's base URL when no explicit ketchUrl override is provided.
@@ -629,6 +629,27 @@ class Ketch private constructor(
         clearConfigCache()
     }
 
+    /**
+     * Set Environment
+     *
+     * @param environment: the environment name
+     */
+    fun setEnvironment(environment: String?) {
+        this.environment = environment
+        clearConfigCache()
+    }
+
+    /**
+     * Set Log Level
+     *
+     * Applies on the next load; the level is passed to the tag at boot.
+     *
+     * @param logLevel: the log level
+     */
+    fun setLogLevel(logLevel: LogLevel) {
+        this.logLevel = logLevel
+    }
+
     // Invalidates the getFullConfiguration() cache; called whenever a config URL path or query
     // component (jurisdiction, language, region) changes on this instance.
     private fun clearConfigCache() {
@@ -989,6 +1010,10 @@ class Ketch private constructor(
                 private var config: KetchConfig? = null
                 private var showConsent: Boolean = false
 
+                override fun onNativeStoragePut(key: String, value: String) {
+                    this@Ketch.listener?.onNativeStoragePut(key, value)
+                }
+
                 override fun showConsent() {
                     if (config == null) {
                         showConsent = true
@@ -1294,6 +1319,12 @@ class Ketch private constructor(
          * Called when an experience has shown
          */
         fun onHasShownExperience()
+
+        /**
+         * Called when the tag writes a key/value to native storage. The value is already
+         * persisted by the time this fires; reading it back is not required.
+         */
+        fun onNativeStoragePut(key: String, value: String) {}
     }
 
     companion object {
