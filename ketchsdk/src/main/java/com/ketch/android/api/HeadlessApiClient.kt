@@ -297,6 +297,7 @@ class HeadlessApiClient(
 
     private fun hasUsableConsentFields(consent: Consent): Boolean {
         if (!consent.purposes.isNullOrEmpty()) return true
+        if (!consent.vendors.isNullOrEmpty()) return true
         if (!consent.protocols.isNullOrEmpty()) return true
         return false
     }

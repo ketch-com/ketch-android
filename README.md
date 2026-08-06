@@ -340,7 +340,47 @@ To revert back to using the remote GitHub dependency:
      * @param region: the region name
      */
     fun setRegion(region: String?)
+
+    /**
+     * Set the environment. Applies on the next load.
+     */
+    fun setEnvironment(environment: String?)
+
+    /**
+     * Set the log level. Applies on the next load.
+     */
+    fun setLogLevel(logLevel: LogLevel)
+
+    /**
+     * Serve specific tag resources from another host. Applies on the next load.
+     */
+    fun setWebResourceUrlOverrides(overrides: Map<String, String>?)
+
+    /**
+     * Fire an onFunction rule trigger. Returns false if the function name is invalid
+     * or an experience is already showing. Calls made before the tag finishes loading
+     * are queued and fired once it is ready.
+     */
+    fun trigger(triggerName: TriggerName, functionName: String, options: Map<String, Any?> = emptyMap()): Boolean
+
+    /**
+     * Resolved region code, preferring a value set via setRegion over a network lookup.
+     * Also available as a suspend function.
+     */
+    fun getRegion(callback: (Result<String?>) -> Unit)
+
+    /**
+     * Resolved jurisdiction code, preferring a value set via setJurisdiction over the
+     * CDN configuration. Also available as a suspend function.
+     */
+    fun getJurisdiction(callback: (Result<String?>) -> Unit)
 ```
+
+`Ketch` and `KetchSdk` also expose headless HTTP methods —
+`getBootstrapConfiguration`, `getFullConfiguration`, `getConsent`, `setConsent`,
+`invokeRight`, `getSubscriptions`, `setSubscriptions`, `getPreferenceQRUrl` —
+for consent operations that need no WebView. Each has a callback and a `suspend`
+variant.
 
 ### com.ketch.android.KetchSdk
 
@@ -359,6 +399,9 @@ To revert back to using the remote GitHub dependency:
      * @param environment - the environment name. Optional
      * @param listener - Ketch.Listener. Optional
      * @param ketchUrl - Overrides the ketch url. Optional
+     * @param dataCenter - selects the server, and therefore which build of the Ketch tag
+     *                     is used: US and EU are production, UAT is the UAT environment.
+     *                     Default is US
      * @param logLevel - the log level, can be TRACE, DEBUG, INFO, WARN, ERROR. Default is ERROR
      */
     fun create(
@@ -368,6 +411,7 @@ To revert back to using the remote GitHub dependency:
         environment: String? = null,
         listener: Ketch.Listener? = null,
         ketchUrl: String? = null,
+        dataCenter: KetchDataCenter = KetchDataCenter.US,
         logLevel: Ketch.LogLevel = Ketch.LogLevel.ERROR
     ): Ketch
 
@@ -463,6 +507,12 @@ To revert back to using the remote GitHub dependency:
          * Called when an experience has shown
          */
         fun onHasShownExperience()
+
+        /**
+         * Called when the tag writes a key/value to native storage. The value is already
+         * persisted by the time this fires. Has a default no-op implementation.
+         */
+        fun onNativeStoragePut(key: String, value: String)
 ```
 
 ## Sample apps

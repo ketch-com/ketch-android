@@ -42,11 +42,11 @@ class Ketch private constructor(
     seedFragmentManager: FragmentManager?,
     private val orgCode: String,
     private val property: String,
-    private val environment: String?,
+    private var environment: String?,
     private val listener: Listener?,
     private val ketchUrl: String?,
     private val dataCenter: KetchDataCenter,
-    private val logLevel: LogLevel,
+    private var logLevel: LogLevel,
     private val headlessApiClient: HeadlessApiClient,
 ) {
     // Falls back to the CDN region's base URL when no explicit ketchUrl override is provided.
@@ -77,6 +77,7 @@ class Ketch private constructor(
     private var jurisdiction: String? = null
     private var region: String? = null
     private var cssStyle: String? = null
+    private var webResourceUrlOverrides: Map<String, String>? = null
     private var age: Int? = null
     private var ageLower: Int? = null
     private var ageUpper: Int? = null
@@ -192,7 +193,8 @@ class Ketch private constructor(
             ageUpper,
             bottomPadding,
             topPadding,
-            cssStyle
+            cssStyle,
+            webResourceUrlOverridesJson()
         )
         return true
     }
@@ -405,7 +407,8 @@ class Ketch private constructor(
             ageUpper,
             bottomPadding,
             topPadding,
-            cssStyle
+            cssStyle,
+            webResourceUrlOverridesJson()
         )
         return true
     }
@@ -452,7 +455,8 @@ class Ketch private constructor(
             ageUpper,
             bottomPadding,
             topPadding,
-            cssStyle
+            cssStyle,
+            webResourceUrlOverridesJson()
         )
         return true
     }
@@ -503,7 +507,8 @@ class Ketch private constructor(
             ageUpper,
             bottomPadding,
             topPadding,
-            cssStyle
+            cssStyle,
+            webResourceUrlOverridesJson()
         )
         return true
     }
@@ -562,7 +567,8 @@ class Ketch private constructor(
             ageUpper,
             0,
             0,
-            cssStyle
+            cssStyle,
+            webResourceUrlOverridesJson()
         )
         return true
     }
@@ -627,6 +633,43 @@ class Ketch private constructor(
     fun setRegion(region: String?) {
         this.region = region
         clearConfigCache()
+    }
+
+    /**
+     * Set Web Resource URL Overrides
+     *
+     * Rewrites resource URLs the tag requests, so specific assets can be served from
+     * another host. Applies on the next load.
+     *
+     * @param overrides: map of matched URL or path fragment to replacement URL
+     */
+    fun setWebResourceUrlOverrides(overrides: Map<String, String>?) {
+        this.webResourceUrlOverrides = overrides?.takeIf { it.isNotEmpty() }
+    }
+
+    // Serialized for injection into the WebView's host page.
+    private fun webResourceUrlOverridesJson(): String? =
+        webResourceUrlOverrides?.let { JSONObject(it as Map<*, *>).toString() }
+
+    /**
+     * Set Environment
+     *
+     * @param environment: the environment name
+     */
+    fun setEnvironment(environment: String?) {
+        this.environment = environment
+        clearConfigCache()
+    }
+
+    /**
+     * Set Log Level
+     *
+     * Applies on the next load; the level is passed to the tag at boot.
+     *
+     * @param logLevel: the log level
+     */
+    fun setLogLevel(logLevel: LogLevel) {
+        this.logLevel = logLevel
     }
 
     // Invalidates the getFullConfiguration() cache; called whenever a config URL path or query
@@ -876,6 +919,7 @@ class Ketch private constructor(
             ageLower?.toString() ?: "",
             ageUpper?.toString() ?: "",
             cssStyle ?: "",
+            webResourceUrlOverridesJson() ?: "",
             bottomPadding.toString(),
             topPadding.toString(),
             logLevel.name,
@@ -988,6 +1032,10 @@ class Ketch private constructor(
 
                 private var config: KetchConfig? = null
                 private var showConsent: Boolean = false
+
+                override fun onNativeStoragePut(key: String, value: String) {
+                    this@Ketch.listener?.onNativeStoragePut(key, value)
+                }
 
                 override fun showConsent() {
                     if (config == null) {
@@ -1294,6 +1342,12 @@ class Ketch private constructor(
          * Called when an experience has shown
          */
         fun onHasShownExperience()
+
+        /**
+         * Called when the tag writes a key/value to native storage. The value is already
+         * persisted by the time this fires; reading it back is not required.
+         */
+        fun onNativeStoragePut(key: String, value: String) {}
     }
 
     companion object {
