@@ -23,6 +23,8 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonParseException
 import com.ketch.android.Ketch
+import com.ketch.android.KetchSharedPreferences
+import com.ketch.android.parseNativeStoragePutPayload
 import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
 import com.ketch.android.data.HideExperienceStatus
@@ -49,6 +51,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
     private val localContentWebViewClient = LocalContentWebViewClient(shouldRetry)
 
     init {
+        KetchSharedPreferences.initialize(context)
         setBackgroundColor(Color.TRANSPARENT)
         webViewClient = localContentWebViewClient
 
@@ -87,9 +90,39 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         setWebContentsDebuggingEnabled(true)
     }
 
+    /** Remove this WebView from its parent without destroying the underlying renderer. */
+    fun detachFromParent() {
+        (parent as? ViewGroup)?.removeView(this)
+    }
+
+    /** Imperatively show the consent experience on an already-booted page. */
+    fun showConsentExperience() {
+        evaluateJavascript("ketch('showConsent')") { result ->
+            Log.d(TAG, "showConsentExperience result: $result")
+        }
+    }
+
+    /** Imperatively show the preference experience on an already-booted page. */
+    fun showPreferenceExperience(optionsJson: String) {
+        evaluateJavascript("ketch('showPreferences', $optionsJson)") { result ->
+            Log.d(TAG, "showPreferenceExperience result: $result")
+        }
+    }
+
+    /** Imperatively fire a custom-function (onFunction) rule trigger on an already-booted page. */
+    fun trigger(triggerName: String, functionName: String, optionsJson: String) {
+        evaluateJavascript("ketch('trigger', '$triggerName', '$functionName', $optionsJson)") { result ->
+            Log.d(TAG, "trigger result: $result")
+        }
+    }
+
+    /** Number of page loads since this WebView was created (for testing warm re-show). */
+    val pageLoadCount: Int
+        get() = localContentWebViewClient.pageLoadCount
+
     // Cancel any coroutines in KetchWebView and fully tear down webview to prevent memory leaks
     fun kill() {
-        (parent as? ViewGroup)?.removeView(this)
+        detachFromParent()
         localContentWebViewClient.cancelCoroutines()
         stopLoading()
         clearHistory()
@@ -104,6 +137,9 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
 
         // Reload delay, increases exponentially in onPageStarted
         private var reloadDelay = INITIAL_RELOAD_DELAY
+
+        var pageLoadCount: Int = 0
+            private set
 
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -129,8 +165,9 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             }
 
             (view as? KetchWebView)?.let { ketchWebView ->
-                ketchWebView.listener?.onClose(HideExperienceStatus.None)
+                Log.w(TAG, "onDismiss source=rendererCrash status=None")
                 ketchWebView.kill()
+                ketchWebView.listener?.onClose(HideExperienceStatus.None, source = "rendererCrash", retainWebView = false)
             }
 
             return true
@@ -161,6 +198,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
             super.onPageStarted(view, url, favicon)
             Log.d(TAG, "onPageStarted: $url")
+            pageLoadCount++
 
             // Reset loaded flag
             isLoaded.set(false)
@@ -219,7 +257,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         ageUpper: Int?,
         bottomPadding: Int?,
         topPadding: Int?,
-        cssStyle: String?
+        cssStyle: String?,
+        webResourceUrlOverrides: String? = null
     ) {
         clearCache(true)
 
@@ -253,7 +292,8 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             ageUpper = ageUpper,
             bottomPadding = bottomPaddingPx,
             topPadding = topPaddingPx,
-            cssStyleOverride = cssStyle
+            cssStyleOverride = cssStyle,
+            webResourceUrlOverrides = webResourceUrlOverrides
         )
 
         loadDataWithBaseURL("http://localhost", indexHtml, "text/html", "UTF-8", null)
@@ -370,14 +410,6 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         }
 
         @JavascriptInterface
-        fun tapOutside(dialogSize: String?) {
-            Log.d(TAG, "tapOutside: $dialogSize")
-            runOnMainThread {
-                ketchWebView.listener?.onTapOutside()
-            }
-        }
-
-        @JavascriptInterface
         fun geoip(ip: String?) {
         }
 
@@ -425,6 +457,28 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             }
         }
 
+        @JavascriptInterface
+        fun nativeStoragePut(payloadJson: String?) {
+            if (payloadJson.isNullOrBlank()) {
+                Log.e(TAG, "nativeStoragePut: empty payload")
+                return
+            }
+            val payload = parseNativeStoragePutPayload(payloadJson)
+            if (payload == null) {
+                Log.e(TAG, "nativeStoragePut: invalid payload")
+                return
+            }
+            try {
+                KetchSharedPreferences.write(payload.key, payload.value)
+                Log.d(TAG, "nativeStoragePut: key=${payload.key}")
+                runOnMainThread {
+                    ketchWebView.listener?.onNativeStoragePut(payload.key, payload.value)
+                }
+            } catch (ex: IllegalStateException) {
+                Log.e(TAG, "nativeStoragePut: ${ex.message}", ex)
+            }
+        }
+
         private fun parseIabTcfGpp(json: String): Map<String, String>? {
             val gson = GsonBuilder()
                 .create()
@@ -455,10 +509,10 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         fun onConsentUpdated(consent: Consent)
         fun onError(errMsg: String?)
         fun changeDialog(display: ContentDisplay)
-        fun onClose(status: HideExperienceStatus)
+        fun onClose(status: HideExperienceStatus, source: String = "hideExperience", retainWebView: Boolean = true)
         fun onWillShowExperience(experienceType: WillShowExperienceType)
         fun onHasShownExperience()
-        fun onTapOutside()
+        fun onNativeStoragePut(key: String, value: String) {}
     }
 
     internal enum class ExperienceType {

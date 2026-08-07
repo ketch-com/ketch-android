@@ -23,7 +23,8 @@ fun getIndexHtml(
     ageUpper: Int? = null,
     bottomPadding: String = "0px",
     topPadding: String = "0px",
-    cssStyleOverride: String? = null
+    cssStyleOverride: String? = null,
+    webResourceUrlOverrides: String? = null
 ) =
     "<html>\n" +
             "  <head>\n" +
@@ -128,21 +129,6 @@ fun getIndexHtml(
             "        };\n" +
             "      })(window.console);\n" +
             "\n" +
-            "      // A temporary workaround to get banner/modal dimensions on tablets\n" +
-            "      // TODO: remove this once there will be a way to get dialogs position from JS SDK\n" +
-            "      function getDialogSize() {\n" +
-            "        var domElem = document.querySelector(\n" +
-            "          '#lanyard_root div[role=\"dialog\"]'\n" +
-            "        );\n" +
-            "        if (!domElem) {\n" +
-            "          return;\n" +
-            "        }\n" +
-            "        var domRect = domElem.getBoundingClientRect();\n" +
-            "        if (domRect) {\n" +
-            "          return domRect;\n" +
-            "        }\n" +
-            "      }\n" +
-            "\n" +
             "      function initKetchTag(parameters) {\n" +
             "        console.log('Ketch Tag is initialization started...');\n" +
             "        // Use parameters to set SDK query params here\n" +
@@ -161,13 +147,61 @@ fun getIndexHtml(
             "        e.defer = e.async = !0;\n" +
             "        document.getElementsByTagName('head')[0].appendChild(e);\n" +
             "      }\n" +
-            "      // We put the script inside body, otherwise document.body will be null\n" +
-            "      // Trigger taps outside the dialog\n" +
-            "      document.body.addEventListener('touchstart', function (e) {\n" +
-            "        if (e.target === document.body) {\n" +
-            "          emitEvent('tapOutside', [getDialogSize()]);\n" +
+            // Rewrites resource URLs the tag requests, so a caller can point specific
+            // assets at their own host. Must run before initKetchTag appends boot.js.
+            "      function installWebResourceUrlOverrides(overrides) {\n" +
+            "        if (!overrides || !Object.keys(overrides).length) return;\n" +
+            "        function resolveUrl(url) {\n" +
+            "          if (!url) return url;\n" +
+            "          if (overrides[url]) return overrides[url];\n" +
+            "          var base = url.split('?')[0].split('#')[0];\n" +
+            "          if (base !== url && overrides[base]) return overrides[base];\n" +
+            "          for (var key in overrides) {\n" +
+            "            if (!Object.prototype.hasOwnProperty.call(overrides, key)) continue;\n" +
+            "            if (key === url || key === base) continue;\n" +
+            "            if (key.charAt(0) === '/' && base.indexOf(key) !== -1) return overrides[key];\n" +
+            "            if (key.indexOf('://') !== -1) continue;\n" +
+            "            if (base.endsWith(key) || base.indexOf('/' + key) !== -1) return overrides[key];\n" +
+            "          }\n" +
+            "          return url;\n" +
             "        }\n" +
-            "      });\n" +
+            "        var srcDesc = Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, 'src');\n" +
+            "        if (srcDesc && srcDesc.set) {\n" +
+            "          var nativeSrcSet = srcDesc.set;\n" +
+            "          var nativeSrcGet = srcDesc.get;\n" +
+            "          Object.defineProperty(HTMLScriptElement.prototype, 'src', {\n" +
+            "            set: function (value) { nativeSrcSet.call(this, resolveUrl(value)); },\n" +
+            "            get: nativeSrcGet,\n" +
+            "            configurable: true,\n" +
+            "          });\n" +
+            "        }\n" +
+            "        var origSetAttribute = Element.prototype.setAttribute;\n" +
+            "        Element.prototype.setAttribute = function (name, value) {\n" +
+            "          if (name === 'src' && this.tagName === 'SCRIPT') {\n" +
+            "            return origSetAttribute.call(this, name, resolveUrl(value));\n" +
+            "          }\n" +
+            "          return origSetAttribute.call(this, name, value);\n" +
+            "        };\n" +
+            "        if (window.fetch) {\n" +
+            "          var origFetch = window.fetch.bind(window);\n" +
+            "          window.fetch = function (input, init) {\n" +
+            "            if (typeof input === 'string') {\n" +
+            "              var mapped = resolveUrl(input);\n" +
+            "              if (mapped !== input) input = mapped;\n" +
+            "            } else if (input && input.url) {\n" +
+            "              var mappedUrl = resolveUrl(input.url);\n" +
+            "              if (mappedUrl !== input.url) input = new Request(mappedUrl, input);\n" +
+            "            }\n" +
+            "            return origFetch(input, init);\n" +
+            "          };\n" +
+            "        }\n" +
+            "      }\n" +
+            (if (webResourceUrlOverrides?.isNotBlank() == true) {
+                "      installWebResourceUrlOverrides($webResourceUrlOverrides);\n"
+            } else {
+                ""
+            }) +
+            "      // We put the script inside body, otherwise document.body will be null\n" +
             "      initKetchTag({" +
             "ketch_log: \"${logLevel}\"," +
             if (language?.isNotBlank() == true) {

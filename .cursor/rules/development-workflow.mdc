@@ -1,0 +1,57 @@
+---
+alwaysApply: true
+---
+
+# Development Workflow
+
+## Prerequisites
+
+- JDK 17 (JitPack also builds with JDK 17 — keep parity)
+- Android SDK with an emulator or device on API 26+ (API 28+ recommended for the instrumented suite)
+- `local.properties` with `sdk.dir` pointing at the Android SDK
+
+## Common Commands
+
+| Command | Purpose |
+|---|---|
+| `./gradlew :ketchsdk:assembleDebug` | Build the SDK library (fast compile check) |
+| `./gradlew :ketchsdk:assembleRelease` | Build the release `.aar` |
+| `./gradlew build` | Assemble + unit-test all modules |
+| `./gradlew test` | Run JVM unit tests (all variants) |
+| `./gradlew :ketchsdk:testDebugUnitTest` | Run SDK unit tests only |
+| `./gradlew :integration-tests:connectedDebugAndroidTest` | Run the instrumented Espresso suite on a connected device/emulator |
+| `./gradlew ktlintCheck` | Kotlin lint check |
+| `./gradlew ktlintFormat` | Auto-format Kotlin sources |
+| `./gradlew :ketchsdk:lint` | Android lint (baseline at `ketchsdk/lint-baseline.xml`) |
+| `./gradlew :ketchsdk:publishToMavenLocal` | Publish the artifact to the local Maven cache |
+| `./gradlew dokkaHtmlMultiModule` | Generate API docs |
+| `./run-integration-tests.sh` | Clean build + full instrumented run (checks for a connected device) |
+
+## Validation Checklist
+
+Run before considering any change complete:
+
+1. `./gradlew :ketchsdk:assembleDebug` — verify the SDK compiles
+2. `./gradlew ktlintCheck` — Kotlin style
+3. `./gradlew test` — unit tests
+4. `./gradlew :integration-tests:connectedDebugAndroidTest` — instrumented suite (requires a running emulator/device); run this when changing SDK runtime behavior, the lifecycle tracker, or the WebView/dialog flow
+
+## Testing
+
+- **Unit tests**: JUnit 4, colocated under each module's `src/test/`.
+- **Instrumented tests**: Espresso + AndroidX Test under `integration-tests/src/androidTest/`. These drive a real WebView and require a device/emulator. See the `integration-testing` rule for ordering, isolation, and the reflection probes.
+- **What to test**: SDK runtime behavior (lifecycle transitions, host resolution, dismiss/preserve logic, cross-activity show). Prefer the instrumented suite for anything touching the WebView or Activity lifecycle.
+- **What NOT to test**: Android framework behavior itself.
+
+## Versioning & Publishing
+
+- Versions live in root `build.gradle` `buildConfig` (`versionCode`, `versionName`) and are duplicated in `ketchsdk/build.gradle` (`version = '3.0'` in the `maven-publish` block).
+- Publishing is **JitPack on-demand**: there is no GitHub Actions publish workflow. A consumer requesting `com.github.ketch-com:ketch-android:<tag|branch-SNAPSHOT|commit>` triggers JitPack to build that ref. Each version is isolated by git ref, so beta tags/branches never affect stable consumers.
+- When changing the public API, update `README.md` and run `dokkaHtmlMultiModule`.
+
+## Code Quality
+
+- Keep diffs focused; don't reformat unrelated code (ktlint will flag style).
+- Hold Activity/`FragmentManager`/Fragment references only via `WeakReference`.
+- Preserve backward compatibility for `Ketch.Listener` (no new interface methods — extend `HideExperienceStatus` instead).
+- Match existing import ordering and file conventions in each module.

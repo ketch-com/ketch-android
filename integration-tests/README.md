@@ -1,6 +1,8 @@
 # Ketch SDK Integration Tests
 
-This module contains integration tests for the Ketch Android SDK. The tests are designed to validate the SDK's functionality in a real Android environment.
+This module contains integration tests for the Ketch Android SDK. The tests validate SDK functionality in a real Android environment.
+
+**ATT is N/A on Android** — App Tracking Transparency is iOS-only. For ATT testing see [mobile-att-testing.md](../../ketch-tag/docs/design/mobile-att-testing.md#ketch-android). For headless CDN tests see [mobile-headless-api-testing.md](../../ketch-tag/docs/design/mobile-headless-api-testing.md#ketch-android).
 
 ## Overview
 
@@ -32,31 +34,63 @@ integration-tests/
 - An Android device or emulator running API 28 or higher
 - The Ketch SDK module (`ketchsdk`) must be built successfully
 
-### Running Tests Locally
+### Headless integration tests
+
+Live CDN round-trip (no WebView): `KetchHeadlessIntegrationTest` uses org `ketch_samples` / property `android`.
+
+```bash
+./gradlew :integration-tests:connectedAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.ketch.android.integration.tests.KetchHeadlessIntegrationTest
+```
+
+### WebView integration tests
+
+```bash
+# From the ketch-android directory
+./gradlew :integration-tests:connectedAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.ketch.android.integration.tests.KetchSdkIntegrationTest
+```
+
+## Running Tests Locally
 
 #### From Android Studio
 
 1. Open the `ketch-android` project in Android Studio
 2. Connect an Android device or start an emulator
 3. Navigate to `integration-tests/src/androidTest/java/com/ketch/android/integration/tests/`
-4. Right-click on `KetchSdkIntegrationTest` and select "Run 'KetchSdkIntegrationTest'"
+4. Right-click on the desired test class and select Run
 
 #### From Command Line
 
+From the repo root (works in bash, zsh, fish, etc.):
+
 ```bash
-# From the ketch-android directory
+make test-integration
+```
+
+Other targets:
+
+```bash
+make run-integration-test-app       # install, launch, and stream harness app logs
+make test-integration-class CLASS=com.ketch.android.integration.tests.ZAutoDismissOnNavigationTest
+make help
+```
+
+Or with gradlew directly:
+
+```bash
+# All integration tests
 ./gradlew :integration-tests:connectedAndroidTest
 ```
 
-### Running the Sample App
-
-You can also run the sample app directly to manually test the SDK:
-
-```bash
-./gradlew :integration-tests:installDebug
-```
+Reports: `integration-tests/build/reports/androidTests/connected/`.
 
 ## Test Coverage
+
+| Suite | Class | What it validates |
+| ----- | ----- | ----------------- |
+| **Headless CDN** | `KetchHeadlessIntegrationTest` | `getRegion`, `getJurisdiction` (server-resolved and locally-set precedence), bootstrap, full config, consent get/set |
+| **WebView** | `KetchSdkIntegrationTest` | SDK init, UI buttons, WebView experience load |
 
 The current test suite covers:
 
@@ -64,15 +98,18 @@ The current test suite covers:
 - **UI Interactions**: Tests all buttons and their status updates
 - **Method Calls**: Validates that SDK methods are called without errors
 - **State Management**: Checks that the app displays initial state correctly
+- **Cross-Activity Display**: Verifies Ketch initialized in Application/MainActivity can show experiences from a different Activity, including WebView content validation (`ketch-consent-banner`, `ketch-preferences`)
+- **Auto-Dismiss on Navigation**: Verifies that navigating to a different Activity while an experience is showing automatically dismisses the orphaned experience (no integrator call needed), reports `onDismiss(HideExperienceStatus.ActivityChanged)`, and leaves the new Activity able to show experiences
+- **Benign Lifecycle (No Dismiss)**: Verifies rotation and backgrounding do NOT auto-dismiss an active experience or kill the WebView
 
 ## Sample App Features
 
 The sample app includes:
 
 - Buttons to trigger all major SDK methods (`load`, `showConsent`, `showPreferences`, etc.)
-- Status display to show current SDK state
+- **Open Second Activity** button to demonstrate cross-activity display with a shared Ketch instance
+- Status display for SDK state and privacy framework values (TCF, US Privacy, GPP)
 - Real-time updates from SDK callbacks
-- Display of privacy framework values (TCF, US Privacy, GPP)
 
 ## Configuration
 
@@ -82,76 +119,27 @@ The sample app uses test configuration values:
 - **Property**: `test_property`
 - **Environment**: `test`
 
-To test with real values, update the constants in `MainActivity.kt`:
-
-```kotlin
-private const val ORG_CODE = "your_real_org_code"
-private const val PROPERTY = "your_real_property"
-private const val ENVIRONMENT = "production"
-```
+To test with real values, update the constants in `MainActivity.kt`.
 
 ## Adding New Tests
 
-To add new integration tests:
-
-1. Create test methods in `KetchSdkIntegrationTest.kt`
+1. Create test methods in the appropriate `*IntegrationTest.kt` class
 2. Use Espresso matchers and assertions
-3. Follow the existing test patterns
-4. Add any necessary helper methods
-
-Example test structure:
-
-```kotlin
-@Test
-fun testNewFeature() {
-    // Arrange
-    // Set up test conditions
-
-    // Act
-    // Perform actions (button clicks, etc.)
-
-    // Assert
-    // Verify expected outcomes
-}
-```
-
-## Future Enhancements
-
-Planned improvements:
-
-- [ ] Tests for dialog display and interaction
-- [ ] Network request mocking for controlled testing
-- [ ] Performance testing
-- [ ] Accessibility testing
-- [ ] Tests for different Android versions and devices
-- [ ] Integration with CI/CD pipelines
+3. Follow existing test patterns
+4. Keep headless tests in `KetchHeadlessIntegrationTest`; WebView tests in `KetchSdkIntegrationTest`
 
 ## Troubleshooting
 
-Common issues and solutions:
-
-**Tests fail with "No activities found"**
-
-- Ensure the sample app builds successfully
-- Check that the device/emulator is running
-
-**SDK initialization errors**
-
-- Verify the SDK module is included in dependencies
-- Check that test configuration values are valid
-
-**UI tests fail intermittently**
-
-- Add appropriate wait conditions for async operations
-- Ensure tests are running on a clean app state
+| Symptom | Likely cause |
+| ------- | ------------ |
+| Tests fail with "No activities found" | Sample app did not build; emulator not running |
+| SDK initialization errors | Invalid test configuration; missing SDK dependency |
+| UI tests fail intermittently | Missing wait for async WebView load |
 
 ## Dependencies
 
-The integration tests use:
+- **Espresso** — UI testing
+- **AndroidX Test** — test infrastructure
+- **JUnit 4** — test framework
 
-- **Espresso**: For UI testing
-- **AndroidX Test**: For test infrastructure
-- **JUnit 4**: For test framework
-- **Awaitility**: For async test conditions (if needed)
-
-All dependencies are automatically managed through the `build.gradle` file.
+All dependencies are managed through `build.gradle`.
