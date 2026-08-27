@@ -13,6 +13,7 @@ import com.ketch.android.data.InvokeRightRequest
 import com.ketch.android.data.LocationResponse
 import com.ketch.android.data.PreferenceQRRequest
 import com.ketch.android.data.SubscriptionsRequest
+import com.ketch.android.data.VendorConsents
 import com.ketch.android.data.SubscriptionsResponse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -295,10 +296,12 @@ class HeadlessApiClient(
             null
         }
 
+    @Suppress("DEPRECATION")
     private fun hasUsableConsentFields(consent: Consent): Boolean {
         if (!consent.purposes.isNullOrEmpty()) return true
         if (!consent.vendors.isNullOrEmpty()) return true
         if (!consent.protocols.isNullOrEmpty()) return true
+        if (consent.vendorConsents != null) return true
         return false
     }
 
@@ -334,18 +337,25 @@ class HeadlessApiClient(
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun emptyConsent(): Consent =
-        Consent(purposes = emptyMap(), vendors = null, protocols = null)
+        Consent(purposes = emptyMap(), vendors = null, protocols = null, vendorConsents = null)
 
     // Fallback used when setConsent's HTTP response is 2xx but the body has no usable purposes/
     // protocols (e.g. empty body). We build a Consent from the values in the request itself, so the
     // caller sees the purposes they asked for as "on". This is a guess: we never confirmed the server
     // actually stored them, since the response didn't tell us anything.
+    @Suppress("DEPRECATION")
     private fun consentFromUpdate(update: ConsentUpdate): Consent {
         val purposes = update.purposes.mapValues { (_, basis) ->
             basis.allowed.equals("true", ignoreCase = true)
         }
-        return Consent(purposes = purposes, vendors = update.vendors, protocols = null)
+        return Consent(
+            purposes = purposes,
+            vendors = update.vendors,
+            protocols = null,
+            vendorConsents = update.vendorConsents,
+        )
     }
 
     private fun <T> launchAsync(
@@ -395,8 +405,10 @@ class HeadlessApiClient(
         val migrationOption: ConsentUpdate.MigrationOption,
         val purposes: Map<String, ConsentUpdate.PurposeAllowedLegalBasis>,
         val vendors: List<String>?,
+        val vendorConsents: VendorConsents?,
     ) {
         companion object {
+            @Suppress("DEPRECATION")
             fun from(update: ConsentUpdate) = SetConsentPayload(
                 organizationCode = update.organizationCode,
                 propertyCode = update.propertyCode,
@@ -406,6 +418,7 @@ class HeadlessApiClient(
                 migrationOption = update.migrationOption,
                 purposes = update.purposes,
                 vendors = update.vendors,
+                vendorConsents = update.vendorConsents,
             )
         }
     }

@@ -87,6 +87,24 @@ data class ConsentConfig(
     )
 }
 
+/** ketch-types `VendorStatus` */
+enum class VendorStatus {
+    @SerializedName("granted")
+    GRANTED,
+
+    @SerializedName("denied")
+    DENIED,
+}
+
+/** ketch-types `VendorConsent`: vendor id to the status recorded for it. */
+typealias VendorConsent = Map<String, VendorStatus>
+
+/** ketch-types `VendorConsents` */
+data class VendorConsents(
+    @SerializedName("tcf") val tcf: VendorConsent? = null,
+    @SerializedName("google") val google: VendorConsent? = null,
+)
+
 /** Request body for `POST /consent/{org}/update`. */
 data class ConsentUpdate(
     val organizationCode: String,
@@ -96,7 +114,15 @@ data class ConsentUpdate(
     val jurisdictionCode: String,
     val migrationOption: MigrationOption,
     val purposes: Map<String, PurposeAllowedLegalBasis>,
+    /** Opt-out list only; it cannot express a grant. */
+    @Deprecated("Use vendorConsents.tcf instead.", ReplaceWith("vendorConsents"))
     val vendors: List<String>? = null,
+    /**
+     * Vendor consent to record. Leaving this null clears any vendor consent already stored for
+     * these identities — the server replaces rather than merges — so a caller updating only
+     * purposes should read the current consent and pass its `vendorConsents` back through.
+     */
+    val vendorConsents: VendorConsents? = null,
     val protocols: Map<String, String>? = null,
 ) {
     enum class MigrationOption {
