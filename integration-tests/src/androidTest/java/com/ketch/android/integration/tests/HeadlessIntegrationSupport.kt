@@ -14,6 +14,13 @@ object HeadlessIntegrationSupport {
     const val ENVIRONMENT = "production"
     const val TIMEOUT_SECONDS = 45L
 
+    // Topic codes are not derivable: HeadlessConfiguration does not model the config's
+    // `subscription` object, and there is no subscriptions-configuration endpoint in this SDK.
+    // Re-check the live list with:
+    //   curl -s .../config/ketch_samples/android/config.json | jq '.subscription.topics[].code'
+    const val SUBSCRIPTION_TOPIC = "marketing_emails"
+    const val SUBSCRIPTION_CONTACT_METHOD = "email"
+
     fun uniqueEmailIdentity(): Map<String, String> =
         mapOf("email" to "headless-${UUID.randomUUID()}@integration.ketch.test")
 
