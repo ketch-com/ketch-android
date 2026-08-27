@@ -70,6 +70,30 @@ class HeadlessSubscriptionsTest {
         )
     }
 
+    /**
+     * The response body omits organizationCode and marks nothing required, so the response type
+     * must declare no non-null fields. Against the request-type alias, hashCode() and copy() threw.
+     */
+    @Test
+    fun subscriptionsResponseSurvivesAbsentFields() = runBlocking {
+        mockWebServer.enqueue(
+            MockResponse().setBody(
+                """{"controllerCode":"","controls":{},"environmentCode":"production",
+                    "identities":{"aaid":"hl-regress-001"},"jurisdictionCode":"","properties":{},
+                    "propertyCode":"android","regionCode":"","topics":{}}""",
+            ),
+        )
+
+        val response = client().getSubscriptions(
+            SubscriptionsRequest(organizationCode = "org"),
+        )
+
+        assertEquals("android", response.propertyCode)
+        assertEquals("production", response.environmentCode)
+        assertEquals(response, response.copy())
+        assertEquals(response.hashCode(), response.copy().hashCode())
+    }
+
     private fun client(): HeadlessApiClient {
         val okHttpClient = OkHttpClient.Builder()
             .addInterceptor { chain ->

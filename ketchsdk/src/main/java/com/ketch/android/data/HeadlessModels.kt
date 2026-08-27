@@ -244,8 +244,25 @@ data class SubscriptionsRequest(
     val regionCode: String? = null,
 )
 
-/** ketch-types `GetSubscriptionsResponse` */
-typealias SubscriptionsResponse = SubscriptionsRequest
+/**
+ * ketch-types `GetSubscriptionsResponse` (shoreline `GetSubscriptionResponseBody`).
+ *
+ * Its own type rather than an alias of [SubscriptionsRequest]: the response body carries no
+ * `organizationCode` and marks nothing required. Gson builds via Unsafe, skipping Kotlin's
+ * constructor null checks, so a field declared non-null here holds null and throws from
+ * `hashCode()` and `copy()` as well as at first use. Every field is nullable for that reason.
+ */
+data class SubscriptionsResponse(
+    @SerializedName("controllerCode") val controllerCode: String? = null,
+    @SerializedName("propertyCode") val propertyCode: String? = null,
+    @SerializedName("environmentCode") val environmentCode: String? = null,
+    @SerializedName("identities") val identities: Map<String, String>? = null,
+    @SerializedName("topics") val topics: Map<String, SubscriptionTopicSetting>? = null,
+    @SerializedName("controls") val controls: Map<String, SubscriptionControlSetting>? = null,
+    @SerializedName("collectedAt") val collectedAt: Long? = null,
+    @SerializedName("jurisdictionCode") val jurisdictionCode: String? = null,
+    @SerializedName("regionCode") val regionCode: String? = null,
+)
 
 /** Errors from native headless HTTP calls. */
 class HeadlessException(message: String, cause: Throwable? = null) : Exception(message, cause)
