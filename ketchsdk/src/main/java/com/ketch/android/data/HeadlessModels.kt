@@ -87,6 +87,24 @@ data class ConsentConfig(
     )
 }
 
+/** ketch-types `VendorStatus` */
+enum class VendorStatus {
+    @SerializedName("granted")
+    GRANTED,
+
+    @SerializedName("denied")
+    DENIED,
+}
+
+/** ketch-types `VendorConsent`: vendor id to the status recorded for it. */
+typealias VendorConsent = Map<String, VendorStatus>
+
+/** ketch-types `VendorConsents` */
+data class VendorConsents(
+    @SerializedName("tcf") val tcf: VendorConsent? = null,
+    @SerializedName("google") val google: VendorConsent? = null,
+)
+
 /** Request body for `POST /consent/{org}/update`. */
 data class ConsentUpdate(
     val organizationCode: String,
@@ -96,7 +114,15 @@ data class ConsentUpdate(
     val jurisdictionCode: String,
     val migrationOption: MigrationOption,
     val purposes: Map<String, PurposeAllowedLegalBasis>,
+    /** Opt-out list only; it cannot express a grant. */
+    @Deprecated("Use vendorConsents.tcf instead.", ReplaceWith("vendorConsents"))
     val vendors: List<String>? = null,
+    /**
+     * Vendor consent to record. Leaving this null clears any vendor consent already stored for
+     * these identities — the server replaces rather than merges — so a caller updating only
+     * purposes should read the current consent and pass its `vendorConsents` back through.
+     */
+    val vendorConsents: VendorConsents? = null,
     val protocols: Map<String, String>? = null,
 ) {
     enum class MigrationOption {
@@ -199,6 +225,36 @@ data class PreferenceQRRequest(
     val parameters: Map<String, String> = emptyMap(),
 )
 
+/** ketch-types `SubscriptionStatus` */
+enum class SubscriptionStatus {
+    @SerializedName("granted")
+    GRANTED,
+
+    @SerializedName("denied")
+    DENIED,
+}
+
+/**
+ * ketch-types `SubscriptionTopicContactMethodSetting`.
+ *
+ * [status] is nullable because the schema does not mark it required. Gson builds via Unsafe and
+ * skips Kotlin's constructor null checks, so declaring it non-null would hold null and throw at
+ * first use rather than at decode.
+ */
+data class SubscriptionTopicContactMethodSetting(
+    @SerializedName("status") val status: SubscriptionStatus?,
+)
+
+/** ketch-types `SubscriptionTopicSetting`: contact method code to the setting for that method. */
+typealias SubscriptionTopicSetting = Map<String, SubscriptionTopicContactMethodSetting>
+
+/** ketch-types `SubscriptionControlSetting`. [status] is nullable for the reason above. */
+data class SubscriptionControlSetting(
+    @SerializedName("status") val status: SubscriptionStatus?,
+    /** shoreline `ControlImpact`: 0 unknown, 1 global, 2 local, 3 property. */
+    @SerializedName("impact") val impact: Int? = null,
+)
+
 /** ketch-types `GetSubscriptionsRequest` / `SetSubscriptionsRequest` */
 data class SubscriptionsRequest(
     val organizationCode: String,
@@ -206,15 +262,33 @@ data class SubscriptionsRequest(
     val propertyCode: String? = null,
     val environmentCode: String? = null,
     val identities: Map<String, String>? = null,
-    val topics: Map<String, Map<String, String>>? = null,
-    val controls: Map<String, Map<String, String>>? = null,
+    /** Topic code to its per-contact-method settings, e.g. `marketing_emails -> email -> granted`. */
+    val topics: Map<String, SubscriptionTopicSetting>? = null,
+    val controls: Map<String, SubscriptionControlSetting>? = null,
     val collectedAt: Long? = null,
     val jurisdictionCode: String? = null,
     val regionCode: String? = null,
 )
 
-/** ketch-types `GetSubscriptionsResponse` */
-typealias SubscriptionsResponse = SubscriptionsRequest
+/**
+ * ketch-types `GetSubscriptionsResponse` (shoreline `GetSubscriptionResponseBody`).
+ *
+ * Its own type rather than an alias of [SubscriptionsRequest]: the response body carries no
+ * `organizationCode` and marks nothing required. Gson builds via Unsafe, skipping Kotlin's
+ * constructor null checks, so a field declared non-null here holds null and throws from
+ * `hashCode()` and `copy()` as well as at first use. Every field is nullable for that reason.
+ */
+data class SubscriptionsResponse(
+    @SerializedName("controllerCode") val controllerCode: String? = null,
+    @SerializedName("propertyCode") val propertyCode: String? = null,
+    @SerializedName("environmentCode") val environmentCode: String? = null,
+    @SerializedName("identities") val identities: Map<String, String>? = null,
+    @SerializedName("topics") val topics: Map<String, SubscriptionTopicSetting>? = null,
+    @SerializedName("controls") val controls: Map<String, SubscriptionControlSetting>? = null,
+    @SerializedName("collectedAt") val collectedAt: Long? = null,
+    @SerializedName("jurisdictionCode") val jurisdictionCode: String? = null,
+    @SerializedName("regionCode") val regionCode: String? = null,
+)
 
 /** Errors from native headless HTTP calls. */
 class HeadlessException(message: String, cause: Throwable? = null) : Exception(message, cause)
