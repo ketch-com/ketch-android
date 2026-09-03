@@ -162,6 +162,24 @@ data class HeadlessConfiguration(
     @SerializedName("purposes") val purposes: List<ConfigurationPurpose>? = null,
 )
 
+/** One entry of the config's `identities` block: where the tag reads this identity space from. */
+data class ConfigurationIdentity(
+    @SerializedName("type") val type: String? = null,
+    @SerializedName("variable") val variable: String? = null,
+    /** Lifetime in seconds. Absent until supercargo emits it. */
+    @SerializedName("ttl") val ttl: Long? = null,
+)
+
+/**
+ * Response of `config.json?include=identities`.
+ *
+ * [identities] is null when the response carried no `identities` key at all, which is distinct
+ * from a property that declares none (an empty map).
+ */
+data class IdentityConfiguration(
+    @SerializedName("identities") val identities: Map<String, ConfigurationIdentity>? = null,
+)
+
 data class ConfigurationRight(
     @SerializedName("code") val code: String? = null,
     @SerializedName("name") val name: String? = null,

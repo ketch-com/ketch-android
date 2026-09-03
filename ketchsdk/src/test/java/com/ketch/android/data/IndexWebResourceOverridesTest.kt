@@ -10,9 +10,8 @@ class IndexWebResourceOverridesTest {
         getIndexHtml(
             orgCode = "org",
             propertyName = "prop",
-            logLevel = "ERROR",
             ketchMobileSdkUrl = "https://global.ketchcdn.com/web/v3",
-            identities = "",
+            params = mapOf("ketch_log" to "ERROR"),
             webResourceUrlOverrides = webResourceUrlOverrides,
         )
 

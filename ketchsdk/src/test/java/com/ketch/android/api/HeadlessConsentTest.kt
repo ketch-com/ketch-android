@@ -1,5 +1,6 @@
 package com.ketch.android.api
 
+import com.ketch.android.ManagedIdentity
 import com.ketch.android.data.Consent
 import com.ketch.android.data.ConsentConfig
 import com.ketch.android.data.ConsentUpdate
@@ -25,10 +26,16 @@ class HeadlessConsentTest {
     fun setUp() {
         mockWebServer = MockWebServer()
         mockWebServer.start()
+    
+        // These cover consent/subscription decoding, not identity. Declaring the property
+        // as having no managed identity keeps the resolver from consuming a queued response.
+        ManagedIdentity.resetForTesting()
+        ManagedIdentity.markResolvedForTesting("org", "prop", null)
     }
 
     @After
     fun tearDown() {
+        ManagedIdentity.resetForTesting()
         mockWebServer.shutdown()
     }
 

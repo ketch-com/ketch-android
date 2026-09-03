@@ -29,6 +29,12 @@ android {
         pickFirst 'lib/*/libc++_shared.so'
     }
 
+    testOptions {
+        // android.jar is stubbed on the JVM; without this every android.util.Log call in code
+        // under test throws "not mocked".
+        unitTests.returnDefaultValues = true
+    }
+
     buildTypes {
         debug {
             minifyEnabled false

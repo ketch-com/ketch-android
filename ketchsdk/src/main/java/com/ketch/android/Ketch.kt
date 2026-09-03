@@ -168,7 +168,8 @@ class Ketch private constructor(
             return false
         }
 
-        val signature = buildLoadSignature(bottomPadding, topPadding)
+        val effectiveIdentities = effectiveIdentities()
+        val signature = buildLoadSignature(bottomPadding, topPadding, effectiveIdentities)
         if (tryWarmWebView(signature) != null) {
             Log.d(TAG, "WebView already loaded with matching signature; skipping reload")
             return true
@@ -182,7 +183,7 @@ class Ketch private constructor(
             jurisdiction,
             region,
             environment,
-            identities,
+            effectiveIdentities,
             null,
             emptyList(),
             null,
@@ -381,7 +382,8 @@ class Ketch private constructor(
             return false
         }
 
-        val signature = buildLoadSignature(bottomPadding, topPadding)
+        val effectiveIdentities = effectiveIdentities()
+        val signature = buildLoadSignature(bottomPadding, topPadding, effectiveIdentities)
         tryWarmWebView(signature, "showConsent")?.let { webView ->
             webView.showConsentExperience()
             return true
@@ -396,7 +398,7 @@ class Ketch private constructor(
             jurisdiction,
             region,
             environment,
-            identities,
+            effectiveIdentities,
             KetchWebView.ExperienceType.CONSENT,
             emptyList(),
             null,
@@ -429,7 +431,8 @@ class Ketch private constructor(
             return false
         }
 
-        val signature = buildLoadSignature(bottomPadding, topPadding)
+        val effectiveIdentities = effectiveIdentities()
+        val signature = buildLoadSignature(bottomPadding, topPadding, effectiveIdentities)
         tryWarmWebView(signature, "showPreferences")?.let { webView ->
             webView.showPreferenceExperience(buildPreferenceOptionsJson())
             return true
@@ -444,7 +447,7 @@ class Ketch private constructor(
             jurisdiction,
             region,
             environment,
-            identities,
+            effectiveIdentities,
             KetchWebView.ExperienceType.PREFERENCES,
             emptyList(),
             null,
@@ -481,7 +484,8 @@ class Ketch private constructor(
             return false
         }
 
-        val signature = buildLoadSignature(bottomPadding, topPadding)
+        val effectiveIdentities = effectiveIdentities()
+        val signature = buildLoadSignature(bottomPadding, topPadding, effectiveIdentities)
         tryWarmWebView(signature, "showPreferencesTab(tab=${tab.name})")?.let { webView ->
             webView.showPreferenceExperience(buildPreferenceOptionsJson(tabs, tab))
             return true
@@ -496,7 +500,7 @@ class Ketch private constructor(
             jurisdiction,
             region,
             environment,
-            identities,
+            effectiveIdentities,
             KetchWebView.ExperienceType.PREFERENCES,
             tabs,
             tab,
@@ -537,7 +541,8 @@ class Ketch private constructor(
         }
 
         val optionsJson = JSONObject(options).toString()
-        val signature = buildLoadSignature(0, 0)
+        val effectiveIdentities = effectiveIdentities()
+        val signature = buildLoadSignature(0, 0, effectiveIdentities)
 
         tryWarmWebView(signature, "trigger($safeName)")?.let { webView ->
             // Supersede any deferred cold trigger so onConfigUpdated does not re-fire it.
@@ -556,7 +561,7 @@ class Ketch private constructor(
             jurisdiction,
             region,
             environment,
-            identities,
+            effectiveIdentities,
             null,
             emptyList(),
             null,
@@ -594,6 +599,32 @@ class Ketch private constructor(
                 resetShowingState(HideExperienceStatus.None)
             }
         }
+    }
+
+    /**
+     * Identities that will be sent, including the Ketch-managed identifier once it has resolved.
+     *
+     * Keyed by identity space code, matching what a consent record is filed under. Resolves the
+     * managed identifier first if that has not happened yet.
+     */
+    fun getIdentities(callback: (Map<String, String>) -> Unit) {
+        ManagedIdentity.resolve(orgCode, property, headlessApiClient) { resolved ->
+            callback(merge(resolved))
+        }
+    }
+
+    suspend fun getIdentities(): Map<String, String> =
+        merge(ManagedIdentity.await(orgCode, property, headlessApiClient))
+
+    private fun merge(resolved: ManagedIdentity.Resolved?): Map<String, String> =
+        resolved?.let { mapOf(it.code to it.value) + identities } ?: identities
+
+    /**
+     * Forgets the Ketch-managed identifier, so the next resolve mints a new one — and therefore
+     * starts a new consent record.
+     */
+    fun clearIdentities() {
+        ManagedIdentity.clear()
     }
 
     /**
@@ -753,6 +784,8 @@ class Ketch private constructor(
     init {
         getPreferences()
 
+        ManagedIdentity.resolve(orgCode, property, headlessApiClient)
+
         // Ensure any existing dialog fragments are properly cleaned up
         synchronized(lock) {
             resolveFragmentManager()?.findFragmentByTag(KetchDialogFragment.TAG)?.let { existingFragment ->
@@ -905,7 +938,20 @@ class Ketch private constructor(
         }
     }
 
-    private fun buildLoadSignature(bottomPadding: Int, topPadding: Int): String =
+    /**
+     * Caller identities plus the Ketch-managed identifier, keyed by the config `variable` since
+     * these become query parameters on the WebView's page. Caller entries win on collision.
+     */
+    private fun effectiveIdentities(): Map<String, String> {
+        val resolved = ManagedIdentity.peek(orgCode, property) ?: return identities
+        return mapOf(resolved.variable to resolved.value) + identities
+    }
+
+    private fun buildLoadSignature(
+        bottomPadding: Int,
+        topPadding: Int,
+        identities: Map<String, String>,
+    ): String =
         listOf(
             orgCode,
             property,
