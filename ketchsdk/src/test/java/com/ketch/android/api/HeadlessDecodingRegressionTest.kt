@@ -1,6 +1,7 @@
 package com.ketch.android.api
 
 import com.google.gson.Gson
+import com.ketch.android.ManagedIdentity
 import com.ketch.android.data.Consent
 import com.ketch.android.data.ConsentConfig
 import com.ketch.android.data.ConsentUpdate
@@ -41,8 +42,20 @@ class HeadlessDecodingRegressionTest {
 
     private lateinit var mockWebServer: MockWebServer
 
-    @Before fun setUp() { mockWebServer = MockWebServer(); mockWebServer.start() }
-    @After fun tearDown() { mockWebServer.shutdown() }
+    @Before
+    fun setUp() {
+        mockWebServer = MockWebServer()
+        mockWebServer.start()
+        // This suite covers decoding, not identity. Declaring the property as having no managed
+        // identity stops the resolver consuming a queued response.
+        ManagedIdentity.resetForTesting()
+        ManagedIdentity.markResolvedForTesting("org", "prop", null)
+    }
+    @After
+    fun tearDown() {
+        mockWebServer.shutdown()
+        ManagedIdentity.resetForTesting()
+    }
 
     /** The get path already worked; this guards against the adapter regressing it. */
     @Test

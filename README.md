@@ -376,6 +376,26 @@ To revert back to using the remote GitHub dependency:
     fun getJurisdiction(callback: (Result<String?>) -> Unit)
 ```
 
+```kotlin
+    /**
+     * Identities that will be sent, including the Ketch-managed identifier once resolved.
+     * Keyed by identity space code. Callback and suspend variants.
+     */
+    fun getIdentities(callback: (Map<String, String>) -> Unit)
+
+    /**
+     * Forgets the Ketch-managed identifier, so the next resolve mints a new one and starts a
+     * new consent record. Does not affect identities set via setIdentities().
+     */
+    fun clearIdentities()
+```
+
+The SDK mints and stores a Ketch-managed identifier (`swb_*`) itself, supplying it to the tag as
+a query parameter and to headless requests. It does so only for properties whose config declares
+that identity space as query-string sourced; otherwise the tag continues to manage the value and
+the SDK supplies nothing. The identifier lives in SharedPreferences and does not survive an
+uninstall.
+
 `Ketch` and `KetchSdk` also expose headless HTTP methods —
 `getBootstrapConfiguration`, `getFullConfiguration`, `getConsent`, `setConsent`,
 `invokeRight`, `getSubscriptions`, `setSubscriptions`, `getPreferenceQRUrl` —

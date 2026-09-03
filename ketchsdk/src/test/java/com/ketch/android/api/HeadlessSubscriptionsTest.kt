@@ -1,5 +1,6 @@
 package com.ketch.android.api
 
+import com.ketch.android.ManagedIdentity
 import com.ketch.android.data.SubscriptionStatus
 import com.ketch.android.data.SubscriptionTopicContactMethodSetting
 import com.ketch.android.data.SubscriptionsRequest
@@ -17,8 +18,20 @@ import org.junit.Test
 class HeadlessSubscriptionsTest {
     private lateinit var mockWebServer: MockWebServer
 
-    @Before fun setUp() { mockWebServer = MockWebServer(); mockWebServer.start() }
-    @After fun tearDown() { mockWebServer.shutdown() }
+    @Before
+    fun setUp() {
+        mockWebServer = MockWebServer()
+        mockWebServer.start()
+        // This suite covers decoding, not identity. Declaring the property as having no managed
+        // identity stops the resolver consuming a queued response.
+        ManagedIdentity.resetForTesting()
+        ManagedIdentity.markResolvedForTesting("org", "prop", null)
+    }
+    @After
+    fun tearDown() {
+        mockWebServer.shutdown()
+        ManagedIdentity.resetForTesting()
+    }
 
     /**
      * A two-level body was rejected with

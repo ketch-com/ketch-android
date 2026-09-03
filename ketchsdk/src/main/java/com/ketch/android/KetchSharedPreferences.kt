@@ -11,7 +11,10 @@ import androidx.core.content.edit
  * KetchSharedPreferences is a singleton object which handles writing to Android SharedPreferences.
  */
 object KetchSharedPreferences {
+    @Volatile
     private lateinit var sharedPreferences: SharedPreferences
+
+    @Volatile
     private var isInitialized = false
 
     // Prefixes to remove during initialization
@@ -28,6 +31,7 @@ object KetchSharedPreferences {
     /**
      * Initialize SharedPreferences if it doesn't already exist
      */
+    @Synchronized
     fun initialize(context: Context) {
         if (!isInitialized) {
             sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
@@ -49,6 +53,13 @@ object KetchSharedPreferences {
     }
 
     /**
+     * Whether [initialize] has run. KetchSdk's static headless methods work with no Ketch
+     * instance, so callers reached that way cannot assume storage exists.
+     */
+    val isReady: Boolean
+        get() = isInitialized
+
+    /**
      * Retrieve some value from SharedPreferences
      */
     fun getSavedValue(key: String): String? = sharedPreferences.getString(key, null)
@@ -64,6 +75,20 @@ object KetchSharedPreferences {
      */
     fun write(key: String, value: String) {
         sharedPreferences.edit { putString(key, value) }
+    }
+
+    /**
+     * Persist several values as one edit.
+     *
+     * [write] is one key per edit, so a caller storing a value and its timestamp could be killed
+     * between the two and leave one without the other. A single edit updates the in-memory map
+     * atomically, so readers never see half of it. Uses apply() rather than commit() because
+     * callers may be on the main thread and commit() writes to disk synchronously.
+     */
+    fun writeAll(values: Map<String, String>) {
+        sharedPreferences.edit {
+            values.forEach { (key, value) -> putString(key, value) }
+        }
     }
 
     /**

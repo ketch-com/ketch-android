@@ -9,6 +9,8 @@ import com.ketch.android.data.HeadlessConfiguration
 import com.ketch.android.data.configPathSegment
 import com.ketch.android.data.configQueryParams
 import com.ketch.android.data.HeadlessException
+import com.ketch.android.ManagedIdentity
+import com.ketch.android.data.IdentityConfiguration
 import com.ketch.android.data.InvokeRightRequest
 import com.ketch.android.data.LocationResponse
 import com.ketch.android.data.PreferenceQRRequest
@@ -107,6 +109,32 @@ class HeadlessApiClient(
             get(path, HeadlessConfiguration::class.java, query, headers)
         }
 
+    /**
+     * Just the `identities` block of a property config.
+     *
+     * Uses the short path deliberately: `include` is ignored on the
+     * environment/jurisdiction/language variant, and identities do not vary by any of them, so
+     * nothing is lost and a language or region change does not force a re-fetch.
+     */
+    fun getIdentityConfiguration(
+        organizationCode: String,
+        propertyCode: String,
+        callback: (Result<IdentityConfiguration>) -> Unit,
+    ) {
+        launchAsync(callback) { getIdentityConfiguration(organizationCode, propertyCode) }
+    }
+
+    suspend fun getIdentityConfiguration(
+        organizationCode: String,
+        propertyCode: String,
+    ): IdentityConfiguration = withContext(Dispatchers.IO) {
+        get(
+            "/config/$organizationCode/$propertyCode/config.json",
+            IdentityConfiguration::class.java,
+            mapOf("include" to "identities"),
+        )
+    }
+
     fun getConsent(
         config: ConsentConfig,
         callback: (Result<Consent>) -> Unit,
@@ -115,8 +143,11 @@ class HeadlessApiClient(
     }
 
     suspend fun getConsent(config: ConsentConfig): Consent = withContext(Dispatchers.IO) {
-        val path = "/consent/${config.organizationCode}/get"
-        postConsent(path, ConsentConfigPayload.from(config))
+        val merged = config.copy(
+            identities = withManagedIdentity(config.identities, config.organizationCode, config.propertyCode),
+        )
+        val path = "/consent/${merged.organizationCode}/get"
+        postConsent(path, ConsentConfigPayload.from(merged))
     }
 
     fun setConsent(
@@ -127,8 +158,11 @@ class HeadlessApiClient(
     }
 
     suspend fun setConsent(update: ConsentUpdate): Consent = withContext(Dispatchers.IO) {
-        val path = "/consent/${update.organizationCode}/update"
-        postSetConsent(path, SetConsentPayload.from(update), update)
+        val merged = update.copy(
+            identities = withManagedIdentity(update.identities, update.organizationCode, update.propertyCode),
+        )
+        val path = "/consent/${merged.organizationCode}/update"
+        postSetConsent(path, SetConsentPayload.from(merged), merged)
     }
 
     fun invokeRight(
@@ -139,7 +173,10 @@ class HeadlessApiClient(
     }
 
     suspend fun invokeRight(request: InvokeRightRequest): Unit = withContext(Dispatchers.IO) {
-        postVoid("/rights/${request.organizationCode}/invoke", request)
+        val merged = request.copy(
+            identities = withManagedIdentity(request.identities, request.organizationCode, request.propertyCode),
+        )
+        postVoid("/rights/${merged.organizationCode}/invoke", merged)
     }
 
     fun getSubscriptions(
@@ -151,7 +188,10 @@ class HeadlessApiClient(
 
     suspend fun getSubscriptions(request: SubscriptionsRequest): SubscriptionsResponse =
         withContext(Dispatchers.IO) {
-            post("/subscriptions/${request.organizationCode}/get", request, SubscriptionsResponse::class.java)
+            val merged = request.copy(
+                identities = withManagedIdentity(request.identities, request.organizationCode, request.propertyCode),
+            )
+            post("/subscriptions/${merged.organizationCode}/get", merged, SubscriptionsResponse::class.java)
         }
 
     fun setSubscriptions(
@@ -162,7 +202,29 @@ class HeadlessApiClient(
     }
 
     suspend fun setSubscriptions(request: SubscriptionsRequest): Unit = withContext(Dispatchers.IO) {
-        postVoid("/subscriptions/${request.organizationCode}/update", request)
+        val merged = request.copy(
+            identities = withManagedIdentity(request.identities, request.organizationCode, request.propertyCode),
+        )
+        postVoid("/subscriptions/${merged.organizationCode}/update", merged)
+    }
+
+    /**
+     * Adds the Ketch-managed identifier to a request's identities.
+     */
+    private suspend fun withManagedIdentity(
+        identities: Map<String, String>?,
+        organizationCode: String,
+        propertyCode: String?,
+    ): Map<String, String> {
+        val caller = identities ?: emptyMap()
+        val resolved = if (propertyCode.isNullOrBlank()) {
+            // Without a property code there is no space to look up, so fall back to whatever has
+            // already resolved rather than dropping the identifier entirely.
+            ManagedIdentity.lastResolved()
+        } else {
+            ManagedIdentity.await(organizationCode, propertyCode, this)
+        } ?: return caller
+        return mapOf(resolved.code to resolved.value) + caller
     }
 
     fun getPreferenceQRUrl(request: PreferenceQRRequest): String {
