@@ -496,6 +496,12 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             }
             val value = KetchSharedPreferences.getSavedValue(parsedKey)
             Log.d(TAG, "ketchNativeResolve: key=$parsedKey found=${value != null}")
+            // Track the key regardless of whether a value was found yet, so a later
+            // nativeStoragePut for it (the tag minting on our null) is recognized as an
+            // identity write, and clearIdentities() knows what to forget.
+            runOnMainThread {
+                ketchWebView.listener?.onNativeResolve(parsedKey)
+            }
             return value
         }
 
@@ -533,6 +539,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         fun onWillShowExperience(experienceType: WillShowExperienceType)
         fun onHasShownExperience()
         fun onNativeStoragePut(key: String, value: String) {}
+        fun onNativeResolve(key: String) {}
     }
 
     internal enum class ExperienceType {

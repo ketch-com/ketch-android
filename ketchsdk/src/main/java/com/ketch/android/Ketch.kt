@@ -31,6 +31,7 @@ import com.ketch.android.ui.KetchDialogFragment
 import com.ketch.android.ui.KetchWebView
 import org.json.JSONObject
 import java.lang.ref.WeakReference
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Main Ketch SDK class
@@ -73,6 +74,13 @@ class Ketch private constructor(
     }
 
     private var identities: Map<String, String> = emptyMap()
+
+    /**
+     * Space codes the tag has asked `ketchNativeResolve` about this process, whether or not a
+     * value existed yet. `nativeStoragePut` is a general storage-write channel, not identity-only,
+     * so only keys the tag has actually resolved are treated as identities here.
+     */
+    private val resolvedIdentityKeys = ConcurrentHashMap.newKeySet<String>()
     private var language: String? = null
     private var jurisdiction: String? = null
     private var region: String? = null
@@ -606,15 +614,21 @@ class Ketch private constructor(
     }
 
     /**
-     * Identities currently supplied by the host app.
+     * Identities that will be sent: those supplied by the host app, plus any the tag has
+     * resolved natively.
      */
-    fun getIdentities(): Map<String, String> = identities
+    fun getIdentities(): Map<String, String> =
+        mergeResolvedIdentities(identities, resolvedIdentityKeys, KetchSharedPreferences::getSavedValue)
 
     /**
-     * Clears the identities supplied by the host app.
+     * Forgets every identity: those supplied by the host app via [setIdentities], and every one
+     * the tag has resolved natively — so the next resolve mints a new managed identifier and
+     * starts a new consent record.
      */
     fun clearIdentities() {
         identities = emptyMap()
+        resolvedIdentityKeys.forEach { key -> KetchSharedPreferences.remove(key) }
+        resolvedIdentityKeys.clear()
     }
 
     /**
@@ -1047,6 +1061,10 @@ class Ketch private constructor(
 
                 override fun onNativeStoragePut(key: String, value: String) {
                     this@Ketch.listener?.onNativeStoragePut(key, value)
+                }
+
+                override fun onNativeResolve(key: String) {
+                    resolvedIdentityKeys.add(key)
                 }
 
                 override fun showConsent() {

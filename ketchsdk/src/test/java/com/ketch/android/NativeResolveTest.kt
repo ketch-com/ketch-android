@@ -55,3 +55,49 @@ class KetchNativeResolveLookupTest {
         assertNull(KetchSharedPreferences.getSavedValue("swb_app1"))
     }
 }
+
+class MergeResolvedIdentitiesTest {
+    @Test
+    fun noResolvedKeys_returnsIdentitiesUnchanged() {
+        val result = mergeResolvedIdentities(
+            identities = mapOf("email" to "a@b.test"),
+            resolvedIdentityKeys = emptySet(),
+            lookup = { null },
+        )
+
+        assertEquals(mapOf("email" to "a@b.test"), result)
+    }
+
+    @Test
+    fun resolvedKeyWithAValue_isAdded() {
+        val result = mergeResolvedIdentities(
+            identities = mapOf("email" to "a@b.test"),
+            resolvedIdentityKeys = setOf("swb_app1"),
+            lookup = { key -> if (key == "swb_app1") "the-uuid" else null },
+        )
+
+        assertEquals(mapOf("email" to "a@b.test", "swb_app1" to "the-uuid"), result)
+    }
+
+    @Test
+    fun resolvedKeyWithNoValueYet_isOmittedNotBlank() {
+        val result = mergeResolvedIdentities(
+            identities = emptyMap(),
+            resolvedIdentityKeys = setOf("swb_app1"),
+            lookup = { null },
+        )
+
+        assertEquals(emptyMap<String, String>(), result)
+    }
+
+    @Test
+    fun resolvedValueWinsOnCollisionWithIdentities() {
+        val result = mergeResolvedIdentities(
+            identities = mapOf("swb_app1" to "stale"),
+            resolvedIdentityKeys = setOf("swb_app1"),
+            lookup = { "fresh" },
+        )
+
+        assertEquals(mapOf("swb_app1" to "fresh"), result)
+    }
+}
