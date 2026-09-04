@@ -606,6 +606,18 @@ class Ketch private constructor(
     }
 
     /**
+     * Identities currently supplied by the host app.
+     */
+    fun getIdentities(): Map<String, String> = identities
+
+    /**
+     * Clears the identities supplied by the host app.
+     */
+    fun clearIdentities() {
+        identities = emptyMap()
+    }
+
+    /**
      * Set the language
      *
      * @param language: a language name (EN, FR, etc.)

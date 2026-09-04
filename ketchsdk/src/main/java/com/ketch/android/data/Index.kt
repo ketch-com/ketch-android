@@ -8,19 +8,8 @@ package com.ketch.android.data
 fun getIndexHtml(
     orgCode: String,
     propertyName: String,
-    logLevel: String,
     ketchMobileSdkUrl: String,
-    language: String? = null,
-    jurisdiction: String? = null,
-    identities: String,
-    region: String? = null,
-    environment: String? = null,
-    forceShow: String? = null,
-    preferencesTabs: String? = null,
-    preferencesTab: String? = null,
-    age: Int? = null,
-    ageLower: Int? = null,
-    ageUpper: Int? = null,
+    params: Map<String, String>,
     bottomPadding: String = "0px",
     topPadding: String = "0px",
     cssStyleOverride: String? = null,
@@ -202,60 +191,41 @@ fun getIndexHtml(
                 ""
             }) +
             "      // We put the script inside body, otherwise document.body will be null\n" +
-            "      initKetchTag({" +
-            "ketch_log: \"${logLevel}\"," +
-            if (language?.isNotBlank() == true) {
-                "ketch_lang: \"${language}\","
-            } else {
-                ""
-            } +
-            if (jurisdiction?.isNotBlank() == true) {
-                "ketch_jurisdiction: \"${jurisdiction}\","
-            } else {
-                ""
-            } +
-            if (region?.isNotBlank() == true) {
-                "ketch_region: \"${region}\","
-            } else {
-                ""
-            } +
-            if (forceShow?.isNotBlank() == true) {
-                "ketch_show: \"${forceShow}\","
-            } else {
-                ""
-            } +
-            if (preferencesTabs?.isNotBlank() == true) {
-                "ketch_preferences_tabs: \"${preferencesTabs}\","
-            } else {
-                ""
-            } +
-            if (preferencesTab?.isNotBlank() == true) {
-                "ketch_preferences_tab: \"${preferencesTab}\","
-            } else {
-                ""
-            } +
-            if (environment?.isNotBlank() == true) {
-                "ketch_env: \"${environment}\","
-            } else {
-                ""
-            } +
-            if (age != null && age >= 0) {
-                "ketch_age: \"${age}\","
-            } else {
-                ""
-            } +
-            if (ageLower != null && ageLower >= 0) {
-                "ketch_age_lower: \"${ageLower}\","
-            } else {
-                ""
-            } +
-            if (ageUpper != null && ageUpper >= 0) {
-                "ketch_age_upper: \"${ageUpper}\","
-            } else {
-                ""
-            } +
-            identities +
-            "});" +
+            "      initKetchTag(${toJsObjectLiteral(params)});" +
             "    </script>\n" +
             "  </body>\n" +
             "</html>"
+
+/**
+ * Escapes [value] for use inside a double-quoted JavaScript string literal.
+ */
+internal fun jsonEscape(value: String): String {
+    val out = StringBuilder(value.length + 16)
+    for (c in value) {
+        when {
+            c == '"' -> out.append("\\\"")
+            c == '\\' -> out.append("\\\\")
+            c == '\n' -> out.append("\\n")
+            c == '\r' -> out.append("\\r")
+            c == '\t' -> out.append("\\t")
+            c == '\b' -> out.append("\\b")
+            c == '\u000C' -> out.append("\\f")
+            // Would otherwise close the enclosing <script> block.
+            c == '/' && out.isNotEmpty() && out.last() == '<' -> out.append("\\/")
+            // Legal in JSON but line terminators to a pre-ES2019 JavaScript parser.
+            c == '\u2028' || c == '\u2029' -> out.append(String.format("\\u%04x", c.code))
+            c < ' ' -> out.append(String.format("\\u%04x", c.code))
+            else -> out.append(c)
+        }
+    }
+    return out.toString()
+}
+
+/**
+ * Serializes [params] as a JavaScript object literal. Iteration order is the map's, so callers
+ * pass an ordered map when the output has to be stable.
+ */
+internal fun toJsObjectLiteral(params: Map<String, String>): String =
+    params.entries.joinToString(separator = ",", prefix = "{", postfix = "}") { (key, value) ->
+        "\"${jsonEscape(key)}\":\"${jsonEscape(value)}\""
+    }
