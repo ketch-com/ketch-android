@@ -390,7 +390,7 @@ class HeadlessApiClient(
                 propertyCode = config.propertyCode,
                 environmentCode = config.environmentCode,
                 jurisdictionCode = config.jurisdictionCode,
-                identities = config.identities,
+                identities = config.identities ?: emptyMap(),
                 purposes = config.purposes,
             )
         }
@@ -413,7 +413,7 @@ class HeadlessApiClient(
                 organizationCode = update.organizationCode,
                 propertyCode = update.propertyCode,
                 environmentCode = update.environmentCode,
-                identities = update.identities,
+                identities = update.identities ?: emptyMap(),
                 jurisdictionCode = update.jurisdictionCode,
                 migrationOption = update.migrationOption,
                 purposes = update.purposes,

@@ -79,7 +79,7 @@ data class ConsentConfig(
     val propertyCode: String,
     val environmentCode: String,
     val jurisdictionCode: String,
-    val identities: Map<String, String>,
+    val identities: Map<String, String>? = null,
     val purposes: Map<String, PurposeLegalBasis>,
 ) {
     data class PurposeLegalBasis(
@@ -110,7 +110,7 @@ data class ConsentUpdate(
     val organizationCode: String,
     val propertyCode: String,
     val environmentCode: String,
-    val identities: Map<String, String>,
+    val identities: Map<String, String>? = null,
     val jurisdictionCode: String,
     val migrationOption: MigrationOption,
     val purposes: Map<String, PurposeAllowedLegalBasis>,
@@ -202,7 +202,7 @@ data class InvokeRightRequest(
     val organizationCode: String,
     val propertyCode: String,
     val environmentCode: String,
-    val identities: Map<String, String>,
+    val identities: Map<String, String>? = null,
     val jurisdictionCode: String,
     val rightCode: String,
     val user: DataSubject,

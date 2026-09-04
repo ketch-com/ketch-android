@@ -24,6 +24,7 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonParseException
 import com.ketch.android.Ketch
 import com.ketch.android.KetchSharedPreferences
+import com.ketch.android.parseNativeResolveKey
 import com.ketch.android.parseNativeStoragePutPayload
 import com.ketch.android.data.Consent
 import com.ketch.android.data.ContentDisplay
@@ -272,24 +273,31 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             topPaddingPx = topPadding.toString() + "px"
         }
 
+        // Insertion order is preserved into the serialized object literal, and identities are
+        // added last so a space code matching a ketch_* key keeps today's precedence.
+        val params = buildMap {
+            put("ketch_log", logLevel.name)
+            language?.takeIf { it.isNotBlank() }?.let { put("ketch_lang", it) }
+            jurisdiction?.takeIf { it.isNotBlank() }?.let { put("ketch_jurisdiction", it) }
+            region?.takeIf { it.isNotBlank() }?.let { put("ketch_region", it) }
+            forceShow?.getUrlParameter()?.takeIf { it.isNotBlank() }?.let { put("ketch_show", it) }
+            preferencesTabs.takeIf { it.isNotEmpty() }
+                ?.joinToString(",") { it.getUrlParameter() }
+                ?.let { put("ketch_preferences_tabs", it) }
+            preferencesTab?.getUrlParameter()?.takeIf { it.isNotBlank() }
+                ?.let { put("ketch_preferences_tab", it) }
+            environment?.takeIf { it.isNotBlank() }?.let { put("ketch_env", it) }
+            age?.takeIf { it >= 0 }?.let { put("ketch_age", it.toString()) }
+            ageLower?.takeIf { it >= 0 }?.let { put("ketch_age_lower", it.toString()) }
+            ageUpper?.takeIf { it >= 0 }?.let { put("ketch_age_upper", it.toString()) }
+            putAll(identities)
+        }
+
         val indexHtml = getIndexHtml(
             orgCode = orgCode,
             propertyName = property,
-            logLevel = logLevel.name,
             ketchMobileSdkUrl = ketchUrl ?: "https://global.ketchcdn.com/web/v3",
-            language = language,
-            jurisdiction = jurisdiction,
-            identities = identities.map { identity ->
-                "${identity.key}: \"${identity.value}\""
-            }.joinToString(separator = ",\n", prefix = "\n", postfix = "\n"),
-            region = region,
-            environment = environment,
-            forceShow = forceShow?.getUrlParameter(),
-            preferencesTabs = preferencesTabs.takeIf { it.isNotEmpty() }?.joinToString(",") { it.getUrlParameter() },
-            preferencesTab = preferencesTab?.getUrlParameter(),
-            age = age,
-            ageLower = ageLower,
-            ageUpper = ageUpper,
+            params = params,
             bottomPadding = bottomPaddingPx,
             topPadding = topPaddingPx,
             cssStyleOverride = cssStyle,
@@ -479,6 +487,24 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             }
         }
 
+        @JavascriptInterface
+        fun ketchNativeResolve(key: String?): String? {
+            val parsedKey = parseNativeResolveKey(key)
+            if (parsedKey == null) {
+                Log.e(TAG, "ketchNativeResolve: invalid key")
+                return null
+            }
+            val value = KetchSharedPreferences.getSavedValue(parsedKey)
+            Log.d(TAG, "ketchNativeResolve: key=$parsedKey found=${value != null}")
+            // Track the key regardless of whether a value was found yet, so a later
+            // nativeStoragePut for it (the tag minting on our null) is recognized as an
+            // identity write, and clearIdentities() knows what to forget.
+            runOnMainThread {
+                ketchWebView.listener?.onNativeResolve(parsedKey)
+            }
+            return value
+        }
+
         private fun parseIabTcfGpp(json: String): Map<String, String>? {
             val gson = GsonBuilder()
                 .create()
@@ -513,6 +539,7 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
         fun onWillShowExperience(experienceType: WillShowExperienceType)
         fun onHasShownExperience()
         fun onNativeStoragePut(key: String, value: String) {}
+        fun onNativeResolve(key: String) {}
     }
 
     internal enum class ExperienceType {

@@ -31,6 +31,7 @@ import com.ketch.android.ui.KetchDialogFragment
 import com.ketch.android.ui.KetchWebView
 import org.json.JSONObject
 import java.lang.ref.WeakReference
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Main Ketch SDK class
@@ -73,6 +74,13 @@ class Ketch private constructor(
     }
 
     private var identities: Map<String, String> = emptyMap()
+
+    /**
+     * Space codes the tag has asked `ketchNativeResolve` about this process, whether or not a
+     * value existed yet. `nativeStoragePut` is a general storage-write channel, not identity-only,
+     * so only keys the tag has actually resolved are treated as identities here.
+     */
+    private val resolvedIdentityKeys = ConcurrentHashMap.newKeySet<String>()
     private var language: String? = null
     private var jurisdiction: String? = null
     private var region: String? = null
@@ -313,54 +321,68 @@ class Ketch private constructor(
         config: ConsentConfig,
         callback: (Result<Consent>) -> Unit,
     ) {
-        headlessApiClient.getConsent(config, callback)
+        headlessApiClient.getConsent(config.withMergedIdentities(), callback)
     }
 
     suspend fun getConsent(config: ConsentConfig): Consent =
-        headlessApiClient.getConsent(config)
+        headlessApiClient.getConsent(config.withMergedIdentities())
 
     /** Updates consent; returns server response with computed `protocols`. */
     fun setConsent(
         update: ConsentUpdate,
         callback: (Result<Consent>) -> Unit,
     ) {
-        headlessApiClient.setConsent(update.withoutProtocols(), callback)
+        headlessApiClient.setConsent(update.withMergedIdentities().withoutProtocols(), callback)
     }
 
     suspend fun setConsent(update: ConsentUpdate): Consent =
-        headlessApiClient.setConsent(update.withoutProtocols())
+        headlessApiClient.setConsent(update.withMergedIdentities().withoutProtocols())
 
     /** Invokes a data subject right (`POST .../rights/{org}/invoke`). */
     fun invokeRight(
         request: InvokeRightRequest,
         callback: (Result<Unit>) -> Unit,
     ) {
-        headlessApiClient.invokeRight(request, callback)
+        headlessApiClient.invokeRight(request.withMergedIdentities(), callback)
     }
 
-    suspend fun invokeRight(request: InvokeRightRequest) = headlessApiClient.invokeRight(request)
+    suspend fun invokeRight(request: InvokeRightRequest) =
+        headlessApiClient.invokeRight(request.withMergedIdentities())
 
     /** Gets subscription topics/controls (`POST .../subscriptions/{org}/get`). */
     fun getSubscriptions(
         request: SubscriptionsRequest,
         callback: (Result<SubscriptionsResponse>) -> Unit,
     ) {
-        headlessApiClient.getSubscriptions(request, callback)
+        headlessApiClient.getSubscriptions(request.withMergedIdentities(), callback)
     }
 
     suspend fun getSubscriptions(request: SubscriptionsRequest): SubscriptionsResponse =
-        headlessApiClient.getSubscriptions(request)
+        headlessApiClient.getSubscriptions(request.withMergedIdentities())
 
     /** Updates subscription topics/controls (`POST .../subscriptions/{org}/update`). */
     fun setSubscriptions(
         request: SubscriptionsRequest,
         callback: (Result<Unit>) -> Unit,
     ) {
-        headlessApiClient.setSubscriptions(request, callback)
+        headlessApiClient.setSubscriptions(request.withMergedIdentities(), callback)
     }
 
     suspend fun setSubscriptions(request: SubscriptionsRequest) =
-        headlessApiClient.setSubscriptions(request)
+        headlessApiClient.setSubscriptions(request.withMergedIdentities())
+
+    /** Fills in `getIdentities()` when the caller left `identities` unset. */
+    private fun ConsentConfig.withMergedIdentities(): ConsentConfig =
+        if (identities == null) copy(identities = getIdentities()) else this
+
+    private fun ConsentUpdate.withMergedIdentities(): ConsentUpdate =
+        if (identities == null) copy(identities = getIdentities()) else this
+
+    private fun InvokeRightRequest.withMergedIdentities(): InvokeRightRequest =
+        if (identities == null) copy(identities = getIdentities()) else this
+
+    private fun SubscriptionsRequest.withMergedIdentities(): SubscriptionsRequest =
+        if (identities == null) copy(identities = getIdentities()) else this
 
     fun getPreferenceQRUrl(request: PreferenceQRRequest): String =
         headlessApiClient.getPreferenceQRUrl(request)
@@ -603,6 +625,24 @@ class Ketch private constructor(
      */
     fun setIdentities(identities: Map<String, String>) {
         this.identities = identities
+    }
+
+    /**
+     * Identities that will be sent: those supplied by the host app, plus any the tag has
+     * resolved natively.
+     */
+    fun getIdentities(): Map<String, String> =
+        mergeResolvedIdentities(identities, resolvedIdentityKeys, KetchSharedPreferences::getSavedValue)
+
+    /**
+     * Forgets every identity: those supplied by the host app via [setIdentities], and every one
+     * the tag has resolved natively — so the next resolve mints a new managed identifier and
+     * starts a new consent record.
+     */
+    fun clearIdentities() {
+        identities = emptyMap()
+        resolvedIdentityKeys.forEach { key -> KetchSharedPreferences.remove(key) }
+        resolvedIdentityKeys.clear()
     }
 
     /**
@@ -1035,6 +1075,10 @@ class Ketch private constructor(
 
                 override fun onNativeStoragePut(key: String, value: String) {
                     this@Ketch.listener?.onNativeStoragePut(key, value)
+                }
+
+                override fun onNativeResolve(key: String) {
+                    resolvedIdentityKeys.add(key)
                 }
 
                 override fun showConsent() {
