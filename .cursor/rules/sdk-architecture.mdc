@@ -1,0 +1,66 @@
+---
+description: "Ketch SDK core architecture — host resolution, lifecycle tracking, WebView dialog, listener/status model. Apply when working in ketchsdk/."
+globs:
+  - "ketchsdk/**"
+alwaysApply: false
+---
+
+# SDK Architecture (`ketchsdk`)
+
+## Structure
+
+```
+ketchsdk/src/main/java/com/ketch/android/
+  Ketch.kt                  # Core class: public API + private host resolution + WebView listener wiring
+  KetchSdk.kt               # Public factory (create() overloads)
+  KetchLifecycleTracker.kt  # ActivityLifecycleCallbacks tracking the foreground FragmentActivity
+  KetchSharedPreferences.kt # IAB privacy string persistence
+  data/                     # Consent, KetchConfig, Index, Events (enums)
+  ui/                       # KetchDialogFragment (host), KetchWebView (content)
+```
+
+## Host Resolution (the central pattern)
+
+The SDK is created with an application context and resolves its UI host lazily at call time. Never cache or strongly hold an Activity.
+
+- `KetchLifecycleTracker.current` — `@Volatile WeakReference<FragmentActivity>`, updated in `onActivityResumed`.
+- `Ketch.resolveHost()` → `tracker.current` or the deprecated `seedActivity` fallback.
+- `Ketch.resolveFragmentManager()` → host's `supportFragmentManager` or `seedFragmentManager` fallback.
+- `Ketch.resolveWebViewContext()` → host Activity (needed for native popups) or application context fallback.
+- When no host can be resolved at show time, call `reportNoHostError()` (fires `onError`).
+
+## Show / Dismiss Flow
+
+- `load()` / `showConsent()` / `showPreferences()` / `showPreferencesTab()` guard on `isShowingExperience`. When a cached WebView exists with a matching `loadedSignature`, the warm path calls `ketch('showConsent')` / `ketch('showPreferences', opts)` via `evaluateJavascript` instead of reloading. Otherwise the cold path runs `cleanupWebView()` → `createWebView()` → `webView.load(...)`.
+- `loadedSignature` covers config/presentation inputs baked into boot HTML (org, property, language, jurisdiction, region, identities, age, padding, css, etc.) but excludes show type and preference tabs (passed imperatively on warm re-show).
+- `createWebView()` wires a `KetchWebView.WebViewListener` that forwards events to `Ketch.Listener` and shows a `KetchDialogFragment` via `showConsentPopup()` / `showPreferences` paths.
+- On show, record both `activeDialogFragment` (`WeakReference<KetchDialogFragment>`) and `dialogHost` (`WeakReference<FragmentActivity>`). Clear both on every dismiss path.
+- **`hideExperience` (`onClose`)** sets `retainWebViewOnDismiss = true`, dismisses the dialog, detaches the WebView, and keeps `activeWebView` alive for fast re-show and trailing JS events.
+- **All other dismiss paths** (`dismissDialog`, back button, auto-dismiss, host-destroyed, renderer-gone, signature change) call `cleanupWebView()` which kills and nulls `activeWebView` and clears `loadedSignature`.
+- `KetchDialogFragment` borrows the WebView for display only; it never calls `destroy()`. `handleDialogDismissed()` decides retain vs kill based on `retainWebViewOnDismiss`.
+- Tap-outside handling was removed from the SDK (no native dismiss on backdrop tap).
+
+## Lifecycle-Driven Auto-Dismiss vs Preserve
+
+Implemented in `Ketch.onHostStopped` / `onHostDestroyed` / `onHostResumed`, invoked by `KetchLifecycleTracker`:
+
+- **Navigate to another Activity while showing** → `autoDismissOnHostGone()` → `onDismiss(HideExperienceStatus.ActivityChanged)`. Detected when the host stops and a *different* activity is foreground.
+- **Navigate to another Activity while idle-retained** (after `hideExperience`) → `onHostStopped` → `tearDownWebViewIfOwnedBy` so the stopped Activity’s context is not held on the back stack.
+- **Rotation / configuration change** → preserved. Guarded by `isChangingConfigurations`. `KetchDialogFragment.onDestroyView` and `onDetach` also skip WebView release while `isChangingConfigurations`.
+- **Backgrounding (Home/recents/screen off)** → preserved. The same host returns to foreground, so no different-activity condition is met.
+- **Host Activity destroyed** (e.g. `finish()`) → `onHostDestroyed` resets state with `onDismiss(HideExperienceStatus.None)` when showing; idle retained WebViews are also cleaned up.
+- **Config change while idle-retained** → `onHostDestroyed` cleans up the retained WebView (Activity context would be stale).
+- **Config change recreates host** → `onHostResumed` re-binds `dialogHost`/`activeDialogFragment` to the new Activity instance so the dialog stays controllable.
+
+## Listener & Status Model (`data/Events.kt`)
+
+- `Ketch.Listener` has NO default methods. Adding a method is a breaking change for Java integrators — do not.
+- To signal a new dismissal reason, add a value to `HideExperienceStatus` and report it through the existing `onDismiss(status)`. `HideExperienceStatus.ActivityChanged` is SDK-synthetic and never parsed from a web event (`fromValue` falls back to `None`).
+- `WillShowExperienceType` distinguishes consent vs preference experiences in `onWillShowExperience`.
+
+## Conventions
+
+- All Activity / FragmentManager / Fragment references are `WeakReference`.
+- Guard shared mutable state (`isShowingExperience`, `activeDialogFragment`, `dialogHost`, `activeWebView`) with the `lock` monitor; centralize teardown in `resetShowingState(status)`.
+- Keep the public API additive and backward compatible; deprecate rather than remove (see the retained `create(context, fragmentManager, ...)` overload).
+- Update `version` in both root `build.gradle` `buildConfig` and `ketchsdk/build.gradle` `maven-publish` together.

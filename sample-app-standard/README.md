@@ -4,10 +4,13 @@ A minimal sample app demonstrating Ketch SDK integration with an `AppCompatActiv
 
 ## Running
 
+From the repo root (works in bash, zsh, fish, etc.):
+
 ```bash
-./gradlew :sample-app-standard:installDebug
-adb shell am start -n com.ketch.android.sample.standard/.MainActivity
+make run-standard
 ```
+
+Clears the terminal, installs the app, launches it, and streams logcat filtered to Ketch SDK tags plus `KetchSample`.
 
 Or open the project in Android Studio and run the `sample-app-standard` configuration.
 

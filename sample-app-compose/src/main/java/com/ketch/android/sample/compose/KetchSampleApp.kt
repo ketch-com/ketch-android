@@ -58,8 +58,15 @@ import com.ketch.android.sample.compose.ui.theme.LightToggleTrack
 @Composable
 fun KetchSampleApp(
     logEntries: List<String>,
+    onLoadExperience: () -> Unit,
     onShowConsent: () -> Unit,
     onShowPreferences: () -> Unit,
+    onOpenSecondActivity: () -> Unit,
+    onOpenTransientLoadActivity: () -> Unit,
+    onLogSharedPreferences: () -> Unit,
+    onTriggerFunction: () -> Unit,
+    onGetJurisdiction: () -> Unit,
+    onGetRegion: () -> Unit,
 ) {
     var isDarkMode by rememberSaveable { mutableStateOf(false) }
 
@@ -86,12 +93,76 @@ fun KetchSampleApp(
                     .verticalScroll(rememberScrollState())
                     .padding(20.dp)
             ) {
+                SectionHeader("Deployment Plan")
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = onLoadExperience,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = KetchPurple),
+                ) {
+                    Text("Load Experience", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                }
+                Spacer(Modifier.height(24.dp))
                 SectionHeader("Experience Functions")
                 Spacer(Modifier.height(16.dp))
                 CardsRow(
                     onShowConsent = onShowConsent,
                     onShowPreferences = onShowPreferences
                 )
+                Spacer(Modifier.height(16.dp))
+                ActionCard(
+                    title = "Trigger Custom Function",
+                    description = "Fire an onFunction rule trigger by custom function name.",
+                    onExecute = onTriggerFunction,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(24.dp))
+                SectionHeader("Headless SDK")
+                Spacer(Modifier.height(12.dp))
+                ActionCard(
+                    title = "Get Jurisdiction",
+                    description = "Call the headless API (getFullConfiguration) and log the resolved jurisdiction.",
+                    onExecute = onGetJurisdiction,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(16.dp))
+                ActionCard(
+                    title = "Get Region",
+                    description = "Call the headless API (getRegion) and log the resolved GeoIP region.",
+                    onExecute = onGetRegion,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(24.dp))
+                SectionHeader("Debug")
+                Spacer(Modifier.height(12.dp))
+                ActionCard(
+                    title = "Shared Preferences",
+                    description = "Log IAB privacy strings persisted by the SDK (TCF, US Privacy, GPP).",
+                    onExecute = onLogSharedPreferences,
+                    modifier = Modifier.fillMaxWidth(),
+                    executeLabel = "Log Values",
+                )
+                Spacer(Modifier.height(24.dp))
+                SectionHeader("Cross-Activity Demo")
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = onOpenSecondActivity,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = KetchPurple),
+                ) {
+                    Text("Open Second Activity", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                }
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = onOpenTransientLoadActivity,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = KetchPurple),
+                ) {
+                    Text("Repro: Transient Activity Load", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                }
                 Spacer(Modifier.height(24.dp))
                 SectionHeader("Event Log")
                 Spacer(Modifier.height(12.dp))
@@ -162,7 +233,7 @@ private fun CardsRow(
     ) {
         ActionCard(
             title = "Privacy Preference Unknown",
-            description = "Trigger the consent banner. This triggers automatically for new users.",
+            description = "Trigger the consent banner. Tap \"Load Experience\" above first to load it.",
             onExecute = onShowConsent,
             modifier = Modifier.weight(1f),
         )
@@ -181,6 +252,7 @@ private fun ActionCard(
     description: String,
     onExecute: () -> Unit,
     modifier: Modifier = Modifier,
+    executeLabel: String = "Execute",
 ) {
     Column(
         modifier = modifier
@@ -214,7 +286,7 @@ private fun ActionCard(
                 contentColor = MaterialTheme.colorScheme.onPrimary,
             ),
         ) {
-            Text("Execute", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Text(executeLabel, fontSize = 14.sp, fontWeight = FontWeight.Medium)
         }
     }
 }

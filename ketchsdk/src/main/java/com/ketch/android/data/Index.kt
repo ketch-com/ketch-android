@@ -8,22 +8,12 @@ package com.ketch.android.data
 fun getIndexHtml(
     orgCode: String,
     propertyName: String,
-    logLevel: String,
     ketchMobileSdkUrl: String,
-    language: String? = null,
-    jurisdiction: String? = null,
-    identities: String,
-    region: String? = null,
-    environment: String? = null,
-    forceShow: String? = null,
-    preferencesTabs: String? = null,
-    preferencesTab: String? = null,
-    age: Int? = null,
-    ageLower: Int? = null,
-    ageUpper: Int? = null,
+    params: Map<String, String>,
     bottomPadding: String = "0px",
     topPadding: String = "0px",
-    cssStyleOverride: String? = null
+    cssStyleOverride: String? = null,
+    webResourceUrlOverrides: String? = null
 ) =
     "<html>\n" +
             "  <head>\n" +
@@ -128,21 +118,6 @@ fun getIndexHtml(
             "        };\n" +
             "      })(window.console);\n" +
             "\n" +
-            "      // A temporary workaround to get banner/modal dimensions on tablets\n" +
-            "      // TODO: remove this once there will be a way to get dialogs position from JS SDK\n" +
-            "      function getDialogSize() {\n" +
-            "        var domElem = document.querySelector(\n" +
-            "          '#lanyard_root div[role=\"dialog\"]'\n" +
-            "        );\n" +
-            "        if (!domElem) {\n" +
-            "          return;\n" +
-            "        }\n" +
-            "        var domRect = domElem.getBoundingClientRect();\n" +
-            "        if (domRect) {\n" +
-            "          return domRect;\n" +
-            "        }\n" +
-            "      }\n" +
-            "\n" +
             "      function initKetchTag(parameters) {\n" +
             "        console.log('Ketch Tag is initialization started...');\n" +
             "        // Use parameters to set SDK query params here\n" +
@@ -161,67 +136,96 @@ fun getIndexHtml(
             "        e.defer = e.async = !0;\n" +
             "        document.getElementsByTagName('head')[0].appendChild(e);\n" +
             "      }\n" +
-            "      // We put the script inside body, otherwise document.body will be null\n" +
-            "      // Trigger taps outside the dialog\n" +
-            "      document.body.addEventListener('touchstart', function (e) {\n" +
-            "        if (e.target === document.body) {\n" +
-            "          emitEvent('tapOutside', [getDialogSize()]);\n" +
+            // Rewrites resource URLs the tag requests, so a caller can point specific
+            // assets at their own host. Must run before initKetchTag appends boot.js.
+            "      function installWebResourceUrlOverrides(overrides) {\n" +
+            "        if (!overrides || !Object.keys(overrides).length) return;\n" +
+            "        function resolveUrl(url) {\n" +
+            "          if (!url) return url;\n" +
+            "          if (overrides[url]) return overrides[url];\n" +
+            "          var base = url.split('?')[0].split('#')[0];\n" +
+            "          if (base !== url && overrides[base]) return overrides[base];\n" +
+            "          for (var key in overrides) {\n" +
+            "            if (!Object.prototype.hasOwnProperty.call(overrides, key)) continue;\n" +
+            "            if (key === url || key === base) continue;\n" +
+            "            if (key.charAt(0) === '/' && base.indexOf(key) !== -1) return overrides[key];\n" +
+            "            if (key.indexOf('://') !== -1) continue;\n" +
+            "            if (base.endsWith(key) || base.indexOf('/' + key) !== -1) return overrides[key];\n" +
+            "          }\n" +
+            "          return url;\n" +
             "        }\n" +
-            "      });\n" +
-            "      initKetchTag({" +
-            "ketch_log: \"${logLevel}\"," +
-            if (language?.isNotBlank() == true) {
-                "ketch_lang: \"${language}\","
+            "        var srcDesc = Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, 'src');\n" +
+            "        if (srcDesc && srcDesc.set) {\n" +
+            "          var nativeSrcSet = srcDesc.set;\n" +
+            "          var nativeSrcGet = srcDesc.get;\n" +
+            "          Object.defineProperty(HTMLScriptElement.prototype, 'src', {\n" +
+            "            set: function (value) { nativeSrcSet.call(this, resolveUrl(value)); },\n" +
+            "            get: nativeSrcGet,\n" +
+            "            configurable: true,\n" +
+            "          });\n" +
+            "        }\n" +
+            "        var origSetAttribute = Element.prototype.setAttribute;\n" +
+            "        Element.prototype.setAttribute = function (name, value) {\n" +
+            "          if (name === 'src' && this.tagName === 'SCRIPT') {\n" +
+            "            return origSetAttribute.call(this, name, resolveUrl(value));\n" +
+            "          }\n" +
+            "          return origSetAttribute.call(this, name, value);\n" +
+            "        };\n" +
+            "        if (window.fetch) {\n" +
+            "          var origFetch = window.fetch.bind(window);\n" +
+            "          window.fetch = function (input, init) {\n" +
+            "            if (typeof input === 'string') {\n" +
+            "              var mapped = resolveUrl(input);\n" +
+            "              if (mapped !== input) input = mapped;\n" +
+            "            } else if (input && input.url) {\n" +
+            "              var mappedUrl = resolveUrl(input.url);\n" +
+            "              if (mappedUrl !== input.url) input = new Request(mappedUrl, input);\n" +
+            "            }\n" +
+            "            return origFetch(input, init);\n" +
+            "          };\n" +
+            "        }\n" +
+            "      }\n" +
+            (if (webResourceUrlOverrides?.isNotBlank() == true) {
+                "      installWebResourceUrlOverrides($webResourceUrlOverrides);\n"
             } else {
                 ""
-            } +
-            if (jurisdiction?.isNotBlank() == true) {
-                "ketch_jurisdiction: \"${jurisdiction}\","
-            } else {
-                ""
-            } +
-            if (region?.isNotBlank() == true) {
-                "ketch_region: \"${region}\","
-            } else {
-                ""
-            } +
-            if (forceShow?.isNotBlank() == true) {
-                "ketch_show: \"${forceShow}\","
-            } else {
-                ""
-            } +
-            if (preferencesTabs?.isNotBlank() == true) {
-                "ketch_preferences_tabs: \"${preferencesTabs}\","
-            } else {
-                ""
-            } +
-            if (preferencesTab?.isNotBlank() == true) {
-                "ketch_preferences_tab: \"${preferencesTab}\","
-            } else {
-                ""
-            } +
-            if (environment?.isNotBlank() == true) {
-                "ketch_env: \"${environment}\","
-            } else {
-                ""
-            } +
-            if (age != null && age >= 0) {
-                "ketch_age: \"${age}\","
-            } else {
-                ""
-            } +
-            if (ageLower != null && ageLower >= 0) {
-                "ketch_age_lower: \"${ageLower}\","
-            } else {
-                ""
-            } +
-            if (ageUpper != null && ageUpper >= 0) {
-                "ketch_age_upper: \"${ageUpper}\","
-            } else {
-                ""
-            } +
-            identities +
-            "});" +
+            }) +
+            "      // We put the script inside body, otherwise document.body will be null\n" +
+            "      initKetchTag(${toJsObjectLiteral(params)});" +
             "    </script>\n" +
             "  </body>\n" +
             "</html>"
+
+/**
+ * Escapes [value] for use inside a double-quoted JavaScript string literal.
+ */
+internal fun jsonEscape(value: String): String {
+    val out = StringBuilder(value.length + 16)
+    for (c in value) {
+        when {
+            c == '"' -> out.append("\\\"")
+            c == '\\' -> out.append("\\\\")
+            c == '\n' -> out.append("\\n")
+            c == '\r' -> out.append("\\r")
+            c == '\t' -> out.append("\\t")
+            c == '\b' -> out.append("\\b")
+            c == '\u000C' -> out.append("\\f")
+            // Would otherwise close the enclosing <script> block.
+            c == '/' && out.isNotEmpty() && out.last() == '<' -> out.append("\\/")
+            // Legal in JSON but line terminators to a pre-ES2019 JavaScript parser.
+            c == '\u2028' || c == '\u2029' -> out.append(String.format("\\u%04x", c.code))
+            c < ' ' -> out.append(String.format("\\u%04x", c.code))
+            else -> out.append(c)
+        }
+    }
+    return out.toString()
+}
+
+/**
+ * Serializes [params] as a JavaScript object literal. Iteration order is the map's, so callers
+ * pass an ordered map when the output has to be stable.
+ */
+internal fun toJsObjectLiteral(params: Map<String, String>): String =
+    params.entries.joinToString(separator = ",", prefix = "{", postfix = "}") { (key, value) ->
+        "\"${jsonEscape(key)}\":\"${jsonEscape(value)}\""
+    }

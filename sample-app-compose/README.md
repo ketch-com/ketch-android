@@ -4,10 +4,13 @@ A sample app demonstrating Ketch SDK integration in a Jetpack Compose applicatio
 
 ## Running
 
+From the repo root (works in bash, zsh, fish, etc.):
+
 ```bash
-./gradlew :sample-app-compose:installDebug
-adb shell am start -n com.ketch.android.sample.compose/.MainActivity
+make run-compose
 ```
+
+Clears the terminal, installs the app, launches it, and streams logcat filtered to Ketch SDK tags plus `KetchCompose`.
 
 Or open the project in Android Studio and run the `sample-app-compose` configuration.
 
