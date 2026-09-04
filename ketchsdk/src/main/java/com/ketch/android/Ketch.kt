@@ -321,54 +321,68 @@ class Ketch private constructor(
         config: ConsentConfig,
         callback: (Result<Consent>) -> Unit,
     ) {
-        headlessApiClient.getConsent(config, callback)
+        headlessApiClient.getConsent(config.withMergedIdentities(), callback)
     }
 
     suspend fun getConsent(config: ConsentConfig): Consent =
-        headlessApiClient.getConsent(config)
+        headlessApiClient.getConsent(config.withMergedIdentities())
 
     /** Updates consent; returns server response with computed `protocols`. */
     fun setConsent(
         update: ConsentUpdate,
         callback: (Result<Consent>) -> Unit,
     ) {
-        headlessApiClient.setConsent(update.withoutProtocols(), callback)
+        headlessApiClient.setConsent(update.withMergedIdentities().withoutProtocols(), callback)
     }
 
     suspend fun setConsent(update: ConsentUpdate): Consent =
-        headlessApiClient.setConsent(update.withoutProtocols())
+        headlessApiClient.setConsent(update.withMergedIdentities().withoutProtocols())
 
     /** Invokes a data subject right (`POST .../rights/{org}/invoke`). */
     fun invokeRight(
         request: InvokeRightRequest,
         callback: (Result<Unit>) -> Unit,
     ) {
-        headlessApiClient.invokeRight(request, callback)
+        headlessApiClient.invokeRight(request.withMergedIdentities(), callback)
     }
 
-    suspend fun invokeRight(request: InvokeRightRequest) = headlessApiClient.invokeRight(request)
+    suspend fun invokeRight(request: InvokeRightRequest) =
+        headlessApiClient.invokeRight(request.withMergedIdentities())
 
     /** Gets subscription topics/controls (`POST .../subscriptions/{org}/get`). */
     fun getSubscriptions(
         request: SubscriptionsRequest,
         callback: (Result<SubscriptionsResponse>) -> Unit,
     ) {
-        headlessApiClient.getSubscriptions(request, callback)
+        headlessApiClient.getSubscriptions(request.withMergedIdentities(), callback)
     }
 
     suspend fun getSubscriptions(request: SubscriptionsRequest): SubscriptionsResponse =
-        headlessApiClient.getSubscriptions(request)
+        headlessApiClient.getSubscriptions(request.withMergedIdentities())
 
     /** Updates subscription topics/controls (`POST .../subscriptions/{org}/update`). */
     fun setSubscriptions(
         request: SubscriptionsRequest,
         callback: (Result<Unit>) -> Unit,
     ) {
-        headlessApiClient.setSubscriptions(request, callback)
+        headlessApiClient.setSubscriptions(request.withMergedIdentities(), callback)
     }
 
     suspend fun setSubscriptions(request: SubscriptionsRequest) =
-        headlessApiClient.setSubscriptions(request)
+        headlessApiClient.setSubscriptions(request.withMergedIdentities())
+
+    /** Fills in `getIdentities()` when the caller left `identities` unset. */
+    private fun ConsentConfig.withMergedIdentities(): ConsentConfig =
+        if (identities == null) copy(identities = getIdentities()) else this
+
+    private fun ConsentUpdate.withMergedIdentities(): ConsentUpdate =
+        if (identities == null) copy(identities = getIdentities()) else this
+
+    private fun InvokeRightRequest.withMergedIdentities(): InvokeRightRequest =
+        if (identities == null) copy(identities = getIdentities()) else this
+
+    private fun SubscriptionsRequest.withMergedIdentities(): SubscriptionsRequest =
+        if (identities == null) copy(identities = getIdentities()) else this
 
     fun getPreferenceQRUrl(request: PreferenceQRRequest): String =
         headlessApiClient.getPreferenceQRUrl(request)
