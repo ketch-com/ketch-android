@@ -22,6 +22,8 @@ import com.google.gson.FieldNamingPolicy
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonParseException
+import com.ketch.android.AaidResolver
+import com.ketch.android.KEY_AAID
 import com.ketch.android.Ketch
 import com.ketch.android.KetchSharedPreferences
 import com.ketch.android.parseNativeResolveKey
@@ -493,6 +495,9 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
             if (parsedKey == null) {
                 Log.e(TAG, "ketchNativeResolve: invalid key")
                 return null
+            }
+            if (parsedKey == KEY_AAID) {
+                return AaidResolver.resolve(ketchWebView.context)
             }
             val value = KetchSharedPreferences.getSavedValue(parsedKey)
             Log.d(TAG, "ketchNativeResolve: key=$parsedKey found=${value != null}")

@@ -643,6 +643,7 @@ class Ketch private constructor(
         identities = emptyMap()
         resolvedIdentityKeys.forEach { key -> KetchSharedPreferences.remove(key) }
         resolvedIdentityKeys.clear()
+        AaidResolver.reset()
     }
 
     /**
