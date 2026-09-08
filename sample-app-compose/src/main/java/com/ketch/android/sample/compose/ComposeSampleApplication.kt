@@ -27,6 +27,9 @@ class ComposeSampleApplication : Application() {
             ketchUrl = null,
             logLevel = Ketch.LogLevel.DEBUG,
         )
+        if (DevUrlOverrides.ENABLED) {
+            ketch.setWebResourceUrlOverrides(DevUrlOverrides.forEmulator)
+        }
         ketch.setIdentities(mapOf("aaid" to "sample-test-123"))
     }
 
