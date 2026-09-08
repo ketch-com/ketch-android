@@ -2,8 +2,6 @@
 
 This module contains integration tests for the Ketch Android SDK. The tests validate SDK functionality in a real Android environment.
 
-**ATT is N/A on Android** — App Tracking Transparency is iOS-only. For ATT testing see [mobile-att-testing.md](../../ketch-tag/docs/design/mobile-att-testing.md#ketch-android). For headless CDN tests see [mobile-headless-api-testing.md](../../ketch-tag/docs/design/mobile-headless-api-testing.md#ketch-android).
-
 ## Overview
 
 The integration tests consist of:

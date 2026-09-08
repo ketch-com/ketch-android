@@ -2,7 +2,7 @@ package com.ketch.android.data
 
 import com.google.gson.annotations.SerializedName
 
-/** GeoIP details from `GET /ip` (ketch-types `IPInfo`). */
+/** GeoIP details from `GET /ip`. */
 data class IPInfo(
     @SerializedName("ip") val ip: String? = null,
     @SerializedName("hostname") val hostname: String? = null,
@@ -28,7 +28,7 @@ fun IPInfo.toRegionCode(): String? {
     return regionCode?.takeIf { it.isNotBlank() }?.let { "$country-$it" } ?: country
 }
 
-/** Parameters for v3 `getFullConfiguration` (ketch-types `GetFullConfigurationRequest`). */
+/** Parameters for v3 `getFullConfiguration`. */
 data class FullConfigurationRequest(
     val organizationCode: String,
     val propertyCode: String,
@@ -87,7 +87,6 @@ data class ConsentConfig(
     )
 }
 
-/** ketch-types `VendorStatus` */
 enum class VendorStatus {
     @SerializedName("granted")
     GRANTED,
@@ -96,10 +95,8 @@ enum class VendorStatus {
     DENIED,
 }
 
-/** ketch-types `VendorConsent`: vendor id to the status recorded for it. */
 typealias VendorConsent = Map<String, VendorStatus>
 
-/** ketch-types `VendorConsents` */
 data class VendorConsents(
     @SerializedName("tcf") val tcf: VendorConsent? = null,
     @SerializedName("google") val google: VendorConsent? = null,
@@ -182,7 +179,6 @@ data class ConfigurationPurpose(
     @SerializedName("legalBasisCode") val legalBasisCode: String? = null,
 )
 
-/** ketch-types `DataSubject` */
 data class DataSubject(
     @SerializedName("email") val email: String,
     @SerializedName("firstName") val firstName: String,
@@ -197,7 +193,6 @@ data class DataSubject(
     @SerializedName("addressLine2") val addressLine2: String? = null,
 )
 
-/** ketch-types `InvokeRightRequest` */
 data class InvokeRightRequest(
     val organizationCode: String,
     val propertyCode: String,
@@ -213,7 +208,6 @@ data class InvokeRightRequest(
     val isAuthenticated: Boolean? = null,
 )
 
-/** ketch-types `GetPreferenceQRRequest` */
 data class PreferenceQRRequest(
     val organizationCode: String,
     val propertyCode: String,
@@ -225,7 +219,6 @@ data class PreferenceQRRequest(
     val parameters: Map<String, String> = emptyMap(),
 )
 
-/** ketch-types `SubscriptionStatus` */
 enum class SubscriptionStatus {
     @SerializedName("granted")
     GRANTED,
@@ -235,8 +228,6 @@ enum class SubscriptionStatus {
 }
 
 /**
- * ketch-types `SubscriptionTopicContactMethodSetting`.
- *
  * [status] is nullable because the schema does not mark it required. Gson builds via Unsafe and
  * skips Kotlin's constructor null checks, so declaring it non-null would hold null and throw at
  * first use rather than at decode.
@@ -245,17 +236,14 @@ data class SubscriptionTopicContactMethodSetting(
     @SerializedName("status") val status: SubscriptionStatus?,
 )
 
-/** ketch-types `SubscriptionTopicSetting`: contact method code to the setting for that method. */
 typealias SubscriptionTopicSetting = Map<String, SubscriptionTopicContactMethodSetting>
 
-/** ketch-types `SubscriptionControlSetting`. [status] is nullable for the reason above. */
 data class SubscriptionControlSetting(
     @SerializedName("status") val status: SubscriptionStatus?,
     /** shoreline `ControlImpact`: 0 unknown, 1 global, 2 local, 3 property. */
     @SerializedName("impact") val impact: Int? = null,
 )
 
-/** ketch-types `GetSubscriptionsRequest` / `SetSubscriptionsRequest` */
 data class SubscriptionsRequest(
     val organizationCode: String,
     val controllerCode: String? = null,
@@ -271,8 +259,6 @@ data class SubscriptionsRequest(
 )
 
 /**
- * ketch-types `GetSubscriptionsResponse` (shoreline `GetSubscriptionResponseBody`).
- *
  * Its own type rather than an alias of [SubscriptionsRequest]: the response body carries no
  * `organizationCode` and marks nothing required. Gson builds via Unsafe, skipping Kotlin's
  * constructor null checks, so a field declared non-null here holds null and throws from
