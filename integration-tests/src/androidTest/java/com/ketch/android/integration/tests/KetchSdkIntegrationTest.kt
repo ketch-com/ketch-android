@@ -3,6 +3,7 @@ package com.ketch.android.integration.tests
 import android.content.Context
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions.matches
@@ -29,6 +30,10 @@ class KetchSdkIntegrationTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
+        val app = context as IntegrationTestApp
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            app.ketch.dismissDialog()
+        }
         scenario = ActivityScenario.launch(MainActivity::class.java)
     }
 
@@ -281,7 +286,10 @@ class KetchSdkIntegrationTest {
         onView(withId(R.id.showPreferencesButton))
             .check(matches(isDisplayed()))
             .check(matches(isClickable()))
-        
+
+        onView(withId(R.id.openSecondActivityButton))
+            .check(matches(isDisplayed()))
+            .check(matches(isClickable()))
 
         
         onView(withId(R.id.setLanguageButton))
@@ -519,14 +527,14 @@ class KetchSdkIntegrationTest {
         assertTrue("Banner should be shown", bannerShown)
         assertTrue("Banner should be validated", bannerValidated)
         
-        // Phase 2: Click "Opt Out" button (primary button)
+        // Phase 2: Click "Opt Out" button (tertiary button = "Reject All" per the deployment plan)
         val optOutLatch = CountDownLatch(1)
         scenario.onActivity { activity ->
-            activity.clickButtonById("ketch-banner-button-primary") { clicked ->
+            activity.clickButtonById("ketch-banner-button-tertiary") { clicked ->
                 if (clicked) {
                     optOutLatch.countDown()
                 } else {
-                    fail("Failed to click 'Opt Out' button (ketch-banner-button-primary)")
+                    fail("Failed to click 'Opt Out' button (ketch-banner-button-tertiary)")
                 }
             }
             optOutConsentRequested = true
@@ -566,14 +574,14 @@ class KetchSdkIntegrationTest {
         assertTrue("Banner should be shown again", bannerShownAgain)
         assertTrue("Banner should be validated again", bannerValidatedAgain)
         
-        // Phase 4: Click "Opt In" button (tertiary button)
+        // Phase 4: Click "Opt In" button (primary button = "Accept All" per the deployment plan)
         val optInLatch = CountDownLatch(1)
         scenario.onActivity { activity ->
-            activity.clickButtonById("ketch-banner-button-tertiary") { clicked ->
+            activity.clickButtonById("ketch-banner-button-primary") { clicked ->
                 if (clicked) {
                     optInLatch.countDown()
                 } else {
-                    fail("Failed to click 'Opt In' button (ketch-banner-button-tertiary)")
+                    fail("Failed to click 'Opt In' button (ketch-banner-button-primary)")
                 }
             }
             optInConsentRequested = true

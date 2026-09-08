@@ -1,0 +1,49 @@
+---
+alwaysApply: true
+---
+
+# Ketch Android SDK — Project Context
+
+## Purpose
+
+The Ketch Mobile SDK for Android lets an app collect and manage a visitor's privacy consent preferences for a Ketch organization. The SDK renders Ketch consent/preference experiences in a WebView dialog and persists IAB privacy strings (TCF, US Privacy, GPP) to shared preferences. It is published as an `.aar` via JitPack (`com.github.ketch-com:ketch-android`).
+
+## Technology Stack
+
+- **Language**: Kotlin 2.1.20, JVM target 17 (`minSdk` 26, `targetSdk`/`compileSdk` 36)
+- **Build System**: Gradle (Groovy DSL), Android Gradle Plugin 9.0.0
+- **Key Libraries**: AndroidX `appcompat`, `core-ktx`, `webkit`, `preference`, `kotlin-parcelize`, Gson; Jetpack Compose (only in `sample-app-compose`)
+- **UI**: WebView-based experiences shown in a `DialogFragment`; View binding + data binding enabled
+- **Testing**: JUnit 4 (unit), Espresso + AndroidX Test (instrumented), `android-junit5` runner
+- **Linting/Formatting**: ktlint (`org.jlleitschuh.gradle.ktlint`), Android `lint` (baseline at `ketchsdk/lint-baseline.xml`)
+- **Docs**: Dokka (`dokkaHtmlMultiModule`, `packageDoc` zip task)
+- **Publishing**: `maven-publish` consumed by JitPack on-demand (`jitpack.yml` pins JDK 17). No CI publish workflow.
+
+## Project Structure
+
+```
+ketchsdk/                         # The published SDK library (the only artifact consumers use)
+  src/main/java/com/ketch/android/
+    Ketch.kt                      # Main SDK class: load/show/dismiss, host resolution, WebView listener
+    KetchSdk.kt                   # Public factory: create() overloads (new = no FragmentManager)
+    KetchLifecycleTracker.kt      # ActivityLifecycleCallbacks: tracks foreground FragmentActivity
+    KetchSharedPreferences.kt     # Persists IAB privacy strings
+    data/                         # Consent, KetchConfig, Events (HideExperienceStatus, WillShowExperienceType)
+    ui/                           # KetchDialogFragment, KetchWebView
+integration-tests/                # Instrumented Espresso suite + sample harness app (not published)
+sample-app-standard/              # View-based sample app
+sample-app-compose/               # Jetpack Compose sample app
+build.gradle                      # Root: buildConfig versions, plugins, repos, dokka
+jitpack.yml                       # JitPack JDK pin (JDK 17)
+run-integration-tests.sh          # Convenience script for the instrumented suite
+```
+
+## Key Design Patterns
+
+- **Single long-lived `Ketch` instance**: Created once via `KetchSdk.create(...)`, typically held in an `Application` subclass (see `SampleApplication`, `ComposeSampleApplication`). Reused across all activities.
+- **Application-context creation, no FragmentManager**: The current `KetchSdk.create()` overload takes a `Context` and no `FragmentManager`. The old overload taking a `FragmentManager` is `@Deprecated` but retained for backward compatibility (passed through as `seedActivity`/`seedFragmentManager`).
+- **Lazy host resolution via lifecycle tracking**: `KetchLifecycleTracker` (an `ActivityLifecycleCallbacks`) holds a `WeakReference` to the foreground `FragmentActivity`. `Ketch` resolves its host at call time through `resolveHost()` / `resolveFragmentManager()` / `resolveWebViewContext()` — never caches a hard Activity reference. This is what allows show-from-any-activity.
+- **WebView owned by the `Ketch` instance**: `activeWebView` is created in `createWebView()` and torn down in `cleanupWebView()` on every dismiss path. The WebView is displayed inside `KetchDialogFragment`.
+- **Lifecycle-driven auto-dismiss**: When the host Activity stops and a *different* activity is now foreground (real navigation), the experience auto-dismisses and reports `onDismiss(HideExperienceStatus.ActivityChanged)`. Rotation (`isChangingConfigurations`) and backgrounding (same activity returns) deliberately preserve the experience.
+- **Backward-compatible listener evolution**: `Ketch.Listener` has no default methods, so adding interface methods would break Java integrators. Signal new dismissal reasons by adding values to the `HideExperienceStatus` enum (reported via existing `onDismiss(status)`), not by adding listener methods.
+- **Memory-safety**: Activity/FragmentManager references are always held via `WeakReference`; the tracker self-unregisters once the `Ketch` instance is garbage-collected.

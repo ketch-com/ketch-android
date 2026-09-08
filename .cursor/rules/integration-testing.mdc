@@ -1,0 +1,52 @@
+---
+description: "Instrumented Espresso integration-test patterns — ordering, isolation, WebView assertions, reflection probes. Apply when working in integration-tests/."
+globs:
+  - "integration-tests/**"
+alwaysApply: false
+---
+
+# Integration Testing (`integration-tests`)
+
+This module is a sample harness app plus an instrumented Espresso suite that drives a real WebView on a device/emulator. It is not published.
+
+## Structure
+
+```
+integration-tests/src/
+  main/java/com/ketch/android/integration/tests/
+    IntegrationTestApp.kt   # Application holder: shared Ketch + test listener + WebView/state probes
+    MainActivity.kt         # Delegates SDK calls to IntegrationTestApp; hosts test buttons
+    SecondActivity.kt       # Second host for cross-activity tests
+  androidTest/java/com/ketch/android/integration/tests/
+    KetchSdkIntegrationTest.kt        # Core suite (init, buttons, method calls, state)
+    ZCrossActivityShowTest.kt         # Show-from-second-activity (+ WebView DOM assertions)
+    ZAutoDismissOnNavigationTest.kt   # Navigation auto-dismiss → onDismiss(ActivityChanged)
+    ZBenignLifecycleNoDismissTest.kt  # Rotation/backgrounding do NOT dismiss
+```
+
+## Patterns & Conventions
+
+- **Run-order via `Z` prefix**: Cross-activity / lifecycle tests are prefixed `Z...` so they run after the core suite (AndroidX runs test classes alphabetically). They mutate global SDK state, so they must run last.
+- **Shared instance + test listener**: Tests reach the SDK through `IntegrationTestApp` (single shared `Ketch`), not per-Activity instances. The app exposes a test listener whose callbacks (e.g. `onDismiss(status)`) are awaited with `CountDownLatch`.
+- **Reflection probes for private state**: `IntegrationTestApp.isShowingExperience()` and `hasActiveWebView()` read private `Ketch` fields via reflection. Use these to assert SDK internal state; keep field names in sync if `Ketch` is refactored.
+- **WebView DOM assertions**: Validate experience content by checking for DOM ids (`ketch-consent-banner`, `ketch-preferences`) via the harness's WebView validation. Fresh WebView loads are slow — poll with retries (see `awaitPreferencesContent`) rather than a fixed sleep.
+- **Thread safety**: Perform UI/SDK operations on the main thread (`InstrumentationRegistry.getInstrumentation().runOnMainSync { ... }`). Never use `@Volatile` on a local — use `AtomicReference` for cross-thread locals in tests.
+- **Isolation**: In `setUp`/`tearDown`, dismiss any showing dialog (`app.ketch.dismissDialog()` and/or `pressBackUnconditionally()`) and reset identities so a leftover banner can't block the next test's Espresso interactions.
+- **Identity gotcha**: Setting a *unique* identity can auto-trigger a banner that blocks later UI actions. Match the established setup (non-unique identity + explicit wait) unless the test specifically exercises the auto-show path.
+
+## Running
+
+```bash
+./gradlew :integration-tests:connectedDebugAndroidTest                 # full suite
+./run-integration-tests.sh                                             # clean build + run (checks for device)
+# single test:
+./gradlew :integration-tests:connectedAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.ketch.android.integration.tests.ZAutoDismissOnNavigationTest
+```
+
+Reports: `integration-tests/build/reports/androidTests/connected/`.
+
+## Adding Tests
+
+- Lifecycle/cross-activity behavior → new `Z`-prefixed class; assert both the `Ketch.Listener` callback (status value) and, where it proves the experience rendered, the WebView DOM content.
+- Keep `KetchSdkIntegrationTest` for non-lifecycle behavior (buttons, method calls, state display). Update its button assertions if the harness UI changes.

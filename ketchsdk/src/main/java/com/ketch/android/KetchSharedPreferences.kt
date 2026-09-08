@@ -2,6 +2,7 @@ package com.ketch.android
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.annotation.VisibleForTesting
 import androidx.preference.PreferenceManager
 import android.util.Log
 import androidx.core.content.edit
@@ -43,23 +44,58 @@ object KetchSharedPreferences {
      * Clear all SharedPreferences keys with the prefixes in PREFIXES_TO_REMOVE
      */
     private fun clearEntriesWithPrefixes() {
-        val keysToRemove = sharedPreferences.all.keys.filter { key ->
-            PREFIXES_TO_REMOVE.any { key.startsWith(it) }
-        }
-
-        sharedPreferences.edit().apply {
-            keysToRemove.forEach { remove(it) }
-            apply()
-        }
-
-        // Log the result
-        Log.d(TAG, "Cleared ${keysToRemove.size} keys while initializing KetchSharedPreferences")
+        val removed = removeValues(PREFIXES_TO_REMOVE)
+        Log.d(TAG, "Cleared $removed keys while initializing KetchSharedPreferences")
     }
 
     /**
      * Retrieve some value from SharedPreferences
      */
     fun getSavedValue(key: String): String? = sharedPreferences.getString(key, null)
+
+    /**
+     * Read a string value, falling back to [defaultValue] when the key is absent.
+     */
+    fun read(key: String, defaultValue: String = ""): String =
+        sharedPreferences.getString(key, defaultValue) ?: defaultValue
+
+    /**
+     * Persist a single string value. Backs the `nativeStoragePut` WebView bridge event.
+     */
+    fun write(key: String, value: String) {
+        sharedPreferences.edit { putString(key, value) }
+    }
+
+    /**
+     * Remove a single key.
+     */
+    fun remove(key: String) {
+        sharedPreferences.edit { remove(key) }
+    }
+
+    /**
+     * Remove every stored key whose name begins with one of [prefixes]. Returns the count removed.
+     */
+    fun removeValues(prefixes: List<String>): Int {
+        val keysToRemove = sharedPreferences.all.keys.filter { key ->
+            prefixes.any { key.startsWith(it) }
+        }
+        sharedPreferences.edit {
+            keysToRemove.forEach { remove(it) }
+        }
+        return keysToRemove.size
+    }
+
+    @VisibleForTesting
+    internal fun bindPreferencesForTesting(prefs: SharedPreferences) {
+        sharedPreferences = prefs
+        isInitialized = true
+    }
+
+    @VisibleForTesting
+    internal fun resetForTesting() {
+        isInitialized = false
+    }
 
     /**
      * Save a map of values in SharedPreferences, using either apply (async) or commit (sync)

@@ -70,6 +70,13 @@
             android:text="Show Preferences"
             android:layout_marginBottom="8dp" />
 
+        <Button
+            android:id="@+id/openSecondActivityButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Open Second Activity"
+            android:layout_marginBottom="8dp" />
+
 
 
         <Button

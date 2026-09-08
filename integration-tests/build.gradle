@@ -71,4 +71,9 @@ dependencies {
     androidTestImplementation 'androidx.test:runner:1.7.0'
     androidTestImplementation 'androidx.test:rules:1.7.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.7.0'
+
+    // Memory-leak detection: watches destroyed Activities/Fragments in the app-under-test
+    // process and lets instrumented tests assert nothing is retained after teardown.
+    debugImplementation "com.squareup.leakcanary:leakcanary-android:${versions.leakcanary}"
+    androidTestImplementation "com.squareup.leakcanary:leakcanary-android-instrumentation:${versions.leakcanary}"
 } 
