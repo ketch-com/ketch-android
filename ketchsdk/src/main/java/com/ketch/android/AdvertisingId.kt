@@ -98,6 +98,9 @@ internal object AaidResolver {
         state.set(State.NotStarted)
     }
 
+    /** The cached AAID, or null if nothing has resolved yet. */
+    fun cachedValue(): String? = (state.get() as? State.Resolved)?.value
+
     @VisibleForTesting
     internal fun resetForTesting() {
         state.set(State.NotStarted)

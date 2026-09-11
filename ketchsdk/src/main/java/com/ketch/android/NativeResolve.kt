@@ -20,3 +20,9 @@ internal fun mergeResolvedIdentities(
     val resolved = resolvedIdentityKeys.mapNotNull { key -> lookup(key)?.let { key to it } }.toMap()
     return identities + resolved
 }
+
+internal fun resolvedIdentityLookup(
+    key: String,
+    aaidCachedValue: () -> String?,
+    storageValue: (String) -> String?,
+): String? = if (key == KEY_AAID) aaidCachedValue() else storageValue(key)

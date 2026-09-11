@@ -137,3 +137,58 @@ class AaidResolverTest {
         assertEquals(2, reader.callCount.get())
     }
 }
+
+// Exercises the same identities map Ketch.getIdentities() builds — resolvedIdentityKeys plus
+// resolvedIdentityLookup — against the real AaidResolver state machine, without needing a real
+// Ketch/Context.
+class AaidInGetIdentitiesTest {
+    @Before
+    fun setUp() {
+        AaidResolver.resetForTesting()
+    }
+
+    @After
+    fun tearDown() {
+        AaidResolver.resetForTesting()
+    }
+
+    private fun identities(resolvedIdentityKeys: Set<String>) =
+        mergeResolvedIdentities(emptyMap(), resolvedIdentityKeys) { key ->
+            resolvedIdentityLookup(key, AaidResolver::cachedValue) { null }
+        }
+
+    @Test
+    fun aaidRegisteredButUnresolved_isOmitted() {
+        assertEquals(emptyMap<String, String>(), identities(setOf(KEY_AAID)))
+    }
+
+    @Test
+    fun aaidResolved_appearsInIdentities() = runTest {
+        AaidResolver.reader = CountingReader(result = "the-aaid")
+        AaidResolver.isAvailable = { true }
+        AaidResolver.scope = CoroutineScope(StandardTestDispatcher(testScheduler))
+
+        AaidResolver.resolve(fakeContext)
+        advanceUntilIdle()
+
+        assertEquals(mapOf(KEY_AAID to "the-aaid"), identities(setOf(KEY_AAID)))
+    }
+
+    @Test
+    fun afterReset_aaidIsGoneFromIdentities() = runTest {
+        AaidResolver.reader = CountingReader(result = "the-aaid")
+        AaidResolver.isAvailable = { true }
+        AaidResolver.scope = CoroutineScope(StandardTestDispatcher(testScheduler))
+
+        AaidResolver.resolve(fakeContext)
+        advanceUntilIdle()
+        assertEquals(mapOf(KEY_AAID to "the-aaid"), identities(setOf(KEY_AAID)))
+
+        // Mirrors Ketch.clearIdentities(): resets the resolver (resolvedIdentityKeys would also
+        // be cleared in the real Ketch instance, but the resolver alone is what makes AAID
+        // disappear from a lookup keyed on KEY_AAID).
+        AaidResolver.reset()
+
+        assertEquals(emptyMap<String, String>(), identities(setOf(KEY_AAID)))
+    }
+}
