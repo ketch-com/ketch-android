@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicReference
 internal const val KEY_AAID = "ketch_aaid"
 
 private const val GMS_AD_ID_CLIENT_CLASS = "com.google.android.gms.ads.identifier.AdvertisingIdClient"
+private const val ZEROED_AAID = "00000000-0000-0000-0000-000000000000"
 
 /**
  * Reads the platform advertising ID. Returns null when unavailable or when the user has limited
@@ -25,12 +26,18 @@ internal interface AaidReader {
     fun read(context: Context): String?
 }
 
+// Play Services returns the zeroed UUID both when the user has opted out (isLimitAdTrackingEnabled)
+// and, separately, when the app hasn't declared the AD_ID permission — in the latter case the flag
+// itself can read false. Check the value directly rather than trusting the flag alone.
+internal fun aaidOrNull(id: String?, isLimitAdTrackingEnabled: Boolean): String? =
+    if (isLimitAdTrackingEnabled || id == null || id == ZEROED_AAID) null else id
+
 internal object GmsAaidReader : AaidReader {
     private val TAG = GmsAaidReader::class.java.simpleName
 
     override fun read(context: Context): String? = try {
         val info = AdvertisingIdClient.getAdvertisingIdInfo(context)
-        if (info.isLimitAdTrackingEnabled) null else info.id
+        aaidOrNull(info.id, info.isLimitAdTrackingEnabled)
     } catch (ex: Throwable) {
         // Throwable, not Exception: also guards NoClassDefFoundError, in case only part of the
         // compileOnly artifact is present at runtime despite the Class.forName gate passing.

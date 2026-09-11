@@ -31,6 +31,30 @@ private class CountingReader(private val result: String?) : AaidReader {
     }
 }
 
+class AaidOrNullTest {
+    @Test
+    fun limitAdTrackingEnabled_isNullRegardlessOfId() {
+        assertNull(aaidOrNull("some-real-id", isLimitAdTrackingEnabled = true))
+    }
+
+    @Test
+    fun zeroedId_isNullEvenWhenLimitAdTrackingIsFalse() {
+        // Play Services returns the zeroed UUID when the app hasn't declared the AD_ID
+        // permission, independent of isLimitAdTrackingEnabled — must not pass through either way.
+        assertNull(aaidOrNull("00000000-0000-0000-0000-000000000000", isLimitAdTrackingEnabled = false))
+    }
+
+    @Test
+    fun nullId_isNull() {
+        assertNull(aaidOrNull(null, isLimitAdTrackingEnabled = false))
+    }
+
+    @Test
+    fun realId_isReturned() {
+        assertEquals("some-real-id", aaidOrNull("some-real-id", isLimitAdTrackingEnabled = false))
+    }
+}
+
 class AaidResolverTest {
     @Before
     fun setUp() {
