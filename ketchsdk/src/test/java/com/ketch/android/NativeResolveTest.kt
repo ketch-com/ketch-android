@@ -56,6 +56,41 @@ class KetchNativeResolveLookupTest {
     }
 }
 
+class ResolvedIdentityLookupTest {
+    @Test
+    fun aaidKey_routesToAaidCachedValue_neverStorage() {
+        val result = resolvedIdentityLookup(
+            key = KEY_AAID,
+            aaidCachedValue = { "the-aaid" },
+            storageValue = { org.junit.Assert.fail("should not read storage for the AAID key"); null },
+        )
+
+        assertEquals("the-aaid", result)
+    }
+
+    @Test
+    fun aaidKey_whenUnresolved_returnsNull() {
+        val result = resolvedIdentityLookup(
+            key = KEY_AAID,
+            aaidCachedValue = { null },
+            storageValue = { org.junit.Assert.fail("should not read storage for the AAID key"); null },
+        )
+
+        assertNull(result)
+    }
+
+    @Test
+    fun otherKey_routesToStorage_neverAaidCache() {
+        val result = resolvedIdentityLookup(
+            key = "swb_app1",
+            aaidCachedValue = { org.junit.Assert.fail("should not read the AAID cache for other keys"); null },
+            storageValue = { key -> if (key == "swb_app1") "the-uuid" else null },
+        )
+
+        assertEquals("the-uuid", result)
+    }
+}
+
 class MergeResolvedIdentitiesTest {
     @Test
     fun noResolvedKeys_returnsIdentitiesUnchanged() {

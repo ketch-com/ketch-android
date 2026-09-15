@@ -632,7 +632,9 @@ class Ketch private constructor(
      * resolved natively.
      */
     fun getIdentities(): Map<String, String> =
-        mergeResolvedIdentities(identities, resolvedIdentityKeys, KetchSharedPreferences::getSavedValue)
+        mergeResolvedIdentities(identities, resolvedIdentityKeys) { key ->
+            resolvedIdentityLookup(key, AaidResolver::cachedValue, KetchSharedPreferences::getSavedValue)
+        }
 
     /**
      * Forgets every identity: those supplied by the host app via [setIdentities], and every one
@@ -643,6 +645,7 @@ class Ketch private constructor(
         identities = emptyMap()
         resolvedIdentityKeys.forEach { key -> KetchSharedPreferences.remove(key) }
         resolvedIdentityKeys.clear()
+        AaidResolver.reset()
     }
 
     /**

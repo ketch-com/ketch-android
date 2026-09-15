@@ -22,6 +22,8 @@ import com.google.gson.FieldNamingPolicy
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonParseException
+import com.ketch.android.AaidResolver
+import com.ketch.android.KEY_AAID
 import com.ketch.android.Ketch
 import com.ketch.android.KetchSharedPreferences
 import com.ketch.android.parseNativeResolveKey
@@ -494,14 +496,17 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
                 Log.e(TAG, "ketchNativeResolve: invalid key")
                 return null
             }
-            val value = KetchSharedPreferences.getSavedValue(parsedKey)
-            Log.d(TAG, "ketchNativeResolve: key=$parsedKey found=${value != null}")
             // Track the key regardless of whether a value was found yet, so a later
             // nativeStoragePut for it (the tag minting on our null) is recognized as an
             // identity write, and clearIdentities() knows what to forget.
             runOnMainThread {
                 ketchWebView.listener?.onNativeResolve(parsedKey)
             }
+            if (parsedKey == KEY_AAID) {
+                return AaidResolver.resolve(ketchWebView.context)
+            }
+            val value = KetchSharedPreferences.getSavedValue(parsedKey)
+            Log.d(TAG, "ketchNativeResolve: key=$parsedKey found=${value != null}")
             return value
         }
 
