@@ -5,9 +5,13 @@ import android.util.Log
 import androidx.annotation.VisibleForTesting
 import com.google.android.gms.ads.identifier.AdvertisingIdClient
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -49,13 +53,16 @@ internal object GmsAaidReader : AaidReader {
 /**
  * Resolves and caches the AAID for the process lifetime only — it must never be persisted, so a
  * user's ad ID reset is honored on next launch. Resolution is lazy (first request for [KEY_AAID])
- * and always off the calling thread: [resolve] never blocks, since it backs a synchronous
- * `@JavascriptInterface` call the tag's JS is waiting on.
+ * and runs off the calling thread; [resolve] waits a bounded time for it, so the first request
+ * returns the value rather than null. It backs a synchronous `@JavascriptInterface` call, which
+ * runs on the WebView's JavaBridge thread, so that wait stalls only the tag's JS — never the UI.
  */
 internal object AaidResolver {
+    private const val RESOLVE_TIMEOUT_MS = 500L
+
     private sealed class State {
         object NotStarted : State()
-        object InFlight : State()
+        data class InFlight(val job: Deferred<String?>) : State()
         data class Resolved(val value: String?) : State()
     }
 
@@ -71,30 +78,45 @@ internal object AaidResolver {
     internal var scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /**
-     * Returns the cached AAID, or null and (if not already in flight) kicks off a background
-     * resolve. Always returns immediately.
+     * Returns the AAID, waiting up to [timeoutMs] for a first read. Runs on the WebView's
+     * JavaBridge thread - never the main thread - so the bounded wait stalls only the tag's JS.
      */
-    fun resolve(context: Context): String? {
-        return when (val current = state.get()) {
-            is State.Resolved -> current.value
-            State.InFlight -> null
-            State.NotStarted -> {
-                if (!state.compareAndSet(State.NotStarted, State.InFlight)) {
-                    // Lost the race to another caller; this poll just returns null too.
-                    return (state.get() as? State.Resolved)?.value
+    fun resolve(context: Context, timeoutMs: Long = RESOLVE_TIMEOUT_MS): String? {
+        while (true) {
+            when (val current = state.get()) {
+                is State.Resolved -> return current.value
+                is State.InFlight -> return current.publishIfDone(timeoutMs)
+                State.NotStarted -> {
+                    if (!isAvailable()) {
+                        state.set(State.Resolved(null))
+                        return null
+                    }
+                    val appContext = context.applicationContext ?: context
+                    // LAZY so a caller that loses the race below never starts a second read:
+                    // an eagerly-started job would already be in Play Services before cancel().
+                    val job = scope.async(start = CoroutineStart.LAZY) { reader.read(appContext) }
+                    val inFlight = State.InFlight(job)
+                    if (state.compareAndSet(current, inFlight)) {
+                        job.start()
+                        return inFlight.publishIfDone(timeoutMs)
+                    }
+                    job.cancel()
                 }
-                if (!isAvailable()) {
-                    state.set(State.Resolved(null))
-                    return null
-                }
-                val appContext = context.applicationContext ?: context
-                scope.launch {
-                    val value = reader.read(appContext)
-                    state.set(State.Resolved(value))
-                }
-                null
             }
         }
+    }
+
+    /**
+     * Waits up to [timeoutMs] for this read, and promotes the state to [State.Resolved] once it
+     * lands. Without the promotion a call that timed out would leave the state on [State.InFlight]
+     * for good, and [cachedValue] — which getIdentities() reads through — would never see the AAID.
+     */
+    private fun State.InFlight.publishIfDone(timeoutMs: Long): String? {
+        val value = runBlocking { withTimeoutOrNull(timeoutMs) { job.await() } }
+        if (job.isCompleted) {
+            state.compareAndSet(this, State.Resolved(job.getCompleted()))
+        }
+        return value
     }
 
     /**

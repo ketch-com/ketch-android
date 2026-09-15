@@ -1,18 +1,18 @@
-@file:OptIn(ExperimentalCoroutinesApi::class)
-
 package com.ketch.android
 
 import android.content.Context
 import android.content.ContextWrapper
+import java.util.Collections
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.concurrent.thread
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.Dispatchers
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -29,6 +29,25 @@ private class CountingReader(private val result: String?) : AaidReader {
         callCount.incrementAndGet()
         return result
     }
+}
+
+/**
+ * Reader that parks inside read() until released, so the timeout and single-read paths can be
+ * driven deterministically rather than by sleeping.
+ */
+private class BlockingReader(private val result: String?) : AaidReader {
+    val callCount = AtomicInteger(0)
+    val started = CountDownLatch(1)
+    private val release = CountDownLatch(1)
+
+    override fun read(context: Context): String? {
+        callCount.incrementAndGet()
+        started.countDown()
+        release.await(5, TimeUnit.SECONDS)
+        return result
+    }
+
+    fun release() = release.countDown()
 }
 
 class AaidOrNullTest {
@@ -66,6 +85,11 @@ class AaidResolverTest {
         AaidResolver.resetForTesting()
     }
 
+    /** A real dispatcher, since resolve() blocks on the read rather than deferring it. */
+    private fun useRealScope() {
+        AaidResolver.scope = CoroutineScope(Dispatchers.IO)
+    }
+
     @Test
     fun dependencyAbsent_alwaysReturnsNull_readerNeverCalled() {
         val reader = CountingReader("some-id")
@@ -78,64 +102,35 @@ class AaidResolverTest {
     }
 
     @Test
-    fun limitAdTrackingEnabled_resolvesToNull() = runTest {
+    fun firstCallWaitsForTheReadAndReturnsTheId() {
+        val reader = CountingReader("the-aaid")
+        AaidResolver.reader = reader
+        AaidResolver.isAvailable = { true }
+        useRealScope()
+
+        // The behaviour this class exists for: the very first resolve answers with the value, so
+        // the tag's first identity collection carries ketch_aaid into getConsent.
+        assertEquals("the-aaid", AaidResolver.resolve(fakeContext))
+        assertEquals(1, reader.callCount.get())
+    }
+
+    @Test
+    fun limitAdTrackingEnabled_resolvesToNull() {
         val reader = CountingReader(result = null)
         AaidResolver.reader = reader
         AaidResolver.isAvailable = { true }
-        AaidResolver.scope = CoroutineScope(StandardTestDispatcher(testScheduler))
-
-        AaidResolver.resolve(fakeContext)
-        advanceUntilIdle()
+        useRealScope()
 
         assertNull(AaidResolver.resolve(fakeContext))
         assertEquals(1, reader.callCount.get())
     }
 
     @Test
-    fun limitAdTrackingDisabled_resolvesToTheId() = runTest {
-        val reader = CountingReader(result = "the-aaid")
+    fun resolvedValueIsCachedAndTheReaderIsNotCalledAgain() {
+        val reader = CountingReader("the-aaid")
         AaidResolver.reader = reader
         AaidResolver.isAvailable = { true }
-        AaidResolver.scope = CoroutineScope(StandardTestDispatcher(testScheduler))
-
-        AaidResolver.resolve(fakeContext)
-        advanceUntilIdle()
-
-        assertEquals("the-aaid", AaidResolver.resolve(fakeContext))
-        assertEquals(1, reader.callCount.get())
-    }
-
-    @Test
-    fun resolveInFlight_secondCallAlsoReturnsNull_readerCalledOnce() = runTest {
-        val reader = CountingReader(result = "the-aaid")
-        AaidResolver.reader = reader
-        AaidResolver.isAvailable = { true }
-        AaidResolver.scope = CoroutineScope(StandardTestDispatcher(testScheduler))
-
-        val first = AaidResolver.resolve(fakeContext)
-        val second = AaidResolver.resolve(fakeContext)
-
-        assertNull(first)
-        assertNull(second)
-        // The background read hasn't run yet on the (paused) test dispatcher — only one coroutine
-        // was launched, for the first call; the second call saw InFlight and returned directly.
-        assertEquals(0, reader.callCount.get())
-
-        advanceUntilIdle()
-
-        assertEquals("the-aaid", AaidResolver.resolve(fakeContext))
-        assertEquals(1, reader.callCount.get())
-    }
-
-    @Test
-    fun resolveComplete_cachedValueReturnedWithoutRereading() = runTest {
-        val reader = CountingReader(result = "the-aaid")
-        AaidResolver.reader = reader
-        AaidResolver.isAvailable = { true }
-        AaidResolver.scope = CoroutineScope(StandardTestDispatcher(testScheduler))
-
-        AaidResolver.resolve(fakeContext)
-        advanceUntilIdle()
+        useRealScope()
 
         assertEquals("the-aaid", AaidResolver.resolve(fakeContext))
         assertEquals("the-aaid", AaidResolver.resolve(fakeContext))
@@ -143,22 +138,83 @@ class AaidResolverTest {
     }
 
     @Test
-    fun reset_restartsTheResolveCycle() = runTest {
-        val reader = CountingReader(result = "the-aaid")
+    fun reset_restartsTheResolveCycle() {
+        val reader = CountingReader("the-aaid")
         AaidResolver.reader = reader
         AaidResolver.isAvailable = { true }
-        AaidResolver.scope = CoroutineScope(StandardTestDispatcher(testScheduler))
+        useRealScope()
 
-        AaidResolver.resolve(fakeContext)
-        advanceUntilIdle()
         assertEquals("the-aaid", AaidResolver.resolve(fakeContext))
-
         AaidResolver.reset()
-        assertNull(AaidResolver.resolve(fakeContext))
-        advanceUntilIdle()
-
         assertEquals("the-aaid", AaidResolver.resolve(fakeContext))
         assertEquals(2, reader.callCount.get())
+    }
+
+    @Test
+    fun readSlowerThanTheTimeoutReturnsNullRatherThanBlockingOn() {
+        val reader = BlockingReader("the-aaid")
+        AaidResolver.reader = reader
+        AaidResolver.isAvailable = { true }
+        useRealScope()
+
+        assertNull(AaidResolver.resolve(fakeContext, timeoutMs = 50))
+        assertTrue(reader.started.await(5, TimeUnit.SECONDS))
+        reader.release()
+    }
+
+    @Test
+    fun valueFromATimedOutReadIsPickedUpByTheNextCall() {
+        val reader = BlockingReader("the-aaid")
+        AaidResolver.reader = reader
+        AaidResolver.isAvailable = { true }
+        useRealScope()
+
+        assertNull(AaidResolver.resolve(fakeContext, timeoutMs = 50))
+        assertTrue(reader.started.await(5, TimeUnit.SECONDS))
+        reader.release()
+
+        // Joins the read already in flight instead of starting a second one.
+        assertEquals("the-aaid", AaidResolver.resolve(fakeContext, timeoutMs = 5_000))
+        assertEquals(1, reader.callCount.get())
+    }
+
+    @Test
+    fun timedOutReadStillReachesCachedValue() {
+        val reader = BlockingReader("the-aaid")
+        AaidResolver.reader = reader
+        AaidResolver.isAvailable = { true }
+        useRealScope()
+
+        assertNull(AaidResolver.resolve(fakeContext, timeoutMs = 50))
+        assertTrue(reader.started.await(5, TimeUnit.SECONDS))
+        reader.release()
+        AaidResolver.resolve(fakeContext, timeoutMs = 5_000)
+
+        // getIdentities() reads cachedValue(), not resolve(). A read that landed after a timeout
+        // has to be promoted out of the in-flight state or the AAID is invisible to it forever.
+        assertEquals("the-aaid", AaidResolver.cachedValue())
+    }
+
+    @Test
+    fun concurrentCallersShareASingleRead() {
+        val reader = BlockingReader("the-aaid")
+        AaidResolver.reader = reader
+        AaidResolver.isAvailable = { true }
+        useRealScope()
+
+        val results = Collections.synchronizedList(mutableListOf<String?>())
+        val callers = (1..4).map {
+            thread { results.add(AaidResolver.resolve(fakeContext, timeoutMs = 5_000)) }
+        }
+
+        assertTrue(reader.started.await(5, TimeUnit.SECONDS))
+        reader.release()
+        callers.forEach { it.join(10_000) }
+
+        // filterNotNull is safe here: expecting four values also asserts none came back null.
+        assertEquals(List(4) { "the-aaid" }, results.filterNotNull().sorted())
+        // Losing the race must not start a second read — the ad ID is read once per process.
+        assertEquals(1, reader.callCount.get())
     }
 }
 
@@ -187,25 +243,23 @@ class AaidInGetIdentitiesTest {
     }
 
     @Test
-    fun aaidResolved_appearsInIdentities() = runTest {
-        AaidResolver.reader = CountingReader(result = "the-aaid")
+    fun aaidResolved_appearsInIdentities() {
+        AaidResolver.reader = CountingReader("the-aaid")
         AaidResolver.isAvailable = { true }
-        AaidResolver.scope = CoroutineScope(StandardTestDispatcher(testScheduler))
+        AaidResolver.scope = CoroutineScope(Dispatchers.IO)
 
         AaidResolver.resolve(fakeContext)
-        advanceUntilIdle()
 
         assertEquals(mapOf(KEY_AAID to "the-aaid"), identities(setOf(KEY_AAID)))
     }
 
     @Test
-    fun afterReset_aaidIsGoneFromIdentities() = runTest {
-        AaidResolver.reader = CountingReader(result = "the-aaid")
+    fun afterReset_aaidIsGoneFromIdentities() {
+        AaidResolver.reader = CountingReader("the-aaid")
         AaidResolver.isAvailable = { true }
-        AaidResolver.scope = CoroutineScope(StandardTestDispatcher(testScheduler))
+        AaidResolver.scope = CoroutineScope(Dispatchers.IO)
 
         AaidResolver.resolve(fakeContext)
-        advanceUntilIdle()
         assertEquals(mapOf(KEY_AAID to "the-aaid"), identities(setOf(KEY_AAID)))
 
         // Mirrors Ketch.clearIdentities(): resets the resolver (resolvedIdentityKeys would also
@@ -214,5 +268,22 @@ class AaidInGetIdentitiesTest {
         AaidResolver.reset()
 
         assertEquals(emptyMap<String, String>(), identities(setOf(KEY_AAID)))
+    }
+
+    @Test
+    fun aaidFromATimedOutReadAppearsOnceItLands() {
+        val reader = BlockingReader("the-aaid")
+        AaidResolver.reader = reader
+        AaidResolver.isAvailable = { true }
+        AaidResolver.scope = CoroutineScope(Dispatchers.IO)
+
+        assertNull(AaidResolver.resolve(fakeContext, timeoutMs = 50))
+        assertEquals(emptyMap<String, String>(), identities(setOf(KEY_AAID)))
+
+        assertTrue(reader.started.await(5, TimeUnit.SECONDS))
+        reader.release()
+        AaidResolver.resolve(fakeContext, timeoutMs = 5_000)
+
+        assertEquals(mapOf(KEY_AAID to "the-aaid"), identities(setOf(KEY_AAID)))
     }
 }
