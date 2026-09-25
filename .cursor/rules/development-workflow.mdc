@@ -24,7 +24,7 @@ alwaysApply: true
 | `./gradlew ktlintFormat` | Auto-format Kotlin sources |
 | `./gradlew :ketchsdk:lint` | Android lint (baseline at `ketchsdk/lint-baseline.xml`) |
 | `./gradlew :ketchsdk:publishToMavenLocal` | Publish the artifact to the local Maven cache |
-| `./gradlew dokkaHtmlMultiModule` | Generate API docs |
+| `./gradlew :dokkaGenerate` | Generate API docs |
 | `./run-integration-tests.sh` | Clean build + full instrumented run (checks for a connected device) |
 
 ## Validation Checklist
@@ -47,7 +47,7 @@ Run before considering any change complete:
 
 - Versions live in root `build.gradle` `buildConfig` (`versionCode`, `versionName`) and are duplicated in `ketchsdk/build.gradle` (`version = '3.0'` in the `maven-publish` block).
 - Publishing is **JitPack on-demand**: there is no GitHub Actions publish workflow. A consumer requesting `com.github.ketch-com:ketch-android:<tag|branch-SNAPSHOT|commit>` triggers JitPack to build that ref. Each version is isolated by git ref, so beta tags/branches never affect stable consumers.
-- When changing the public API, update `README.md` and run `dokkaHtmlMultiModule`.
+- When changing the public API, update `README.md` and run `./gradlew :dokkaGenerate`.
 
 ## Code Quality
 

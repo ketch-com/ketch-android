@@ -1,3 +1,5 @@
+import org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier
+
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-parcelize'
 apply plugin: 'org.jetbrains.kotlin.android'
@@ -118,37 +120,32 @@ afterEvaluate {
     }
 }
 
-dokkaHtmlPartial.configure {
-    dokkaSourceSets {
-        named("main") {
-            // Used to remove a source set from documentation, test source sets are suppressed by default
-            suppress.set(false)
+dokka {
+    dokkaSourceSets.named("main") {
+        documentedVisibilities.set([VisibilityModifier.Public])
 
-            includeNonPublic.set(false)
+        // Do not output deprecated members. Applies globally, can be overridden by packageOptions
+        skipDeprecated.set(false)
 
-            // Do not output deprecated members. Applies globally, can be overridden by packageOptions
-            skipDeprecated.set(false)
+        // Emit warnings about not documented members. Applies globally, also can be overridden by packageOptions
+        reportUndocumented.set(true)
 
-            // Emit warnings about not documented members. Applies globally, also can be overridden by packageOptions
-            reportUndocumented.set(true)
+        // Do not create index pages for empty packages
+        skipEmptyPackages.set(true)
 
-            // Do not create index pages for empty packages
-            skipEmptyPackages.set(true)
+        displayName.set("Ketch SDK")
 
-            displayName.set("Ketch SDK")
+        // Link to online kotlin-stdlib, JDK, and Android SDK documentation
+        enableKotlinStdLibDocumentationLink.set(true)
+        enableJdkDocumentationLink.set(true)
+        enableAndroidDocumentationLink.set(true)
 
-            // Disable linking to online kotlin-stdlib documentation
-            noStdlibLink.set(false)
-
-            // Disable linking to online JDK documentation
-            noJdkLink.set(false)
-
-            // Disable linking to online Android documentation (only applicable for Android projects)
-            noAndroidSdkLink.set(false)
-
-            // Include generated files in documentation
-            // By default Dokka will omit all files in folder named generated that is a child of buildDir
-            suppressGeneratedFiles.set(false)
-        }
+        // Include generated files in documentation
+        // By default Dokka will omit all files in folder named generated that is a child of buildDir
+        suppressGeneratedFiles.set(false)
+    }
+    // The "release" variant source set repeats src/main, which fails Dokka's duplicate-source-root check.
+    dokkaSourceSets.named("release") {
+        suppress.set(true)
     }
 }
