@@ -13,7 +13,9 @@ buildscript {
     ]
     ext.versions = [
             'javaVersion' :  17,
-            'kotlin'      : '2.1.20',
+            // Kotlin Gradle plugin (build-time only); the published SDK's stdlib/API level is kotlinStdlib
+            'kotlin'      : '2.4.20',
+            'kotlinStdlib': '2.2.10',
             'ktx'         : '1.17.0',
             'appcompat'   : '1.7.1',
             'dokka'       : '1.9.20',

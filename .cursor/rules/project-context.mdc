@@ -10,9 +10,9 @@ The Ketch Mobile SDK for Android lets an app collect and manage a visitor's priv
 
 ## Technology Stack
 
-- **Language**: Kotlin 2.1.20, JVM target 17 (`minSdk` 26, `targetSdk`/`compileSdk` 36)
+- **Language**: Kotlin 2.4.20 compiler, published at Kotlin 2.2 (stdlib 2.2.10, API/language 2.2), JVM target 17 (`minSdk` 26, `targetSdk`/`compileSdk` 36)
 - **Build System**: Gradle (Groovy DSL), Android Gradle Plugin 9.0.0
-- **Key Libraries**: AndroidX `appcompat`, `core-ktx`, `webkit`, `preference`, `kotlin-parcelize`, Gson; Jetpack Compose (only in `sample-app-compose`)
+- **Key Libraries**: AndroidX `appcompat`, `core-ktx`, `webkit`, `preference`, Gson; Jetpack Compose (only in `sample-app-compose`)
 - **UI**: WebView-based experiences shown in a `DialogFragment`; View binding + data binding enabled
 - **Testing**: JUnit 4 (unit), Espresso + AndroidX Test (instrumented), `android-junit5` runner
 - **Linting/Formatting**: ktlint (`org.jlleitschuh.gradle.ktlint`), Android `lint` (baseline at `ketchsdk/lint-baseline.xml`)
