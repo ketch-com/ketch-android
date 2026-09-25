@@ -16,7 +16,7 @@ The Ketch Mobile SDK for Android lets an app collect and manage a visitor's priv
 - **UI**: WebView-based experiences shown in a `DialogFragment`; View binding + data binding enabled
 - **Testing**: JUnit 4 (unit), Espresso + AndroidX Test (instrumented), `android-junit5` runner
 - **Linting/Formatting**: ktlint (`org.jlleitschuh.gradle.ktlint`), Android `lint` (baseline at `ketchsdk/lint-baseline.xml`)
-- **Docs**: Dokka (`dokkaHtmlMultiModule`, `packageDoc` zip task)
+- **Docs**: Dokka 2 (`:dokkaGenerate`, `packageDoc` zip task)
 - **Publishing**: `maven-publish` consumed by JitPack on-demand (`jitpack.yml` pins JDK 17). No CI publish workflow.
 
 ## Project Structure

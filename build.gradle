@@ -18,7 +18,7 @@ buildscript {
             'kotlinStdlib': '2.2.10',
             'ktx'         : '1.17.0',
             'appcompat'   : '1.7.1',
-            'dokka'       : '1.9.20',
+            'dokka'       : '2.2.0',
             'junit'       : '4.13.2',
             'gson'        : '2.13.2',
             'okhttp'      : '4.12.0',
@@ -59,13 +59,10 @@ buildscript {
             'io.netty:netty-handler-proxy:4.1.137.Final',
             'io.netty:netty-resolver:4.1.137.Final',
             'io.netty:netty-transport:4.1.137.Final',
-            'io.netty:netty-transport-native-unix-common:4.1.137.Final'
-    ]
-    // Dokka configurations skip securityPins (Jackson), so they get these instead.
-    ext.dokkaSecurityPins = [
+            'io.netty:netty-transport-native-unix-common:4.1.137.Final',
+            // Dokka 2.2.0 pulls freemarker 2.3.32 and jsoup 1.16.1
             'org.freemarker:freemarker:2.3.35',
-            'org.jsoup:jsoup:1.23.1',
-            'com.fasterxml.woodstox:woodstox-core:6.4.0'
+            'org.jsoup:jsoup:1.23.1'
     ]
     repositories {
         google()
@@ -97,38 +94,34 @@ allprojects {
         maven { url "https://software.mobile.pendo.io/artifactory/android-release" }
     }
     configurations.configureEach {
-        // Dokka 1.9.20's worker classpath breaks on Jackson 2.18 (TypeFactory signature change).
-        if (name.startsWith('dokka')) {
-            resolutionStrategy { force rootProject.ext.dokkaSecurityPins }
-        } else {
-            resolutionStrategy { force rootProject.ext.securityPins }
-        }
+        resolutionStrategy { force rootProject.ext.securityPins }
     }
-}
-
-tasks.register('clean', Delete) {
-    delete rootProject.layout.buildDirectory
 }
 
 ext {
     ketch_version = '0.3.' + System.getenv('GITHUB_RUN_NUMBER')
 }
 
-dokkaHtmlMultiModule.configure {
-    // Set module name displayed in the final output
+dependencies {
+    dokka(project(':ketchsdk'))
+}
+
+dokka {
     moduleName.set("Ketch SDK")
 
-    // Suppress obvious functions like default toString or equals. Defaults to true
-    suppressObviousFunctions.set(false)
+    dokkaPublications.html {
+        // Suppress obvious functions like default toString or equals. Defaults to true
+        suppressObviousFunctions.set(false)
 
-    // Suppress all inherited members that were not overridden in a given class.
-    // Eg. using it you can suppress toString or equals functions but you can't suppress componentN or copy on data class. To do that use with suppressObviousFunctions
-    // Defaults to false
-    suppressInheritedMembers.set(true)
+        // Suppress all inherited members that were not overridden in a given class.
+        // Eg. using it you can suppress toString or equals functions but you can't suppress componentN or copy on data class. To do that use with suppressObviousFunctions
+        // Defaults to false
+        suppressInheritedMembers.set(true)
+    }
 }
 
 tasks.register('packageDoc', Zip) {
     archiveFileName = "sdk-doc.zip"
     destinationDirectory = layout.buildDirectory.dir("doc")
-    from layout.buildDirectory.dir("dokka/htmlMultiModule/")
+    from tasks.named('dokkaGeneratePublicationHtml').flatMap { it.outputDirectory }
 }
