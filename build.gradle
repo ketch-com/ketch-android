@@ -62,7 +62,9 @@ buildscript {
             'io.netty:netty-transport-native-unix-common:4.1.137.Final',
             // Dokka 2.2.0 pulls freemarker 2.3.32 and jsoup 1.16.1
             'org.freemarker:freemarker:2.3.35',
-            'org.jsoup:jsoup:1.23.2'
+            'org.jsoup:jsoup:1.23.2',
+            // AGP 9.0.0 and its unified test platform pull 32.0.1-jre and 33.3.1-jre
+            'com.google.guava:guava:33.7.2-jre'
     ]
     repositories {
         google()
