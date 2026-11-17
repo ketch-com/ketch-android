@@ -246,6 +246,15 @@ To revert back to using the remote GitHub dependency:
 1. Remove or comment out the `includeBuild` section in the sample app's `settings.gradle` file
 2. Rebuild the sample app
 
+### Dependency Locking
+
+Dependency versions are locked in `gradle.lockfile` files (one per module, plus `buildscript-gradle.lockfile` for the build plugins) so security scanners can read them.
+After changing a dependency version or a pin in `ext.securityPins`, regenerate the locks and commit them with the change:
+
+```
+./gradlew dependencies :ketchsdk:dependencies :integration-tests:dependencies :sample-app-standard:dependencies :sample-app-compose:dependencies --write-locks
+```
+
 ## Developer's Documentations
 
 ### com.ketch.android.Ketch
