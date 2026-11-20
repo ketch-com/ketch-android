@@ -29,6 +29,8 @@ import com.ketch.android.data.jurisdictionCode
 import com.ketch.android.data.toRegionCode
 import com.ketch.android.ui.KetchDialogFragment
 import com.ketch.android.ui.KetchWebView
+import com.ketch.android.ui.buildCustomTriggerScript
+import com.ketch.android.ui.buildNamedTriggerScript
 import org.json.JSONObject
 import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
@@ -559,18 +561,56 @@ class Ketch private constructor(
         }
 
         val optionsJson = JSONObject(options).toString()
-        val signature = buildLoadSignature(0, 0)
+        return dispatchTrigger(PendingTrigger(triggerNameValue, safeName, optionsJson), "trigger($safeName)", 0, 0)
+    }
 
-        tryWarmWebView(signature, "trigger($safeName)")?.let { webView ->
+    /**
+     * Fire a rule trigger by name, such as `privacyPreferenceUnknown`, `preferencesOpened` or `dnsOpened`.
+     * The name is passed to the tag as-is, so trigger names added to the tag need no SDK update.
+     * If a matching backend rule shows an experience, the fragment dialog is displayed automatically.
+     *
+     * Use `trigger(TriggerName.CUSTOM, functionName, options)` for custom-function triggers.
+     *
+     * @param name: the trigger name; must start with a letter and contain only letters, digits, '_' or '-'
+     * @param options: optional key/value trigger options
+     * @param bottomPadding: Pixels of padding to add to the bottom of the experience
+     * @param topPadding: Pixels of padding to add to the top of the experience
+     * @return false if the name is rejected or an experience is already showing
+     */
+    fun trigger(
+        name: String,
+        options: Map<String, Any?> = emptyMap(),
+        bottomPadding: Int = 0,
+        topPadding: Int = 0,
+    ): Boolean {
+        triggerNameRejection(name)?.let { reason ->
+            Log.w(TAG, "[Ketch] trigger rejected: $reason")
+            return false
+        }
+
+        if (isShowingExperience) {
+            Log.d(TAG, "Not triggering '$name' as an experience is already being shown")
+            return false
+        }
+
+        val optionsJson = JSONObject(options).toString()
+        return dispatchTrigger(PendingTrigger(name, null, optionsJson), "trigger($name)", bottomPadding, topPadding)
+    }
+
+    // Fires on a warm WebView now, or cold-loads one and fires from onConfigUpdated once the tag is ready.
+    private fun dispatchTrigger(pending: PendingTrigger, label: String, bottomPadding: Int, topPadding: Int): Boolean {
+        val signature = buildLoadSignature(bottomPadding, topPadding)
+
+        tryWarmWebView(signature, label)?.let { webView ->
             // Supersede any deferred cold trigger so onConfigUpdated does not re-fire it.
             pendingTrigger = null
-            webView.trigger(triggerNameValue, safeName, optionsJson)
+            pending.fireOn(webView)
             return true
         }
 
-        Log.d(TAG, "Cold WebView load for trigger($safeName)")
+        Log.d(TAG, "Cold WebView load for $label")
         val webView = prepareColdWebView(false, false, signature) ?: return false
-        pendingTrigger = PendingTrigger(triggerNameValue, safeName, optionsJson)
+        pendingTrigger = pending
         webView.load(
             orgCode,
             property,
@@ -587,8 +627,8 @@ class Ketch private constructor(
             age,
             ageLower,
             ageUpper,
-            0,
-            0,
+            bottomPadding,
+            topPadding,
             cssStyle,
             webResourceUrlOverridesJson()
         )
@@ -1148,7 +1188,7 @@ class Ketch private constructor(
 
                     pendingTrigger?.let { pending ->
                         pendingTrigger = null
-                        webView.trigger(pending.triggerName, pending.functionName, pending.optionsJson)
+                        pending.fireOn(webView)
                     }
 
                     if (!showConsent) {
@@ -1452,9 +1492,33 @@ class Ketch private constructor(
 private fun ConsentUpdate.withoutProtocols(): ConsentUpdate =
     copy(protocols = null)
 
-private data class PendingTrigger(val triggerName: String, val functionName: String, val optionsJson: String)
+internal data class PendingTrigger(val triggerName: String, val functionName: String?, val optionsJson: String) {
+    // A null functionName selects the named-trigger form, which takes no function argument.
+    val script: String
+        get() = if (functionName == null) {
+            buildNamedTriggerScript(triggerName, optionsJson)
+        } else {
+            buildCustomTriggerScript(triggerName, functionName, optionsJson)
+        }
+
+    fun fireOn(webView: KetchWebView) {
+        webView.runTriggerScript(script)
+    }
+}
 
 private val TRIGGER_FUNCTION_NAME_REGEX = Regex("^[A-Za-z0-9_.-]+$")
 
 internal fun isValidTriggerFunctionName(functionName: String): Boolean =
     TRIGGER_FUNCTION_NAME_REGEX.matches(functionName)
+
+private val TRIGGER_NAME_REGEX = Regex("^[A-Za-z][A-Za-z0-9_-]*$")
+
+/** Why [name] cannot be fired as a named trigger, or null when it can. */
+internal fun triggerNameRejection(name: String): String? =
+    when {
+        name == TriggerName.CUSTOM.value ->
+            "'custom' needs a function name; call trigger(TriggerName.CUSTOM, functionName, options)"
+        !TRIGGER_NAME_REGEX.matches(name) ->
+            "name must start with a letter and contain only letters, digits, '_' or '-'"
+        else -> null
+    }

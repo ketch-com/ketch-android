@@ -114,7 +114,14 @@ class KetchWebView(context: Context, shouldRetry: Boolean = false) : WebView(con
 
     /** Imperatively fire a custom-function (onFunction) rule trigger on an already-booted page. */
     fun trigger(triggerName: String, functionName: String, optionsJson: String) {
-        evaluateJavascript("ketch('trigger', '$triggerName', '$functionName', $optionsJson)") { result ->
+        evaluateJavascript(buildCustomTriggerScript(triggerName, functionName, optionsJson)) { result ->
+            Log.d(TAG, "trigger result: $result")
+        }
+    }
+
+    /** Imperatively run a trigger script built by [buildCustomTriggerScript] or [buildNamedTriggerScript]. */
+    internal fun runTriggerScript(script: String) {
+        evaluateJavascript(script) { result ->
             Log.d(TAG, "trigger result: $result")
         }
     }

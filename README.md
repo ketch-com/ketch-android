@@ -373,6 +373,19 @@ After changing a dependency version or a pin in `ext.securityPins`, regenerate t
     fun trigger(triggerName: TriggerName, functionName: String, options: Map<String, Any?> = emptyMap()): Boolean
 
     /**
+     * Fire a rule trigger by name: privacyPreferenceUnknown, preferencesOpened, dnsOpened, or any
+     * name the Ketch tag adds later. Calls ketch('trigger', name, options) in the tag.
+     * Returns false for "custom" (use the function-name form above), a malformed name, or
+     * when an experience is already showing. Queued until the tag is ready, like the form above.
+     */
+    fun trigger(
+        name: String,
+        options: Map<String, Any?> = emptyMap(),
+        bottomPadding: Int = 0,
+        topPadding: Int = 0,
+    ): Boolean
+
+    /**
      * Resolved region code, preferring a value set via setRegion over a network lookup.
      * Also available as a suspend function.
      */
