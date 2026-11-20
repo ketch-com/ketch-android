@@ -565,7 +565,7 @@ class Ketch private constructor(
     }
 
     /**
-     * Fire a rule trigger by name, such as `privacyPrefUnknown`, `preferencesOpened` or `dnsOpened`.
+     * Fire a rule trigger by name, such as `privacyPreferenceUnknown`, `preferencesOpened` or `dnsOpened`.
      * The name is passed to the tag as-is, so trigger names added to the tag need no SDK update.
      * If a matching backend rule shows an experience, the fragment dialog is displayed automatically.
      *

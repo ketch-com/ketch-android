@@ -7,7 +7,7 @@ import org.junit.Test
 class TriggerNameRejectionTest {
     @Test
     fun knownTriggerNames_areAccepted() {
-        assertNull(triggerNameRejection("privacyPrefUnknown"))
+        assertNull(triggerNameRejection("privacyPreferenceUnknown"))
         assertNull(triggerNameRejection("preferencesOpened"))
         assertNull(triggerNameRejection("dnsOpened"))
     }
